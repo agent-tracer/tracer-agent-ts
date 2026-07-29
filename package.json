@@ -1,0 +1,40 @@
+{
+  "name": "tracer-agent-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "libs/*",
+    "services/*"
+  ],
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
+    "gen:paths": "node scripts/gen-paths.mjs",
+    "check:paths": "node scripts/gen-paths.mjs --check",
+    "check:coauthors": "node scripts/check-coauthors.mjs",
+    "lint": "npm run lint:format && npm run lint:types && npm run lint:structure && npm run lint:deps",
+    "lint:format": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:types": "node scripts/run-workspaces.mjs lint:types",
+    "lint:structure": "node scripts/check-structure.mjs",
+    "lint:deps": "node scripts/check-dependencies.mjs",
+    "build": "node scripts/run-workspaces.mjs build",
+    "test": "vitest run && node --test \"scripts/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=24.0.0 <25.0.0"
+  },
+  "dependencies": {
+    "@swc-node/register": "^1.11.1",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "dependency-cruiser": "^16.10.4",
+    "eslint": "^9.39.5",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.63.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@tracer-agent/platform": [
+        "libs/platform/src/index.ts"
+      ],
+      "@tracer-agent/platform/*": [
+        "libs/platform/src/*"
+      ],
+      "~platform/*": [
+        "libs/platform/src/*"
+      ],
+      "@tracer-agent/llm": [
+        "libs/llm/src/index.ts"
+      ],
+      "@tracer-agent/llm/*": [
+        "libs/llm/src/*"
+      ],
+      "~llm/*": [
+        "libs/llm/src/*"
+      ],
+      "@tracer-agent/tracer-client": [
+        "libs/tracer-client/src/index.ts"
+      ],
+      "@tracer-agent/tracer-client/*": [
+        "libs/tracer-client/src/*"
+      ],
+      "~tracer-client/*": [
+        "libs/tracer-client/src/*"
+      ],
+      "~agent-api/*": [
+        "services/agent-api/src/*"
+      ],
+      "~agent-worker/*": [
+        "services/agent-worker/src/*"
+      ]
+    }
+  }
+}
