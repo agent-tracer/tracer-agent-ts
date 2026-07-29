@@ -1,0 +1,208 @@
+import "reflect-metadata";
+import { ClaudeQueryRunner } from "@tracer-agent/llm";
+import {
+    createDataSource,
+    errorMessage,
+    loadApplicationConfig,
+    logError,
+    logInfo,
+    SystemClock,
+} from "@tracer-agent/platform";
+import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
+import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
+import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
+import {
+    EventEntity,
+    SearchOutboxEntity,
+    TaskEntity,
+    TaskUserStateEntity,
+    TurnEntity,
+} from "~agent-worker/config/ledger/tracer.entity.js";
+import { createKafka } from "~agent-worker/config/kafka.factory.js";
+import { createSearchClient } from "~agent-worker/config/search.factory.js";
+import { createNotificationPublisher } from "~agent-worker/config/notification.js";
+import { GENERATE_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
+import { resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
+import { createTemporalWorker } from "~agent-worker/config/temporal.worker.js";
+import { runUntilShutdown } from "~agent-worker/config/worker.lifecycle.js";
+import { RecipeEntity } from "~agent-worker/domain/recipe/adapter/recipe.entity.js";
+import { RecipeNotificationAdapter } from "~agent-worker/domain/recipe/adapter/recipe.notification.adapter.js";
+import { RecipeReaderAdapter } from "~agent-worker/domain/recipe/adapter/recipe.reader.adapter.js";
+import { RecipeRepositoryAdapter } from "~agent-worker/domain/recipe/adapter/recipe.repository.adapter.js";
+import { RecipeAgentAdapter } from "~agent-worker/domain/recipe/adapter/recipe.agent.adapter.js";
+import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
+import { FailRecipeJobUsecase } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
+import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/application/finalize.recipe.scan.usecase.js";
+import { PrepareRecipeScanUsecase } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
+import { ScanRecipeUsecase } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
+import { RecipeActivity } from "~agent-worker/domain/recipe/inbound/recipe.activity.js";
+import { TaskCleanupSuggestionEntity } from "~agent-worker/domain/cleanup/adapter/cleanup.entity.js";
+import { CleanupNotificationAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.notification.adapter.js";
+import { CleanupReaderAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.reader.adapter.js";
+import { CleanupRepositoryAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.repository.adapter.js";
+import { CleanupSdkAgentAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.sdk.agent.adapter.js";
+import { CleanupUlidGenerator } from "~agent-worker/domain/cleanup/adapter/cleanup.ulid.generator.js";
+import { FailCleanupJobUsecase } from "~agent-worker/domain/cleanup/application/fail.cleanup.job.usecase.js";
+import { FinalizeTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/finalize.task.cleanup.usecase.js";
+import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/prepare.task.cleanup.usecase.js";
+import { SuggestCleanupUsecase } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
+import { CleanupActivity } from "~agent-worker/domain/cleanup/inbound/cleanup.activity.js";
+import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/title.notification.adapter.js";
+import type { TitleEventReaderPort, TitleTimelineQuery } from "~agent-worker/domain/title/port/title.event.reader.port.js";
+import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/title.event.reader.adapter.js";
+import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
+import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
+import { TitleUlidGenerator } from "~agent-worker/domain/title/adapter/title.ulid.generator.js";
+import { FailTitleJobUsecase } from "~agent-worker/domain/title/application/fail.title.job.usecase.js";
+import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/application/finalize.title.suggestion.usecase.js";
+import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
+import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
+import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
+import { HttpEvaluationExecutionClient } from "~agent-worker/domain/evaluation/adapter/tracer-api.evaluation.execution.client.js";
+import { buildEvaluationAgentRegistry } from "~agent-worker/domain/evaluation/adapter/evaluation.agent.registry.js";
+import { RunEvaluationUsecase } from "~agent-worker/domain/evaluation/application/run.evaluation.usecase.js";
+import { RunExperimentStepUsecase } from "~agent-worker/domain/evaluation/application/run.experiment.step.usecase.js";
+import { EvaluationActivity } from "~agent-worker/domain/evaluation/inbound/evaluation.activity.js";
+import { EvaluationExperimentActivity } from "~agent-worker/domain/evaluation/inbound/evaluation.experiment.activity.js";
+import { EvaluatorRegistry } from "~agent-worker/domain/evaluation/model/evaluator.registry.js";
+import type { DeterministicEvaluatorImplementation } from "~agent-worker/domain/evaluation/model/deterministic.evaluator.model.js";
+import type { SnapshotTaskAndEventReader } from "~agent-worker/domain/evaluation/adapter/snapshot.readers.js";
+
+/** 잡 원장과 추적 읽기 모델을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
+const GENERATE_ENTITIES = [
+    AiJobEntity,
+    AiJobStepEntity,
+    AgentRunObservationEntity,
+    TaskEntity,
+    TaskUserStateEntity,
+    EventEntity,
+    TurnEntity,
+    SearchOutboxEntity,
+    RecipeEntity,
+    TaskCleanupSuggestionEntity,
+] as const;
+
+/** 평가 스냅샷 리더를 title 슬라이스가 요구하는 포트 모양으로 바꾸며, 없는 본문은 undefined로 비운다. */
+function toTitleEventReader(reader: SnapshotTaskAndEventReader): TitleEventReaderPort {
+    return {
+        taskExists: () => reader.taskExists(),
+        countByTask: () => reader.countByTask(),
+        readTimeline: async (query: TitleTimelineQuery) => {
+            const events = await reader.readTimeline({
+                limit: query.limit,
+                descending: query.descending,
+                ...(query.cursor !== undefined ? { cursor: query.cursor } : {}),
+            });
+            return events.map((event) => ({
+                id: event.id,
+                seq: event.seq,
+                kind: event.kind,
+                title: event.title,
+                filePaths: event.filePaths,
+                occurredAt: event.occurredAt,
+                ...(event.body !== null ? { body: event.body } : {}),
+                ...(event.toolName !== null ? { toolName: event.toolName } : {}),
+            }));
+        },
+    };
+}
+
+/** 검색 색인이 노출하는 REST 표면을 그대로 부르는 최소 클라이언트다. */
+async function bootstrap(): Promise<void> {
+    const config = loadApplicationConfig();
+    const dataSource = createDataSource({ db: config.agentDb, entities: [...GENERATE_ENTITIES] });
+    await dataSource.initialize();
+
+    const producer = createKafka("agent-worker-generate").producer();
+    await producer.connect();
+    const clock = new SystemClock();
+    const publish = createNotificationPublisher(producer);
+    const isLocal = config.profile === "local";
+    const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
+    const search = createSearchClient();
+
+    const recipeIds = new RecipeUlidGenerator();
+    const recipeReader = new RecipeReaderAdapter(dataSource);
+    const recipeRepository = new RecipeRepositoryAdapter(dataSource, recipeIds);
+    const recipeNotification = new RecipeNotificationAdapter(publish);
+    const recipeAgent = new RecipeAgentAdapter(claudeRunner, {
+        tasks: recipeReader,
+        events: recipeReader,
+        rules: recipeReader,
+        search,
+    });
+    const recipe = new RecipeActivity(
+        new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock),
+        new ScanRecipeUsecase(recipeRepository, recipeAgent, clock, recipeIds),
+        new FinalizeRecipeScanUsecase(recipeRepository, recipeNotification, clock),
+        new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock),
+    );
+
+    const titleIds = new TitleUlidGenerator(clock);
+    const titleReader = new TitleEventReaderAdapter(dataSource);
+    const titleRepository = new TitleRepositoryAdapter(dataSource);
+    const titleNotification = new TitleNotificationAdapter(publish);
+    const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader);
+    const title = new TitleActivity(
+        new PrepareTitleSuggestionUsecase(titleRepository, titleAgent, titleNotification, clock),
+        new SuggestTitleUsecase(titleRepository, titleAgent, clock, titleIds),
+        new FinalizeTitleSuggestionUsecase(titleRepository, titleNotification, clock),
+        new FailTitleJobUsecase(titleRepository, titleNotification, clock),
+    );
+
+    const cleanupIds = new CleanupUlidGenerator();
+    const cleanupReader = new CleanupReaderAdapter(dataSource);
+    const cleanupRepository = new CleanupRepositoryAdapter(dataSource);
+    const cleanupNotification = new CleanupNotificationAdapter(publish);
+    const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
+        tasks: cleanupReader,
+        events: cleanupReader,
+    });
+    const cleanup = new CleanupActivity(
+        new PrepareTaskCleanupUsecase(cleanupRepository, cleanupAgent, cleanupNotification, clock),
+        new SuggestCleanupUsecase(cleanupRepository, cleanupAgent, clock, cleanupIds),
+        new FinalizeTaskCleanupUsecase(cleanupRepository, cleanupNotification, clock),
+        new FailCleanupJobUsecase(cleanupRepository, cleanupNotification, clock),
+    );
+
+    // 결정적 채점기 구현은 아직 어떤 에이전트도 내놓지 않아 빈 목록으로 시작한다.
+    const deterministicEvaluators: readonly DeterministicEvaluatorImplementation[] = [];
+    const evaluationAgents = buildEvaluationAgentRegistry({
+        title: (events, resolveFragments) =>
+            new TitleAgentAdapter(claudeRunner, toTitleEventReader(events), resolveFragments),
+        recipe: (deps, resolveFragments) => new RecipeAgentAdapter(claudeRunner, deps, resolveFragments),
+        cleanup: (events, resolveFragments) =>
+            new CleanupSdkAgentAdapter(claudeRunner, { tasks: events, events }, resolveFragments),
+    });
+    const runEvaluation = new RunEvaluationUsecase(evaluationAgents, new EvaluatorRegistry(deterministicEvaluators));
+    const evaluation = new EvaluationActivity(runEvaluation);
+    const experiment = new EvaluationExperimentActivity(
+        new RunExperimentStepUsecase(new HttpEvaluationExecutionClient(resolveTracerApiUrl()), runEvaluation),
+    );
+
+    // replica 수와 이 값의 곱이 동시 모델 호출 총량이므로, 총량을 늘리려면 이 값을 replica 수로 나눠 정한다.
+    const generateMaxConcurrentActivities = Number(process.env["SDK_GENERATE_MAX_CONCURRENT_ACTIVITIES"] ?? "6");
+
+    const workers = await createTemporalWorker({
+        address: config.temporal.address,
+        namespace: config.temporal.namespace,
+        taskQueue: GENERATE_TASK_QUEUE,
+        activities: {
+            generateRecipeCandidates: recipe.generateRecipeCandidates,
+            generateTitleSuggestion: title.generateTitleSuggestion,
+            generateTaskCleanupSuggestions: cleanup.generateTaskCleanupSuggestions,
+            runEvaluationAgent: evaluation.runEvaluationAgent,
+            runNext: experiment.runNext,
+            finalize: experiment.finalize,
+        },
+        generateMaxConcurrentActivities,
+    });
+    logInfo({ msg: "process.lifecycle.started", taskQueue: GENERATE_TASK_QUEUE });
+
+    await runUntilShutdown({ workers, producer, dataSource });
+}
+
+await bootstrap().catch((error: unknown) => {
+    logError({ msg: "process.bootstrap.failed", error: errorMessage(error) });
+    process.exit(1);
+});
