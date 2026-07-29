@@ -1,0 +1,82 @@
+# 에이전트가 쓸 수 있는 모델과 그 단가의 유일한 창구다. 서버만 읽고, Python 실행 백엔드에는
+# 실행 봉투로 실어 보낸다. 단가를 모르는 모델은 예산을 집행할 수 없어 접수 자체가 거부된다.
+#
+# 단가는 백만 토큰당 USD이며 Anthropic 공식 모델·요금 문서 기준이다.
+# 캐시 쓰기는 입력의 1.25배, 캐시 읽기는 입력의 0.1배다.
+models:
+  claude-opus-5:
+    label: Claude Opus 5
+    input: 5.0
+    output: 25.0
+    cacheWrite: 6.25
+    cacheRead: 0.5
+  claude-sonnet-5:
+    label: Claude Sonnet 5
+    # 2026-08-31까지 도입 단가($2/$10)가 적용되지만, 예산은 과소 추정하지 않도록 정가로 집행한다.
+    input: 3.0
+    output: 15.0
+    cacheWrite: 3.75
+    cacheRead: 0.3
+  claude-sonnet-4-6:
+    label: Claude Sonnet 4.6
+    input: 3.0
+    output: 15.0
+    cacheWrite: 3.75
+    cacheRead: 0.3
+  claude-haiku-4-5:
+    label: Claude Haiku 4.5
+    input: 1.0
+    output: 5.0
+    cacheWrite: 1.25
+    cacheRead: 0.1
+
+# 기능마다 기본 모델과 사용자가 고를 수 있는 모델과 실행 한도를 정한다.
+# allowed에 없는 모델은 설정에 저장되지 않는다.
+#
+# limits는 실행 봉투에 실려 백엔드로 건너가므로 두 백엔드가 같은 한도로 돈다.
+#   budgetUsd   실행 전체가 태울 수 있는 달러이며, 닿으면 도구를 거두고 결론만 받는다
+#   maxTurns    폭주만 끊는 느슨한 그물이며 예산이 아니다
+#   deadlineMs  벽시계 백스톱이다. 도구를 부르는 에이전트 턴은 몇 분이 정상이라 넉넉히 둔다
+#   stallMs     마지막 진행 이후 이만큼 아무 소식이 없으면 멈춘 것으로 보고 끊는다
+features:
+  chat:
+    default: claude-sonnet-4-6
+    allowed: [claude-sonnet-4-6, claude-sonnet-5, claude-opus-5, claude-haiku-4-5]
+    limits:
+      budgetUsd: 1.2
+      maxTurns: 14
+      maxOutputTokens: 4000
+      deadlineMs: 600000
+      # 사고 블록과 도구 인자 스트리밍까지 진행으로 세므로, 정말 아무것도 안 나오는 구간만 침묵이다.
+      stallMs: 120000
+  recipe-scan:
+    default: claude-sonnet-4-6
+    fallback: claude-haiku-4-5
+    allowed: [claude-sonnet-4-6, claude-sonnet-5, claude-opus-5, claude-haiku-4-5]
+    limits:
+      budgetUsd: 2.0
+      maxTurns: 15
+      maxOutputTokens: 16000
+      deadlineMs: 720000
+  title-suggestion:
+    default: claude-haiku-4-5
+    fallback: claude-haiku-4-5
+    allowed: [claude-haiku-4-5, claude-sonnet-4-6]
+    limits:
+      budgetUsd: 0.2
+      maxTurns: 4
+      maxOutputTokens: 4000
+      deadlineMs: 300000
+  task-cleanup:
+    default: claude-haiku-4-5
+    fallback: claude-haiku-4-5
+    allowed: [claude-haiku-4-5, claude-sonnet-4-6]
+    limits:
+      budgetUsd: 0.5
+      maxTurns: 16
+      maxOutputTokens: 16000
+      deadlineMs: 600000
+  rule-generation:
+    default: claude-sonnet-4-6
+    fallback: claude-haiku-4-5
+    allowed: [claude-sonnet-4-6, claude-sonnet-5, claude-haiku-4-5]
