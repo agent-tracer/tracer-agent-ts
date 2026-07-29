@@ -1,0 +1,65 @@
+import type { AgentQueryUsage } from "@tracer-agent/llm";
+import type { ChatExecutionStatus, ChatStopReason } from "./chat.const.js";
+
+/** 한 시도가 태운 모델과 지출이며 종결이 이 값을 실행 원장에 새긴다. */
+export interface ChatExecutionSpend {
+    readonly modelUsed: string;
+    readonly costUsd: number | null;
+    readonly numTurns: number | null;
+    readonly stopReason: ChatStopReason;
+    readonly usage: AgentQueryUsage | Record<string, unknown>;
+}
+
+/** 대화 턴 하나의 수명이며 접수부터 종결까지의 상태와 누적 답변과 지출을 든다. */
+export class ChatExecution {
+    id!: string;
+
+    userId!: string;
+
+    threadId!: string;
+
+    userMessageId!: string;
+
+    clientRequestId!: string;
+
+    inputHash!: string;
+
+    status!: ChatExecutionStatus;
+
+    /** 이 실행을 맡을 구현체를 게이트웨이가 골랐으면 그 이름이고 고르지 않았으면 비어 있다. */
+    requestedImplementation!: string | null;
+
+    model!: string | null;
+
+    language!: string | null;
+
+    draftText!: string;
+
+    draftSeq!: number;
+
+    attempt!: number;
+
+    draftTokenHash!: string | null;
+
+    assistantMessageId!: string | null;
+
+    modelUsed!: string | null;
+
+    costUsd!: number | null;
+
+    numTurns!: number | null;
+
+    stopReason!: ChatStopReason | null;
+
+    usage!: Record<string, unknown>;
+
+    error!: string | null;
+
+    createdAt!: Date;
+
+    updatedAt!: Date;
+
+    startedAt!: Date | null;
+
+    completedAt!: Date | null;
+}

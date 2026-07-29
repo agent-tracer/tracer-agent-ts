@@ -1,0 +1,34 @@
+import type { ToolHandlers } from "@tracer-agent/llm";
+import type { TracerApiClient } from "@tracer-agent/tracer-client";
+import { parseChatToolArgs } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
+import { chatReadToolNames } from "./chat.tool.gate.js";
+import { telemetered } from "./chat.tool.support.js";
+
+/** 한 사용자 범위로 묶인 도구 호출 한 건이다. */
+export interface ChatToolCallContext {
+    readonly userId: string;
+    readonly scopeToken: string | undefined;
+}
+
+/** 계약이 선언한 자리로만 추적 API를 되읽는 읽기 도구를 세운다. */
+export function buildChatReadToolHandlers(
+    client: TracerApiClient,
+    ctx: ChatToolCallContext,
+): ToolHandlers {
+    const handlers: Record<string, (raw: Record<string, unknown>) => Promise<string>> = {};
+    for (const name of chatReadToolNames()) {
+        handlers[name] = async (raw) => {
+            const args = parseChatToolArgs(name, raw);
+            return telemetered(name, args, async () => {
+                const data = await client.call({
+                    toolName: name,
+                    userId: ctx.userId,
+                    args,
+                    ...(ctx.scopeToken !== undefined ? { scopeToken: ctx.scopeToken } : {}),
+                });
+                return JSON.stringify(data);
+            });
+        };
+    }
+    return handlers;
+}
