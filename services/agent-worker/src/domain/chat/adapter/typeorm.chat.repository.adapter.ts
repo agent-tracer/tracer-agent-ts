@@ -1,18 +1,12 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
 import type { QueryDeepPartialEntity, Repository } from "typeorm";
 import type { ChatMessage } from "~agent-worker/domain/chat/model/chat.message.model.js";
 import type { ChatThread } from "~agent-worker/domain/chat/model/chat.thread.model.js";
 import type {
-    AgentRunObservationRepositoryPort,
     ChatExecutionStepRecord,
     ChatExecutionStepRepositoryPort,
     ChatMessageRepositoryPort,
     ChatThreadRepositoryPort,
 } from "~agent-worker/domain/chat/port/chat.repository.port.js";
-import {
-    AgentRunObservationEntity,
-    toAgentRunObservationRow,
-} from "./agent.run.observation.entity.js";
 import type {
     ChatMessageEntity,
     ChatThreadEntity} from "./chat.entity.js";
@@ -61,24 +55,5 @@ export class TypeOrmChatExecutionStepRepository implements ChatExecutionStepRepo
         await this.repo.insert(
             steps.map(toChatExecutionStepRow) as unknown as QueryDeepPartialEntity<ChatExecutionStepEntity>[],
         );
-    }
-}
-
-export class TypeOrmAgentRunObservationRepository implements AgentRunObservationRepositoryPort {
-    constructor(private readonly repo: Repository<AgentRunObservationEntity>) {}
-
-    /** 같은 시도의 관측은 한 번만 새기며 이미 있으면 덮지 않는다. */
-    async record(userId: string, observation: AgentRunObservation, now: Date): Promise<boolean> {
-        const result = await this.repo
-            .createQueryBuilder()
-            .insert()
-            .into(AgentRunObservationEntity)
-            .values(
-                toAgentRunObservationRow(userId, observation, now) as unknown as
-                    QueryDeepPartialEntity<AgentRunObservationEntity>,
-            )
-            .orIgnore()
-            .execute();
-        return (result.identifiers[0] ?? null) !== null;
     }
 }

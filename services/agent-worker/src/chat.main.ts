@@ -14,7 +14,7 @@ import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { CHAT_EXECUTION_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { resolveAgentApiUrl, resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { ChatAgentAdapter } from "~agent-worker/domain/chat/adapter/chat.agent.adapter.js";
-import { AgentRunObservationEntity } from "~agent-worker/domain/chat/adapter/agent.run.observation.entity.js";
+import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import {
     ChatExecutionEntity,
     ChatMessageEntity,

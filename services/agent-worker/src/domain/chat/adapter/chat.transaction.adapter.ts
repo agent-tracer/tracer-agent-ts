@@ -1,11 +1,11 @@
 import type { DataSource } from "typeorm";
 import type { ChatTransactionPort, ChatTx } from "~agent-worker/domain/chat/port/chat.transaction.port.js";
-import { AgentRunObservationEntity } from "./agent.run.observation.entity.js";
+import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { ChatExecutionEntity, ChatMessageEntity, ChatThreadEntity } from "./chat.entity.js";
 import { ChatExecutionStepEntity } from "./chat.execution.step.entity.js";
 import { TypeOrmChatExecutionRepository } from "./typeorm.chat.execution.repository.adapter.js";
+import { TypeOrmAgentRunObservationRepository } from "~agent-worker/config/ledger/observation.repository.js";
 import {
-    TypeOrmAgentRunObservationRepository,
     TypeOrmChatExecutionStepRepository,
     TypeOrmChatMessageRepository,
     TypeOrmChatThreadRepository,
