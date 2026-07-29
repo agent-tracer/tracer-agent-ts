@@ -38,6 +38,22 @@ jobs:
       - name: contract conformance
         run: node contract/conformance/runner/verify.mjs
 
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      # 계약은 submodule이라 함께 받아야 이미지 빌드 컨텍스트 안에 있다.
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+
   commit-message:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
