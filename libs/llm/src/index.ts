@@ -12,6 +12,7 @@ export * from "./observability/semconv.const.js";
 export * from "./observability/telemetry.attributes.js";
 export * from "./observability/telemetry.js";
 export * from "./observability/trajectory.js";
+export * from "./orchestration/activity.guard.js";
 export * from "./pricing/llm.catalog.schema.js";
 export * from "./pricing/pricing.js";
 export * from "./runner/claude/claude.env.js";
