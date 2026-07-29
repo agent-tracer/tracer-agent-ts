@@ -1,0 +1,53 @@
+import { mergeAgentTrajectory } from "@tracer-agent/llm";
+import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
+import type { GenerateCleanupSuggestionsInput, GenerateCleanupSuggestionsOutput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
+import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
+import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { cleanupModelName, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
+import type { CleanupRunSegment } from "./cleanup.sdk.orchestration.js";
+
+export function buildCleanupOutput(
+    ctx: CleanupQueryContext,
+    segments: readonly CleanupRunSegment[],
+    suggestions: readonly CleanupSuggestionPayload[],
+    modelUsed: string,
+): GenerateCleanupSuggestionsOutput {
+    const input: GenerateCleanupSuggestionsInput = ctx.input;
+    const accounting = mergeAgentCallAccounting(segments.map((segment) => segment.accounting));
+    const steps = mergeAgentTrajectory(segments.map((segment) => ({ nodeName: segment.nodeName, steps: segment.steps })));
+    const fragmentIntegrity = ctx.fragmentResolver?.finalizeBundle(Object.fromEntries(ctx.resolvedTemplates));
+
+    return {
+        suggestions,
+        modelUsed,
+        durationMs: accounting.durationMs,
+        costUsd: accounting.costUsd,
+        numTurns: accounting.numTurns,
+        usage: accounting.usage,
+        steps,
+        observation: buildSuccessfulRunObservation({
+            executionId: input.jobId,
+            attempt: input.attempt,
+            jobId: input.jobId,
+            agentName: TASK_CLEANUP_SPEC.name,
+            modelRequested: cleanupModelName(input),
+            modelActual: modelUsed,
+            promptVersion: input.prompt.versionId,
+            promptFingerprint: {
+                agent: TASK_CLEANUP_SPEC.name,
+                version: input.prompt.semanticVersion,
+                language: input.language,
+                contentHash: input.prompt.contentHash,
+            },
+            toolContractVersion: input.prompt.toolContractVersion,
+            durationMs: accounting.durationMs,
+            costUsd: accounting.costUsd,
+            usage: accounting.usage,
+            steps,
+            landed: false,
+            repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
+            validationPassed: true,
+            ...(fragmentIntegrity ?? {}),
+        }),
+    };
+}
