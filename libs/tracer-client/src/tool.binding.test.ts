@@ -12,8 +12,7 @@ describe("도구 바인딩", () => {
     });
 
     it("경로 자리를 인자 값으로 채우고 이스케이프한다", () => {
-        expect(fillPath(toolBinding("upsert_setting"), { key: "anthropic.api_key", value: "x" }))
-            .toBe("/api/v1/settings/anthropic.api_key");
+        expect(fillPath(toolBinding("approve_rule"), { ruleId: "r1" })).toBe("/api/v1/rules/r1/approve");
         expect(fillPath(toolBinding("get_task"), { taskId: "a/b" })).toBe("/api/v1/tasks/a%2Fb");
     });
 

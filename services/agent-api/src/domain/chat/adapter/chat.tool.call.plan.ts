@@ -143,14 +143,6 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
         const suggestionId = req(args, "suggestionId");
         return plain({ suggestionId }, `Dismissed cleanup suggestion ${suggestionId}.`);
     },
-    upsert_setting: (args) => {
-        const key = req(args, "key");
-        return plain({ key, value: req(args, "value") }, `Set setting ${key}.`);
-    },
-    delete_setting: (args) => {
-        const key = req(args, "key");
-        return plain({ key }, `Cleared setting ${key}.`);
-    },
     enqueue_job: (args) => {
         const kind = req(args, "kind");
         return {

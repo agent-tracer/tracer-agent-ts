@@ -6,7 +6,6 @@ import { ChatDraftTokenAdapter } from "~agent-api/domain/chat/adapter/chat.draft
 import { ChatExecutionEvents } from "~agent-api/domain/chat/adapter/chat.execution.events.js";
 import { ChatExecutionUpdatePublisher } from "~agent-api/domain/chat/adapter/chat.execution.update.publisher.js";
 import { ChatScopeTokenAdapter } from "~agent-api/domain/chat/adapter/chat.scope.token.adapter.js";
-import { ChatSettingReaderAdapter } from "~agent-api/domain/chat/adapter/chat.setting.reader.adapter.js";
 import { ChatTransactionAdapter } from "~agent-api/domain/chat/adapter/chat.transaction.adapter.js";
 import { buildChatToolExecutors } from "~agent-api/domain/chat/adapter/chat.tool.executors.adapter.js";
 import { ChatUlidGenerator } from "~agent-api/domain/chat/adapter/chat.ulid.generator.js";
@@ -73,6 +72,7 @@ import {
 import { CHAT_TRANSACTION } from "~agent-api/domain/chat/port/chat.transaction.port.js";
 import { CHAT_CLOCK } from "~agent-api/domain/chat/port/clock.port.js";
 import { CHAT_SETTING_READER } from "~agent-api/domain/chat/port/setting.reader.port.js";
+import { SETTING_REPOSITORY } from "~agent-api/domain/settings/port/setting.repository.port.js";
 
 /** 도구가 기록을 읽고 되돌려 보내는 추적 API의 기점이다. */
 function resolveTracerApiBaseUrl(): string {
@@ -127,8 +127,7 @@ export const chatFeature = {
         { provide: CHAT_EXECUTION_DISPATCHER, useExisting: ChatWorkflowDispatcher },
         ChatTransactionAdapter,
         { provide: CHAT_TRANSACTION, useExisting: ChatTransactionAdapter },
-        ChatSettingReaderAdapter,
-        { provide: CHAT_SETTING_READER, useExisting: ChatSettingReaderAdapter },
+        { provide: CHAT_SETTING_READER, useExisting: SETTING_REPOSITORY },
         { provide: CHAT_CLOCK, useClass: SystemClock },
         ChatUlidGenerator,
         { provide: CHAT_ID_GENERATOR, useExisting: ChatUlidGenerator },

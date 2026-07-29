@@ -3,7 +3,6 @@ import type { DataSource } from "typeorm";
 import { AGENT_DATA_SOURCE } from "~agent-api/config/agent.datasource.token.js";
 import { GraphJobExecutionEntity } from "~agent-api/domain/job/adapter/graph.job.execution.entity.js";
 import { JobEntity } from "~agent-api/domain/job/adapter/job.entity.js";
-import { JobSettingReaderAdapter } from "~agent-api/domain/job/adapter/job.setting.reader.adapter.js";
 import { JobStepEntity } from "~agent-api/domain/job/adapter/job.step.entity.js";
 import { JobUlidGenerator } from "~agent-api/domain/job/adapter/job.ulid.generator.js";
 import { JobWorkflowDispatcher } from "~agent-api/domain/job/adapter/job.workflow.dispatcher.js";
@@ -34,6 +33,7 @@ import { JOB_STEP_REPOSITORY } from "~agent-api/domain/job/port/job.step.reposit
 import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.js";
 import { RULE_ANCHOR_READER } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
 import { JOB_SETTING_READER } from "~agent-api/domain/job/port/setting.reader.port.js";
+import { SETTING_REPOSITORY } from "~agent-api/domain/settings/port/setting.repository.port.js";
 import { WORKFLOW_DISPATCHER } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
 
 /** job 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
@@ -54,8 +54,7 @@ export const jobFeature = {
         { provide: JOB_STATUS_NOTIFIER, useExisting: KafkaJobStatusNotifier },
         StructuredJobEventLogAdapter,
         { provide: JOB_EVENT_LOG, useExisting: StructuredJobEventLogAdapter },
-        JobSettingReaderAdapter,
-        { provide: JOB_SETTING_READER, useExisting: JobSettingReaderAdapter },
+        { provide: JOB_SETTING_READER, useExisting: SETTING_REPOSITORY },
         RuleAnchorReaderAdapter,
         { provide: RULE_ANCHOR_READER, useExisting: RuleAnchorReaderAdapter },
         { provide: JOB_CLOCK, useClass: SystemClock },

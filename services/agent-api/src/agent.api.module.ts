@@ -17,6 +17,7 @@ import { READINESS_PROBE } from "~agent-api/domain/health/port/readiness.probe.p
 import { chatFeature } from "./chat.feature.js";
 import { jobFeature } from "./job.feature.js";
 import { evaluationFeature } from "./evaluation.feature.js";
+import { settingsFeature } from "./settings.feature.js";
 
 @Module({})
 export class AgentApiModule {
@@ -27,6 +28,7 @@ export class AgentApiModule {
                 ...chatFeature.controllers,
                 ...jobFeature.controllers,
                 ...evaluationFeature.controllers,
+                ...settingsFeature.controllers,
                 HealthController,
             ],
             providers: [
@@ -35,6 +37,7 @@ export class AgentApiModule {
                 ...chatFeature.providers,
                 ...jobFeature.providers,
                 ...evaluationFeature.providers,
+                ...settingsFeature.providers,
                 DataSourceReadinessProbeAdapter,
                 { provide: READINESS_PROBE, useExisting: DataSourceReadinessProbeAdapter },
                 CheckReadinessUseCase,

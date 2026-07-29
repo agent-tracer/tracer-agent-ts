@@ -1,7 +1,8 @@
-import { createDecipheriv, createHash } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const ENCRYPTED_PREFIX = "enc:v1:";
+const IV_BYTES = 12;
 // 소스 실행과 컨테이너 실행이 같은 로컬 DB를 공유하므로 두 경로의 기본 키가 같아야 한다.
 const INSECURE_LOCAL_DEV_KEY = "monitor-dev-key";
 
@@ -29,6 +30,15 @@ export class SecretKeyMismatchError extends Error {
 
 export function isEncryptedSecret(value: string): boolean {
     return value.startsWith(ENCRYPTED_PREFIX);
+}
+
+/** 평문을 지금 키로 암호화해 초기벡터와 인증태그와 암호문을 한 문자열에 담는다. */
+export function encryptSecret(plaintext: string): string {
+    const iv = randomBytes(IV_BYTES);
+    const cipher = createCipheriv(ALGORITHM, resolveKey(), iv);
+    const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+    const parts = [iv.toString("base64"), cipher.getAuthTag().toString("base64"), ciphertext.toString("base64")];
+    return `${ENCRYPTED_PREFIX}${parts.join(":")}`;
 }
 
 export function decryptSecret(stored: string): string {
