@@ -1,0 +1,55 @@
+import { loadApplicationConfig, SystemClock } from "@tracer-agent/platform";
+import type { DataSource } from "typeorm";
+import { AGENT_DATA_SOURCE } from "~agent-api/config/agent.datasource.token.js";
+import { JobEntity } from "~agent-api/domain/job/adapter/job.entity.js";
+import { JobSettingReaderAdapter } from "~agent-api/domain/job/adapter/job.setting.reader.adapter.js";
+import { JobUlidGenerator } from "~agent-api/domain/job/adapter/job.ulid.generator.js";
+import { JobWorkflowDispatcher } from "~agent-api/domain/job/adapter/job.workflow.dispatcher.js";
+import { KafkaJobStatusNotifier } from "~agent-api/domain/job/adapter/kafka.job.status.notifier.js";
+import { RuleAnchorReaderAdapter } from "~agent-api/domain/job/adapter/rule.anchor.reader.adapter.js";
+import { StructuredJobEventLogAdapter } from "~agent-api/domain/job/adapter/structured.job.event.log.adapter.js";
+import { TypeOrmJobRepository } from "~agent-api/domain/job/adapter/typeorm.job.repository.adapter.js";
+import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
+import { EnqueueJobUseCase } from "~agent-api/domain/job/application/command/enqueue.job.usecase.js";
+import { JobCommandController } from "~agent-api/domain/job/inbound/job.command.controller.js";
+import { JOB_CLOCK } from "~agent-api/domain/job/port/clock.port.js";
+import { JOB_EVENT_LOG } from "~agent-api/domain/job/port/job.event.log.port.js";
+import { JOB_ID_GENERATOR } from "~agent-api/domain/job/port/job.id.generator.port.js";
+import { JOB_REPOSITORY } from "~agent-api/domain/job/port/job.repository.port.js";
+import { JOB_STATUS_NOTIFIER } from "~agent-api/domain/job/port/job.status.notifier.port.js";
+import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.js";
+import { RULE_ANCHOR_READER } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
+import { JOB_SETTING_READER } from "~agent-api/domain/job/port/setting.reader.port.js";
+import { WORKFLOW_DISPATCHER } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
+
+/** job 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
+export const jobFeature = {
+    controllers: [JobCommandController],
+    providers: [
+        CancelJobUseCase,
+        EnqueueJobUseCase,
+        JobWorkflowDispatcher,
+        { provide: WORKFLOW_DISPATCHER, useExisting: JobWorkflowDispatcher },
+        KafkaJobStatusNotifier,
+        { provide: JOB_STATUS_NOTIFIER, useExisting: KafkaJobStatusNotifier },
+        StructuredJobEventLogAdapter,
+        { provide: JOB_EVENT_LOG, useExisting: StructuredJobEventLogAdapter },
+        JobSettingReaderAdapter,
+        { provide: JOB_SETTING_READER, useExisting: JobSettingReaderAdapter },
+        RuleAnchorReaderAdapter,
+        { provide: RULE_ANCHOR_READER, useExisting: RuleAnchorReaderAdapter },
+        { provide: JOB_CLOCK, useClass: SystemClock },
+        JobUlidGenerator,
+        { provide: JOB_ID_GENERATOR, useExisting: JobUlidGenerator },
+        // 로컬 자격으로 도는 프로파일에서는 접수가 API 키를 묻지 않는다.
+        { provide: LOCAL_CLI_AUTH, useFactory: () => loadApplicationConfig().profile === "local" },
+        {
+            provide: JOB_REPOSITORY,
+            inject: [AGENT_DATA_SOURCE],
+            useFactory: (source: DataSource) => new TypeOrmJobRepository(source.getRepository(JobEntity)),
+        },
+    ],
+};
+
+/** 잡 원장의 표를 비추는 엔티티다. */
+export const JOB_ENTITIES = [JobEntity] as const;

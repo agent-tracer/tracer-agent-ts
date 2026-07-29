@@ -2,7 +2,7 @@ import type { Repository } from "typeorm";
 import type { ChatUserMemory } from "~agent-api/domain/chat/model/chat.user.memory.model.js";
 import type { ChatUserMemoryRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { toChatUserMemory, toChatUserMemoryRow, type ChatUserMemoryEntity } from "./chat.user.memory.entity.js";
-import { upsertByKeys } from "./typeorm.upsert.js";
+import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 
 export class TypeOrmChatUserMemoryRepository implements ChatUserMemoryRepositoryPort {
     constructor(private readonly repo: Repository<ChatUserMemoryEntity>) {}

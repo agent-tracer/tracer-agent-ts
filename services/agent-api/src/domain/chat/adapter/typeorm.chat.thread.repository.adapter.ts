@@ -2,7 +2,7 @@ import type { Repository } from "typeorm";
 import type { ChatThread } from "~agent-api/domain/chat/model/chat.thread.model.js";
 import type { ChatThreadRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { toChatThread, toChatThreadRow, type ChatThreadEntity } from "./chat.thread.entity.js";
-import { upsertByKeys } from "./typeorm.upsert.js";
+import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 
 export class TypeOrmChatThreadRepository implements ChatThreadRepositoryPort {
     constructor(private readonly repo: Repository<ChatThreadEntity>) {}

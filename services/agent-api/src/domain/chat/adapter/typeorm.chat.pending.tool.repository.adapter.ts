@@ -2,7 +2,7 @@ import type { Repository } from "typeorm";
 import type { ChatPendingTool } from "~agent-api/domain/chat/model/chat.pending.tool.model.js";
 import type { ChatPendingToolRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { toChatPendingTool, toChatPendingToolRow, type ChatPendingToolEntity } from "./chat.pending.tool.entity.js";
-import { upsertByKeys } from "./typeorm.upsert.js";
+import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 
 export class TypeOrmChatPendingToolRepository implements ChatPendingToolRepositoryPort {
     constructor(private readonly repo: Repository<ChatPendingToolEntity>) {}
