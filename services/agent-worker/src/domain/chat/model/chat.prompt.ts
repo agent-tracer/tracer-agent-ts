@@ -21,8 +21,7 @@ export function buildChatSystemPrompt(
         )?.content ?? codeDefault;
     return [
         "You are the assistant of Agent Tracer, an observability tool that records coding-agent sessions",
-        "(tasks), their timelines, verification rules, memos, recipes, tags, cleanup suggestions, AI jobs",
-        "and settings.",
+        "(tasks), their timelines, verification rules, memos, recipes, tags, cleanup suggestions, and AI jobs.",
         "",
         "Your job is to work out what the user is actually asking for, reach for the tools that answer it,",
         "ground your reply in what they return, and propose the changes their work needs.",
