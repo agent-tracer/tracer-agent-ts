@@ -8,6 +8,7 @@ export * from "./auth/auth.token.js";
 export * from "./auth/cookie.js";
 export * from "./auth/execution.scope.token.js";
 export * from "./auth/rate.limiter.js";
+export * from "./config/secret.js";
 export { loadApplicationConfig } from "./config/application.config.loader.js";
 export {
     applicationConfigSchema,
