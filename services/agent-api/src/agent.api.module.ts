@@ -16,18 +16,25 @@ import { HealthController } from "~agent-api/domain/health/inbound/health.contro
 import { READINESS_PROBE } from "~agent-api/domain/health/port/readiness.probe.port.js";
 import { chatFeature } from "./chat.feature.js";
 import { jobFeature } from "./job.feature.js";
+import { evaluationFeature } from "./evaluation.feature.js";
 
 @Module({})
 export class AgentApiModule {
     static forRoot(dataSource: DataSource, kafka: KafkaClient): DynamicModule {
         return {
             module: AgentApiModule,
-            controllers: [...chatFeature.controllers, ...jobFeature.controllers, HealthController],
+            controllers: [
+                ...chatFeature.controllers,
+                ...jobFeature.controllers,
+                ...evaluationFeature.controllers,
+                HealthController,
+            ],
             providers: [
                 { provide: AGENT_DATA_SOURCE, useValue: dataSource },
                 { provide: AGENT_KAFKA, useValue: kafka },
                 ...chatFeature.providers,
                 ...jobFeature.providers,
+                ...evaluationFeature.providers,
                 DataSourceReadinessProbeAdapter,
                 { provide: READINESS_PROBE, useExisting: DataSourceReadinessProbeAdapter },
                 CheckReadinessUseCase,
