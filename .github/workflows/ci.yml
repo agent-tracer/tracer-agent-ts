@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      # 계약은 submodule이라 함께 받아야 적합성 검사와 스키마 로더가 선다.
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: test
+        run: npm test
+
+      - name: build
+        run: npm run build
+
+      # 저장소가 갈린 뒤 두 구현체가 어긋나는 것을 컴파일 타임이 아니라 여기서 잡는다.
+      - name: contract conformance
+        run: node contract/conformance/runner/verify.mjs
+
+  commit-message:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: commit message
+        run: |
+          set -e
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          failed=0
+          for sha in $(git log "$base..$head" --format=%H); do
+            git log -1 --format=%B "$sha" > /tmp/commit-msg
+            node scripts/check-commit-msg.mjs /tmp/commit-msg || failed=1
+            node scripts/check-coauthors.mjs --file /tmp/commit-msg || failed=1
+          done
+          exit $failed
