@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { resolvePromptContentHash } from "~agent-api/domain/evaluation/model/prompt.hash.js";
+import { resolveFragmentIntegrityHash } from "~agent-api/domain/evaluation/model/prompt.fragment.policy.js";
 import { PromptChannelAssignment, PromptDefinition, PromptVersion, type PromptVersionInput } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import { PROMPT_REPOSITORY, type PromptRepositoryPort } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
 import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, type PromptClockPort, type PromptIdGeneratorPort } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
@@ -14,7 +14,7 @@ export class RegisterPythonPromptUseCase {
         const definition = Object.assign(new PromptDefinition(), { id: this.ids.next("prompt"), userId: input.userId,
             agentName: input.agentName, backend: "python", language: input.language, name: input.name, createdAt: now });
         const version = Object.assign(new PromptVersion(), { id: this.ids.next("prompt-version"), definitionId: definition.id,
-            ...input.version, contentHash: resolvePromptContentHash(input.version.content, input.version.contentHash),
+            ...input.version, contentHash: resolveFragmentIntegrityHash(input.version.content, input.version.contentHash),
             contentOrigin: "file", createdBy: input.userId, createdAt: now });
         const channel = Object.assign(new PromptChannelAssignment(), { id: this.ids.next("channel"), definitionId: definition.id,
             channel: "production", versionId: version.id, updatedAt: now });

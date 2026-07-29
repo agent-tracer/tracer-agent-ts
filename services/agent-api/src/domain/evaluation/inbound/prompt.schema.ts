@@ -24,6 +24,19 @@ export const registerPythonPromptSchema = z.object({
     name: z.string().trim().min(1), agentName: z.string().trim().min(1),
     language: z.string().trim().min(1), version,
 }).strict();
+const fragmentManifestEntry = z.object({
+    backend: z.enum(["python", "claude-sdk"]), agentName: z.string().trim().min(1),
+    language: z.string().trim().min(1), codeName: z.string().trim().min(1),
+    definitionKey: z.string().trim().min(1), fragmentName: z.string().trim().min(1),
+    defaultVersion: z.string().trim().min(1), defaultContent: z.string().min(1),
+    toolContractVersion: z.string().trim().min(1), outputSchemaVersion: z.string().trim().min(1),
+    bindings: z.array(z.object({
+        templateKey: z.string().trim().min(1), fragmentSlot: z.string().trim().min(1),
+    }).strict()).min(1),
+}).strict();
+export const registerAndResolvePromptFragmentsSchema = z.object({
+    profile: z.string().trim().min(1), manifest: z.array(fragmentManifestEntry),
+}).strict();
 export const promptFragmentCatalogQuerySchema = z.object({
     agentName: z.string().trim().min(1).optional(), backend: z.enum(["python", "claude-sdk"]).optional(),
 });
@@ -38,5 +51,6 @@ export type CreatePromptVersionPayload = z.infer<typeof createPromptVersionSchem
 export type PromotePromptPayload = z.infer<typeof promotePromptSchema>;
 export type RollbackPromptChannelPayload = z.infer<typeof rollbackPromptChannelSchema>;
 export type RegisterPythonPromptPayload = z.infer<typeof registerPythonPromptSchema>;
+export type RegisterAndResolvePromptFragmentsPayload = z.infer<typeof registerAndResolvePromptFragmentsSchema>;
 export type PromptFragmentCatalogQuery = z.infer<typeof promptFragmentCatalogQuerySchema>;
 export type RegisterCandidateFragmentVersionPayload = z.infer<typeof registerCandidateFragmentVersionSchema>;

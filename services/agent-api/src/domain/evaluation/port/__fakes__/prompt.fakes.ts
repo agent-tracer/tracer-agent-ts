@@ -1,16 +1,18 @@
-import {
-    PromptFragmentDefinition, PromptFragmentVersion,
-    type PromptFragmentManifestEntry, type ResolvedPromptFragment, extractFragmentPlaceholders,
-} from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
 import type {
-    PromptFragmentBinding, PromptFragmentChannelAssignment,
+    PromptFragmentBinding, PromptFragmentChannelAssignment, PromptFragmentDefinition,
+    PromptFragmentManifestBinding, PromptFragmentManifestEntry, PromptFragmentVersion, ResolvedPromptFragment,
 } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
-import { promptContentHash } from "~agent-api/domain/evaluation/model/prompt.hash.js";
+import {
+    newFragmentBinding, newFragmentChannel, newFragmentDefinition, newFragmentVersion, promptFragmentChannel,
+    resolveFragment, SEEDED_FRAGMENT_CHANNEL,
+} from "~agent-api/domain/evaluation/model/prompt.fragment.policy.js";
 import type {
     PromptBackend, PromptChannel, PromptChannelAssignment, PromptDefinition, PromptPromotion, PromptVersion,
 } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import type { PromptRepositoryPort, PromptFragmentCatalogItem } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
 import type { PromptClockPort, PromptIdGeneratorPort, PromptPromotionGatePort, PromotionGateResult } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
+
+const FRAGMENT_EPOCH = new Date(0);
 
 export class FixedPromptClock implements PromptClockPort {
     constructor(private readonly value: Date) {}
@@ -34,6 +36,7 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
     readonly fragmentVersions: PromptFragmentVersion[] = [];
     readonly fragmentBindings: PromptFragmentBinding[] = [];
     readonly fragmentChannels: PromptFragmentChannelAssignment[] = [];
+    private readonly fragmentIds = new SequentialPromptIdGenerator();
 
     async savePrompt(definition: PromptDefinition, version: PromptVersion): Promise<void> {
         this.definitions.push(definition); this.versions.push(version);
@@ -74,8 +77,9 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
     async registerPythonPrompt(_userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void> {
         await this.savePrompt(definition, version); this.channels.push(channel);
     }
-    async registerAndResolveFragments(_profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]> {
-        return manifest.map((entry, index) => this.registerManifestEntry(entry, index));
+    async registerAndResolveFragments(profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]> {
+        const channel = promptFragmentChannel(profile);
+        return manifest.flatMap((entry) => this.registerManifestEntry(entry, channel));
     }
     async listFragmentCatalog(filter: { agentName?: string | undefined; backend?: PromptBackend | undefined }): Promise<readonly PromptFragmentCatalogItem[]> {
         return this.fragmentBindings.flatMap((binding) => {
@@ -90,20 +94,43 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
         const index = this.fragmentChannels.findIndex((item) => item.definitionId === input.definition.id && item.channel === "candidate");
         if (index < 0) this.fragmentChannels.push(input.channel); else this.fragmentChannels[index] = input.channel;
     }
-    private registerManifestEntry(entry: PromptFragmentManifestEntry, index: number): ResolvedPromptFragment {
-        const definition = Object.assign(new PromptFragmentDefinition(), {
-            id: `fragment-${index}`, definitionKey: `${entry.backend}.${entry.agentName}.${entry.fragmentName}`,
-            agentName: entry.agentName, backend: entry.backend, language: entry.language,
-            fragmentName: entry.fragmentName, codeName: entry.codeName, createdAt: new Date(0),
-        });
-        const hash = promptContentHash(entry.content);
-        const version = Object.assign(new PromptFragmentVersion(), {
-            id: `fragment-version-${index}`, definitionId: definition.id, semanticVersion: entry.semanticVersion,
-            content: entry.content, contentHash: hash, placeholders: extractFragmentPlaceholders(entry.content),
-            toolContractVersion: entry.toolContractVersion, outputSchemaVersion: entry.outputSchemaVersion,
-            origin: "code-default", previousVersionId: null, changeSummary: null, createdBy: "system", createdAt: new Date(0),
-        });
-        this.fragmentDefinitions.push(definition); this.fragmentVersions.push(version);
-        return { templateKey: entry.templateKey, fragmentSlot: entry.fragmentSlot, definitionId: definition.id, versionId: version.id, content: entry.content, contentHash: hash };
+    private registerManifestEntry(entry: PromptFragmentManifestEntry, channel: PromptChannel): readonly ResolvedPromptFragment[] {
+        const definition = this.ensureFragmentDefinition(entry);
+        const seed = this.ensureFragmentVersion(entry, definition.id);
+        for (const binding of entry.bindings) this.ensureFragmentBinding(entry, binding, definition.id);
+        this.ensureFragmentChannel(definition.id, seed.id);
+        const selected = this.selectFragmentVersion(definition.id, channel);
+        return selected === null ? [] : entry.bindings.map((binding) => resolveFragment(binding, definition, selected));
+    }
+    private ensureFragmentDefinition(entry: PromptFragmentManifestEntry): PromptFragmentDefinition {
+        const found = this.fragmentDefinitions.find((item) => item.definitionKey === entry.definitionKey);
+        if (found) return found;
+        const created = newFragmentDefinition(entry, this.fragmentIds.next("fragment"), FRAGMENT_EPOCH);
+        this.fragmentDefinitions.push(created);
+        return created;
+    }
+    private ensureFragmentVersion(entry: PromptFragmentManifestEntry, definitionId: string): PromptFragmentVersion {
+        const found = this.fragmentVersions.find(
+            (item) => item.definitionId === definitionId && item.semanticVersion === entry.defaultVersion,
+        );
+        if (found) return found;
+        const created = newFragmentVersion(entry, this.fragmentIds.next("fragment-version"), definitionId, FRAGMENT_EPOCH);
+        this.fragmentVersions.push(created);
+        return created;
+    }
+    private ensureFragmentBinding(entry: PromptFragmentManifestEntry, binding: PromptFragmentManifestBinding, definitionId: string): void {
+        if (this.fragmentBindings.some((item) => item.templateKey === binding.templateKey && item.fragmentSlot === binding.fragmentSlot)) return;
+        this.fragmentBindings.push(newFragmentBinding(entry, binding, this.fragmentIds.next("fragment-binding"), definitionId, FRAGMENT_EPOCH));
+    }
+    private ensureFragmentChannel(definitionId: string, versionId: string): void {
+        if (this.fragmentChannels.some((item) => item.definitionId === definitionId)) return;
+        this.fragmentChannels.push(newFragmentChannel(this.fragmentIds.next("fragment-channel"), definitionId, SEEDED_FRAGMENT_CHANNEL, versionId, FRAGMENT_EPOCH));
+    }
+    private selectFragmentVersion(definitionId: string, channel: PromptChannel): PromptFragmentVersion | null {
+        const assignment = this.fragmentChannels.find(
+            (item) => item.definitionId === definitionId && item.channel === channel,
+        );
+        if (!assignment) return null;
+        return this.fragmentVersions.find((item) => item.id === assignment.versionId) ?? null;
     }
 }

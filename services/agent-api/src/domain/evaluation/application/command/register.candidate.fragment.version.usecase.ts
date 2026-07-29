@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { extractFragmentPlaceholders, PromptFragmentChannelAssignment, PromptFragmentDefinition, PromptFragmentVersion } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
-import { promptContentHash } from "~agent-api/domain/evaluation/model/prompt.hash.js";
+import { computePromptFragmentHash, extractPromptFragmentPlaceholders } from "@tracer-agent/llm";
+import { PromptFragmentChannelAssignment, PromptFragmentDefinition, PromptFragmentVersion } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
 import type { PromptBackend } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import { PROMPT_REPOSITORY, type PromptRepositoryPort } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
 import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, type PromptClockPort, type PromptIdGeneratorPort } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
@@ -19,7 +19,7 @@ export class RegisterCandidateFragmentVersionUseCase {
             codeName: input.fragmentName, createdAt: now });
         const version = Object.assign(new PromptFragmentVersion(), { id: this.ids.next("fragment-version"),
             definitionId: definition.id, semanticVersion: "candidate", content: input.content,
-            contentHash: promptContentHash(input.content), placeholders: extractFragmentPlaceholders(input.content),
+            contentHash: computePromptFragmentHash(input.content), placeholders: extractPromptFragmentPlaceholders(input.content),
             toolContractVersion: "current", outputSchemaVersion: "current", origin: "database-authored",
             previousVersionId: null, changeSummary: input.changeSummary, createdBy: input.createdBy, createdAt: now });
         const channel = Object.assign(new PromptFragmentChannelAssignment(), { id: this.ids.next("fragment-channel"),

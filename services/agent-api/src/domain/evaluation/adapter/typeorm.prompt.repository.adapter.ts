@@ -1,9 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { DataSource, EntityManager } from "typeorm";
 import { AGENT_DATA_SOURCE } from "~agent-api/config/agent.datasource.token.js";
-import type { PromptFragmentManifestEntry, ResolvedPromptFragment } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
-import type { PromptBackend, PromptChannelAssignment, PromptDefinition, PromptPromotion, PromptVersion } from "~agent-api/domain/evaluation/model/prompt.model.js";
+import type {
+    PromptFragmentDefinition, PromptFragmentManifestEntry, PromptFragmentVersion, ResolvedPromptFragment,
+} from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
+import {
+    newFragmentBinding, newFragmentChannel, newFragmentDefinition, newFragmentVersion, promptFragmentChannel,
+    resolveFragment, SEEDED_FRAGMENT_CHANNEL,
+} from "~agent-api/domain/evaluation/model/prompt.fragment.policy.js";
+import type { PromptBackend, PromptChannel, PromptChannelAssignment, PromptDefinition, PromptPromotion, PromptVersion } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import type { PromptFragmentCatalogItem, PromptRepositoryPort } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
+import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, type PromptClockPort, type PromptIdGeneratorPort } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
 import {
     PromptChannelEntity, PromptDefinitionEntity, PromptPromotionEntity, PromptVersionEntity,
     toPromptChannel, toPromptChannelRow, toPromptDefinition, toPromptDefinitionRow,
@@ -11,14 +18,16 @@ import {
 } from "./prompt.entity.js";
 import {
     PromptFragmentBindingEntity, PromptFragmentChannelEntity, PromptFragmentDefinitionEntity,
-    PromptFragmentVersionEntity, toPromptFragmentBinding, toPromptFragmentChannelRow,
+    PromptFragmentVersionEntity, toPromptFragmentBinding, toPromptFragmentBindingRow, toPromptFragmentChannelRow,
     toPromptFragmentDefinition, toPromptFragmentDefinitionRow, toPromptFragmentVersion,
     toPromptFragmentVersionRow,
 } from "./prompt.fragment.entity.js";
 
 @Injectable()
 export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
-    constructor(@Inject(AGENT_DATA_SOURCE) private readonly source: DataSource) {}
+    constructor(@Inject(AGENT_DATA_SOURCE) private readonly source: DataSource,
+        @Inject(PROMPT_ID_GENERATOR) private readonly ids: PromptIdGeneratorPort,
+        @Inject(PROMPT_CLOCK) private readonly clock: PromptClockPort) {}
     async savePrompt(definition: PromptDefinition, version: PromptVersion): Promise<void> {
         await this.source.transaction(async (manager) => {
             await manager.getRepository(PromptDefinitionEntity).insert(toPromptDefinitionRow(definition));
@@ -71,10 +80,11 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
             await manager.getRepository(PromptChannelEntity).insert(toPromptChannelRow(channel));
         });
     }
-    async registerAndResolveFragments(_profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]> {
+    async registerAndResolveFragments(profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]> {
+        const channel = promptFragmentChannel(profile);
         return this.source.transaction(async (manager) => {
             const resolved: ResolvedPromptFragment[] = [];
-            for (const entry of manifest) resolved.push(await this.resolveManifestEntry(manager, entry));
+            for (const entry of manifest) resolved.push(...await this.registerManifestEntry(manager, entry, channel));
             return resolved;
         });
     }
@@ -105,16 +115,55 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
         await manager.getRepository(PromptChannelEntity).upsert(toPromptChannelRow(channel), ["definitionId", "channel"]);
         await manager.getRepository(PromptPromotionEntity).save(toPromptPromotionRow(promotion));
     }
-    private async resolveManifestEntry(manager: EntityManager, entry: PromptFragmentManifestEntry): Promise<ResolvedPromptFragment> {
-        const definition = await manager.getRepository(PromptFragmentDefinitionEntity).findOne({
-            where: { definitionKey: `${entry.backend}.${entry.agentName}.${entry.fragmentName}` },
-        });
-        if (!definition) throw new Error("Prompt fragment definition is not registered");
-        const version = await manager.getRepository(PromptFragmentVersionEntity).findOne({
-            where: { definitionId: definition.id, semanticVersion: entry.semanticVersion },
-        });
-        if (!version) throw new Error("Prompt fragment version is not registered");
-        return { templateKey: entry.templateKey, fragmentSlot: entry.fragmentSlot, definitionId: definition.id,
-            versionId: version.id, content: version.content, contentHash: version.contentHash };
+    private async registerManifestEntry(manager: EntityManager, entry: PromptFragmentManifestEntry,
+        channel: PromptChannel): Promise<readonly ResolvedPromptFragment[]> {
+        const definition = await this.ensureFragmentDefinition(manager, entry);
+        const seed = await this.ensureFragmentVersion(manager, entry, definition.id);
+        await this.ensureFragmentBindings(manager, entry, definition.id);
+        await this.ensureFragmentChannel(manager, definition.id, seed.id);
+        const selected = await this.selectFragmentVersion(manager, definition.id, channel);
+        return selected === null ? [] : entry.bindings.map((binding) => resolveFragment(binding, definition, selected));
+    }
+    private async ensureFragmentDefinition(manager: EntityManager, entry: PromptFragmentManifestEntry): Promise<PromptFragmentDefinition> {
+        const repository = manager.getRepository(PromptFragmentDefinitionEntity);
+        const found = await repository.findOne({ where: { definitionKey: entry.definitionKey } });
+        if (found) return toPromptFragmentDefinition(found);
+        const created = newFragmentDefinition(entry, this.ids.next("fragment"), this.clock.now());
+        await repository.insert(toPromptFragmentDefinitionRow(created));
+        return created;
+    }
+    private async ensureFragmentVersion(manager: EntityManager, entry: PromptFragmentManifestEntry,
+        definitionId: string): Promise<PromptFragmentVersion> {
+        const repository = manager.getRepository(PromptFragmentVersionEntity);
+        const found = await repository.findOne({ where: { definitionId, semanticVersion: entry.defaultVersion } });
+        if (found) return toPromptFragmentVersion(found);
+        const created = newFragmentVersion(entry, this.ids.next("fragment-version"), definitionId, this.clock.now());
+        await repository.insert(toPromptFragmentVersionRow(created));
+        return created;
+    }
+    private async ensureFragmentBindings(manager: EntityManager, entry: PromptFragmentManifestEntry, definitionId: string): Promise<void> {
+        const repository = manager.getRepository(PromptFragmentBindingEntity);
+        for (const binding of entry.bindings) {
+            const found = await repository.findOne({ where: { templateKey: binding.templateKey, fragmentSlot: binding.fragmentSlot } });
+            if (found) continue;
+            await repository.insert(toPromptFragmentBindingRow(
+                newFragmentBinding(entry, binding, this.ids.next("fragment-binding"), definitionId, this.clock.now()),
+            ));
+        }
+    }
+    private async ensureFragmentChannel(manager: EntityManager, definitionId: string, versionId: string): Promise<void> {
+        const repository = manager.getRepository(PromptFragmentChannelEntity);
+        if (await repository.findOne({ where: { definitionId } })) return;
+        await repository.insert(toPromptFragmentChannelRow(
+            newFragmentChannel(this.ids.next("fragment-channel"), definitionId, SEEDED_FRAGMENT_CHANNEL, versionId, this.clock.now()),
+        ));
+    }
+    private async selectFragmentVersion(manager: EntityManager, definitionId: string,
+        channel: PromptChannel): Promise<PromptFragmentVersion | null> {
+        const assignment = await manager.getRepository(PromptFragmentChannelEntity)
+            .findOne({ where: { definitionId, channel } });
+        if (!assignment) return null;
+        const version = await manager.getRepository(PromptFragmentVersionEntity).findOne({ where: { id: assignment.versionId } });
+        return version ? toPromptFragmentVersion(version) : null;
     }
 }

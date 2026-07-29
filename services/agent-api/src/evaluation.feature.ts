@@ -40,6 +40,7 @@ import { ListPromptVersionsUseCase } from "~agent-api/domain/evaluation/applicat
 import { ListPromptsUseCase } from "~agent-api/domain/evaluation/application/query/list.prompts.usecase.js";
 import { PromptController } from "~agent-api/domain/evaluation/inbound/prompt.controller.js";
 import { PromptFragmentController } from "~agent-api/domain/evaluation/inbound/prompt.fragment.controller.js";
+import { PromptInternalController } from "~agent-api/domain/evaluation/inbound/prompt.internal.controller.js";
 import { EXPERIMENT_REPOSITORY } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import { EXPERIMENT_CLOCK, EXPERIMENT_DISPATCHER, EXPERIMENT_ID_GENERATOR, EXPERIMENT_RANDOM } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
 import { PROMPT_REPOSITORY } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
@@ -105,7 +106,7 @@ const useCases = [
 
 /** 평가 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
 export const evaluationFeature = {
-    controllers: [EvaluationDatasetController, EvaluationEvaluatorController, EvaluationCandidateController, PromptController, PromptFragmentController],
+    controllers: [EvaluationDatasetController, EvaluationEvaluatorController, EvaluationCandidateController, PromptController, PromptFragmentController, PromptInternalController],
     providers: [
         ...useCases,
         EvaluationUlidGenerator,
