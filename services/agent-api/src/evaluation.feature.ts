@@ -6,6 +6,25 @@ import { EvaluationUlidGenerator } from "~agent-api/domain/evaluation/adapter/ev
 import { EvaluationExecutionReaderAdapter } from "~agent-api/domain/evaluation/adapter/execution.reader.adapter.js";
 import { EvaluatorDefinitionEntity, EvaluatorSetEntity, EvaluatorSetMemberEntity } from "~agent-api/domain/evaluation/adapter/evaluator.entity.js";
 import { TypeOrmEvaluationRepository } from "~agent-api/domain/evaluation/adapter/typeorm.evaluation.repository.adapter.js";
+import { ExperimentRow, ExperimentVariantRow } from "~agent-api/domain/evaluation/adapter/experiment.entity.js";
+import { EvaluationScoreRow, ExperimentExecutionRow } from "~agent-api/domain/evaluation/adapter/experiment.execution.entity.js";
+import { HumanReviewRevisionRow, HumanReviewRow } from "~agent-api/domain/evaluation/adapter/human.review.entity.js";
+import { TypeOrmExperimentRepository } from "~agent-api/domain/evaluation/adapter/typeorm.experiment.repository.adapter.js";
+import { ExperimentRandomAdapter } from "~agent-api/domain/evaluation/adapter/experiment.random.adapter.js";
+import { TemporalExperimentDispatcher } from "~agent-api/domain/evaluation/adapter/temporal.experiment.dispatcher.js";
+import { CancelExperimentUseCase } from "~agent-api/domain/evaluation/application/command/cancel.experiment.usecase.js";
+import { CreateExperimentUseCase } from "~agent-api/domain/evaluation/application/command/create.experiment.usecase.js";
+import { CreateReviewUseCase } from "~agent-api/domain/evaluation/application/command/create.review.usecase.js";
+import { StartExperimentUseCase } from "~agent-api/domain/evaluation/application/command/start.experiment.usecase.js";
+import { SubmitReviewUseCase } from "~agent-api/domain/evaluation/application/command/submit.review.usecase.js";
+import { GetExperimentComparisonUseCase } from "~agent-api/domain/evaluation/application/query/get.experiment.comparison.usecase.js";
+import { GetExperimentUseCase } from "~agent-api/domain/evaluation/application/query/get.experiment.usecase.js";
+import { ListExperimentExecutionsUseCase } from "~agent-api/domain/evaluation/application/query/list.experiment.executions.usecase.js";
+import { ListExperimentsUseCase } from "~agent-api/domain/evaluation/application/query/list.experiments.usecase.js";
+import { ListReviewsUseCase } from "~agent-api/domain/evaluation/application/query/list.reviews.usecase.js";
+import { PreviewExperimentUseCase } from "~agent-api/domain/evaluation/application/query/preview.experiment.usecase.js";
+import { EXPERIMENT_REPOSITORY } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
+import { EXPERIMENT_CLOCK, EXPERIMENT_DISPATCHER, EXPERIMENT_ID_GENERATOR, EXPERIMENT_RANDOM } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
 import { CreateDatasetUseCase } from "~agent-api/domain/evaluation/application/command/create.dataset.usecase.js";
 import { DeleteDatasetUseCase } from "~agent-api/domain/evaluation/application/command/delete.dataset.usecase.js";
 import { ReviseDatasetUseCase } from "~agent-api/domain/evaluation/application/command/revise.dataset.usecase.js";
@@ -41,6 +60,17 @@ const useCases = [
     ListDatasetsUseCase,
     ListEvaluatorsUseCase,
     SuggestDatasetCandidatesUseCase,
+    CancelExperimentUseCase,
+    CreateExperimentUseCase,
+    CreateReviewUseCase,
+    StartExperimentUseCase,
+    SubmitReviewUseCase,
+    GetExperimentComparisonUseCase,
+    GetExperimentUseCase,
+    ListExperimentExecutionsUseCase,
+    ListExperimentsUseCase,
+    ListReviewsUseCase,
+    PreviewExperimentUseCase,
 ];
 
 /** 평가 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
@@ -51,6 +81,12 @@ export const evaluationFeature = {
         EvaluationUlidGenerator,
         { provide: EVALUATION_ID_GENERATOR, useExisting: EvaluationUlidGenerator },
         { provide: EVALUATION_CLOCK, useClass: SystemClock },
+        { provide: EXPERIMENT_CLOCK, useClass: SystemClock },
+        { provide: EXPERIMENT_ID_GENERATOR, useExisting: EvaluationUlidGenerator },
+        ExperimentRandomAdapter,
+        { provide: EXPERIMENT_RANDOM, useExisting: ExperimentRandomAdapter },
+        TemporalExperimentDispatcher,
+        { provide: EXPERIMENT_DISPATCHER, useExisting: TemporalExperimentDispatcher },
         {
             provide: EVALUATION_REPOSITORY,
             inject: [AGENT_DATA_SOURCE],
@@ -61,6 +97,11 @@ export const evaluationFeature = {
                 evaluatorSets: source.getRepository(EvaluatorSetEntity),
                 evaluatorMembers: source.getRepository(EvaluatorSetMemberEntity),
             }),
+        },
+        {
+            provide: EXPERIMENT_REPOSITORY,
+            inject: [AGENT_DATA_SOURCE],
+            useFactory: (source: DataSource) => new TypeOrmExperimentRepository(source),
         },
         {
             provide: EVALUATION_EXECUTION_READER,
@@ -77,4 +118,10 @@ export const EVALUATION_ENTITIES = [
     EvaluatorDefinitionEntity,
     EvaluatorSetEntity,
     EvaluatorSetMemberEntity,
+    ExperimentRow,
+    ExperimentVariantRow,
+    ExperimentExecutionRow,
+    EvaluationScoreRow,
+    HumanReviewRow,
+    HumanReviewRevisionRow,
 ] as const;
