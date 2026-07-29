@@ -12,19 +12,38 @@ import { HumanReviewRevisionRow, HumanReviewRow } from "~agent-api/domain/evalua
 import { TypeOrmExperimentRepository } from "~agent-api/domain/evaluation/adapter/typeorm.experiment.repository.adapter.js";
 import { ExperimentRandomAdapter } from "~agent-api/domain/evaluation/adapter/experiment.random.adapter.js";
 import { TemporalExperimentDispatcher } from "~agent-api/domain/evaluation/adapter/temporal.experiment.dispatcher.js";
+import { PromptChannelEntity, PromptDefinitionEntity, PromptPromotionEntity, PromptVersionEntity } from "~agent-api/domain/evaluation/adapter/prompt.entity.js";
+import { PromptFragmentBindingEntity, PromptFragmentChannelEntity, PromptFragmentDefinitionEntity, PromptFragmentVersionEntity } from "~agent-api/domain/evaluation/adapter/prompt.fragment.entity.js";
+import { TypeOrmPromptRepositoryAdapter } from "~agent-api/domain/evaluation/adapter/typeorm.prompt.repository.adapter.js";
+import { UnconfiguredPromotionGate } from "~agent-api/domain/evaluation/adapter/unconfigured.promotion.gate.js";
 import { CancelExperimentUseCase } from "~agent-api/domain/evaluation/application/command/cancel.experiment.usecase.js";
 import { CreateExperimentUseCase } from "~agent-api/domain/evaluation/application/command/create.experiment.usecase.js";
 import { CreateReviewUseCase } from "~agent-api/domain/evaluation/application/command/create.review.usecase.js";
 import { StartExperimentUseCase } from "~agent-api/domain/evaluation/application/command/start.experiment.usecase.js";
 import { SubmitReviewUseCase } from "~agent-api/domain/evaluation/application/command/submit.review.usecase.js";
+import { CreatePromptUseCase } from "~agent-api/domain/evaluation/application/command/create.prompt.usecase.js";
+import { CreatePromptVersionUseCase } from "~agent-api/domain/evaluation/application/command/create.prompt.version.usecase.js";
+import { PromotePromptUseCase } from "~agent-api/domain/evaluation/application/command/promote.prompt.usecase.js";
+import { RegisterAndResolvePromptFragmentsUseCase } from "~agent-api/domain/evaluation/application/command/register.and.resolve.prompt.fragments.usecase.js";
+import { RegisterCandidateFragmentVersionUseCase } from "~agent-api/domain/evaluation/application/command/register.candidate.fragment.version.usecase.js";
+import { RegisterPythonPromptUseCase } from "~agent-api/domain/evaluation/application/command/register.python.prompt.usecase.js";
+import { RollbackPromptChannelUseCase } from "~agent-api/domain/evaluation/application/command/rollback.prompt.channel.usecase.js";
 import { GetExperimentComparisonUseCase } from "~agent-api/domain/evaluation/application/query/get.experiment.comparison.usecase.js";
 import { GetExperimentUseCase } from "~agent-api/domain/evaluation/application/query/get.experiment.usecase.js";
 import { ListExperimentExecutionsUseCase } from "~agent-api/domain/evaluation/application/query/list.experiment.executions.usecase.js";
 import { ListExperimentsUseCase } from "~agent-api/domain/evaluation/application/query/list.experiments.usecase.js";
 import { ListReviewsUseCase } from "~agent-api/domain/evaluation/application/query/list.reviews.usecase.js";
 import { PreviewExperimentUseCase } from "~agent-api/domain/evaluation/application/query/preview.experiment.usecase.js";
+import { GetPromptChannelsUseCase } from "~agent-api/domain/evaluation/application/query/get.prompt.channels.usecase.js";
+import { ListPromptFragmentCatalogUseCase } from "~agent-api/domain/evaluation/application/query/list.prompt.fragment.catalog.usecase.js";
+import { ListPromptVersionsUseCase } from "~agent-api/domain/evaluation/application/query/list.prompt.versions.usecase.js";
+import { ListPromptsUseCase } from "~agent-api/domain/evaluation/application/query/list.prompts.usecase.js";
+import { PromptController } from "~agent-api/domain/evaluation/inbound/prompt.controller.js";
+import { PromptFragmentController } from "~agent-api/domain/evaluation/inbound/prompt.fragment.controller.js";
 import { EXPERIMENT_REPOSITORY } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import { EXPERIMENT_CLOCK, EXPERIMENT_DISPATCHER, EXPERIMENT_ID_GENERATOR, EXPERIMENT_RANDOM } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
+import { PROMPT_REPOSITORY } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
+import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, PROMPT_PROMOTION_GATE } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
 import { CreateDatasetUseCase } from "~agent-api/domain/evaluation/application/command/create.dataset.usecase.js";
 import { DeleteDatasetUseCase } from "~agent-api/domain/evaluation/application/command/delete.dataset.usecase.js";
 import { ReviseDatasetUseCase } from "~agent-api/domain/evaluation/application/command/revise.dataset.usecase.js";
@@ -71,22 +90,39 @@ const useCases = [
     ListExperimentsUseCase,
     ListReviewsUseCase,
     PreviewExperimentUseCase,
+    CreatePromptUseCase,
+    CreatePromptVersionUseCase,
+    PromotePromptUseCase,
+    RegisterAndResolvePromptFragmentsUseCase,
+    RegisterCandidateFragmentVersionUseCase,
+    RegisterPythonPromptUseCase,
+    RollbackPromptChannelUseCase,
+    GetPromptChannelsUseCase,
+    ListPromptFragmentCatalogUseCase,
+    ListPromptVersionsUseCase,
+    ListPromptsUseCase,
 ];
 
 /** 평가 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
 export const evaluationFeature = {
-    controllers: [EvaluationDatasetController, EvaluationEvaluatorController, EvaluationCandidateController],
+    controllers: [EvaluationDatasetController, EvaluationEvaluatorController, EvaluationCandidateController, PromptController, PromptFragmentController],
     providers: [
         ...useCases,
         EvaluationUlidGenerator,
         { provide: EVALUATION_ID_GENERATOR, useExisting: EvaluationUlidGenerator },
         { provide: EVALUATION_CLOCK, useClass: SystemClock },
         { provide: EXPERIMENT_CLOCK, useClass: SystemClock },
+        { provide: PROMPT_CLOCK, useClass: SystemClock },
         { provide: EXPERIMENT_ID_GENERATOR, useExisting: EvaluationUlidGenerator },
+        { provide: PROMPT_ID_GENERATOR, useExisting: EvaluationUlidGenerator },
         ExperimentRandomAdapter,
         { provide: EXPERIMENT_RANDOM, useExisting: ExperimentRandomAdapter },
         TemporalExperimentDispatcher,
         { provide: EXPERIMENT_DISPATCHER, useExisting: TemporalExperimentDispatcher },
+        UnconfiguredPromotionGate,
+        { provide: PROMPT_PROMOTION_GATE, useExisting: UnconfiguredPromotionGate },
+        TypeOrmPromptRepositoryAdapter,
+        { provide: PROMPT_REPOSITORY, useExisting: TypeOrmPromptRepositoryAdapter },
         {
             provide: EVALUATION_REPOSITORY,
             inject: [AGENT_DATA_SOURCE],
@@ -124,4 +160,12 @@ export const EVALUATION_ENTITIES = [
     EvaluationScoreRow,
     HumanReviewRow,
     HumanReviewRevisionRow,
+    PromptDefinitionEntity,
+    PromptVersionEntity,
+    PromptChannelEntity,
+    PromptPromotionEntity,
+    PromptFragmentDefinitionEntity,
+    PromptFragmentVersionEntity,
+    PromptFragmentBindingEntity,
+    PromptFragmentChannelEntity,
 ] as const;
