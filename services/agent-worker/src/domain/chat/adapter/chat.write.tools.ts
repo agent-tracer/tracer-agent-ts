@@ -4,7 +4,7 @@ import type { ChatTurnToolCall } from "~agent-worker/domain/chat/model/chat.turn
 import { chatWriteToolNames } from "./chat.tool.gate.js";
 import { chatApiHeaders, telemetered, unwrapChatApiEnvelope } from "./chat.tool.support.js";
 
-const CHAT_THREADS_PATH = "/api/v1/chat/threads";
+const CHAT_THREADS_PATH = "/api/agent/chat/threads";
 
 /** 확인 창구 한 번의 결과이며 성공이면 봉투를 벗긴 본문이 text에 담긴다. */
 export interface ChatProposalResult {

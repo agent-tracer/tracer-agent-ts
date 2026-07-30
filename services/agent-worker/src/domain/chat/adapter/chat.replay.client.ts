@@ -4,7 +4,7 @@ import type {
 } from "~agent-worker/domain/chat/port/chat.replay.port.js";
 import { chatApiHeaders, unwrapChatApiEnvelope } from "./chat.tool.support.js";
 
-const CHAT_THREADS_PATH = "/api/v1/chat/threads";
+const CHAT_THREADS_PATH = "/api/agent/chat/threads";
 
 /** 실행이 무엇이든 같은 재생 계산을 받도록 자기 원장으로 다시 구하지 않고 접수를 되읽는다. */
 export class ChatReplayClient implements ChatReplayPort {

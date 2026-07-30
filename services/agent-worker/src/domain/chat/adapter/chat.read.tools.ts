@@ -10,13 +10,14 @@ export interface ChatToolCallContext {
     readonly scopeToken: string | undefined;
 }
 
-/** 계약이 선언한 자리로만 추적 API를 되읽는 읽기 도구를 세운다. */
+/** 계약이 선언한 자리로만 되읽는 읽기 도구를 세우며 이름을 주지 않으면 추적 API의 도구를 세운다. */
 export function buildChatReadToolHandlers(
     client: TracerApiClient,
     ctx: ChatToolCallContext,
+    names: readonly string[] = chatReadToolNames(),
 ): ToolHandlers {
     const handlers: Record<string, (raw: Record<string, unknown>) => Promise<string>> = {};
-    for (const name of chatReadToolNames()) {
+    for (const name of names) {
         handlers[name] = async (raw) => {
             const args = parseChatToolArgs(name, raw);
             return telemetered(name, args, async () => {

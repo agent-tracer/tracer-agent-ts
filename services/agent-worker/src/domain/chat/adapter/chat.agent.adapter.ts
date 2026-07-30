@@ -30,6 +30,7 @@ import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.po
 import type { ChatPromptFragmentSnapshotPort } from "~agent-worker/domain/chat/port/chat.prompt.fragment.snapshot.port.js";
 import { buildChatMemoryToolHandlers } from "./chat.memory.tools.js";
 import { buildChatReadToolHandlers } from "./chat.read.tools.js";
+import { chatAgentReadToolNames } from "./chat.tool.gate.js";
 import { ChatWriteClient, buildChatWriteToolHandlers } from "./chat.write.tools.js";
 
 export const CHAT_MCP_SERVER = `monitor-${CHAT_SPEC.name}`;
@@ -56,6 +57,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
         );
         const handlers = {
             ...buildChatReadToolHandlers(this.tracerApi, scope),
+            ...buildChatReadToolHandlers(this.memoryApi, scope, chatAgentReadToolNames()),
             ...buildChatMemoryToolHandlers(this.memoryApi, { ...scope, sink }),
             ...writes.handlers,
         };

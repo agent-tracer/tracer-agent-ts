@@ -5,10 +5,28 @@ export const CHAT_MEMORY_TOOLS = ["recall_facts", "remember_fact"] as const;
 
 const MEMORY_TOOL_SET: ReadonlySet<string> = new Set(CHAT_MEMORY_TOOLS);
 
-/** 게이트 없이 되읽는 도구, 곧 추적 API의 뷰인 도구 이름이다. */
+/** 도구가 부르는 경로가 추적이 아니라 에이전트 서비스 자신의 것인지를 가른다. */
+function isAgentOwnedPath(path: string): boolean {
+    return path.startsWith("/api/agent/");
+}
+
+/** 게이트 없이 되읽는 도구 중 추적 API의 뷰인 도구 이름이다. */
 export function chatReadToolNames(): readonly string[] {
     return Object.entries(TOOL_BINDINGS)
-        .filter(([name, binding]) => binding.gate === TOOL_GATE_NONE && !MEMORY_TOOL_SET.has(name))
+        .filter(
+            ([name, binding]) =>
+                binding.gate === TOOL_GATE_NONE && !MEMORY_TOOL_SET.has(name) && !isAgentOwnedPath(binding.path),
+        )
+        .map(([name]) => name);
+}
+
+/** 게이트 없이 되읽되 원장이 에이전트 서비스에 있어 기점이 다른 도구 이름이다. */
+export function chatAgentReadToolNames(): readonly string[] {
+    return Object.entries(TOOL_BINDINGS)
+        .filter(
+            ([name, binding]) =>
+                binding.gate === TOOL_GATE_NONE && !MEMORY_TOOL_SET.has(name) && isAgentOwnedPath(binding.path),
+        )
         .map(([name]) => name);
 }
 
