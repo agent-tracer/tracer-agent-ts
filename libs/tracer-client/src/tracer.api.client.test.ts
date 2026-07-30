@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { TracerApiClient, type HttpRequestInit } from "./tracer.api.client.js";
+import { TracerApiClient } from "./tracer.api.client.js";
 import { TracerApiError } from "./tracer.api.error.js";
+import type { HttpRequestInit } from "./tracer.api.window.js";
 
 interface Sent {
     url: string;
