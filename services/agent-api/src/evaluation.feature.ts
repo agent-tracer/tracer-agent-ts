@@ -17,7 +17,7 @@ import { PromptFragmentBindingEntity, PromptFragmentChannelEntity, PromptFragmen
 import { TypeOrmPromptRepositoryAdapter } from "~agent-api/domain/evaluation/adapter/typeorm.prompt.repository.adapter.js";
 import { CancelExperimentUseCase } from "~agent-api/domain/evaluation/application/command/cancel.experiment.usecase.js";
 import { CreateExperimentUseCase } from "~agent-api/domain/evaluation/application/command/create.experiment.usecase.js";
-import { CreateReviewUseCase } from "~agent-api/domain/evaluation/application/command/create.review.usecase.js";
+import { DrawReviewPairUseCase } from "~agent-api/domain/evaluation/application/command/draw.review.pair.usecase.js";
 import { StartExperimentUseCase } from "~agent-api/domain/evaluation/application/command/start.experiment.usecase.js";
 import { SubmitReviewUseCase } from "~agent-api/domain/evaluation/application/command/submit.review.usecase.js";
 import { CreatePromptUseCase } from "~agent-api/domain/evaluation/application/command/create.prompt.usecase.js";
@@ -62,6 +62,7 @@ import { EvaluationCandidateController } from "~agent-api/domain/evaluation/inbo
 import { EvaluationDatasetController } from "~agent-api/domain/evaluation/inbound/evaluation.dataset.controller.js";
 import { EvaluationEvaluatorController } from "~agent-api/domain/evaluation/inbound/evaluation.evaluator.controller.js";
 import { EvaluationExperimentController } from "~agent-api/domain/evaluation/inbound/evaluation.experiment.controller.js";
+import { EvaluationReviewController } from "~agent-api/domain/evaluation/inbound/evaluation.review.controller.js";
 import { EVALUATION_CLOCK } from "~agent-api/domain/evaluation/port/clock.port.js";
 import { EVALUATION_REPOSITORY } from "~agent-api/domain/evaluation/port/evaluation.repository.port.js";
 import { EVALUATION_EXECUTION_READER } from "~agent-api/domain/evaluation/port/execution.reader.port.js";
@@ -83,7 +84,7 @@ const useCases = [
     SuggestDatasetCandidatesUseCase,
     CancelExperimentUseCase,
     CreateExperimentUseCase,
-    CreateReviewUseCase,
+    DrawReviewPairUseCase,
     StartExperimentUseCase,
     SubmitReviewUseCase,
     GetExperimentComparisonUseCase,
@@ -113,6 +114,7 @@ export const evaluationFeature = {
         EvaluationEvaluatorController,
         EvaluationCandidateController,
         EvaluationExperimentController,
+        EvaluationReviewController,
         PromptController,
         PromptFragmentController,
         PromptInternalController,

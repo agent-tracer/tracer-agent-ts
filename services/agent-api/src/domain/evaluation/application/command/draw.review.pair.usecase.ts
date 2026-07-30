@@ -3,7 +3,7 @@ import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api
 import { EXPERIMENT_RANDOM, type ExperimentRandomPort } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
 
 @Injectable()
-export class CreateReviewUseCase {
+export class DrawReviewPairUseCase {
     constructor(
         @Inject(EXPERIMENT_REPOSITORY) private readonly repository: ExperimentRepositoryPort,
         @Inject(EXPERIMENT_RANDOM) private readonly random: ExperimentRandomPort,

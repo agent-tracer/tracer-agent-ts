@@ -32,6 +32,14 @@ export const startExperimentSchema = z.object({
     }).strict(),
 }).strict();
 
+export const submitReviewSchema = z.object({
+    executionAId: identifier,
+    executionBId: identifier,
+    preference: z.enum(["a", "b", "tie"]),
+    reason: z.string().nullable().optional(),
+    correctedOutput: record.nullable().optional(),
+}).strict();
 
 export type CreateExperimentPayload = z.infer<typeof createExperimentSchema>;
 export type StartExperimentPayload = z.infer<typeof startExperimentSchema>;
+export type SubmitReviewPayload = z.infer<typeof submitReviewSchema>;
