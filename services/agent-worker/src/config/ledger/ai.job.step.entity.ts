@@ -1,4 +1,4 @@
-import type { JobStepGraphEventKind, JobStepPayload, JobStepRole, JobStepToolCall } from "@tracer-agent/llm";
+import type { JobStepOrchestrationEventKind, JobStepPayload, JobStepRole, JobStepToolCall } from "@tracer-agent/llm";
 import { jobStepCarriesContent } from "@tracer-agent/llm";
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
@@ -70,7 +70,7 @@ export class AiJobStepEntity {
     nodeName!: string | null;
 
     @Column({ name: "event_kind", type: "text", nullable: true })
-    eventKind!: JobStepGraphEventKind | null;
+    eventKind!: JobStepOrchestrationEventKind | null;
 
     @Column({ name: "duration_ms", type: "integer", nullable: true })
     durationMs!: number | null;

@@ -1,5 +1,5 @@
 /** 궤적 한 줄을 남긴 주체이며 값은 계약의 잡 단계 어휘가 소유한다. */
-export const CHAT_STEP_ROLES = ["system", "user", "assistant", "tool", "graph"] as const;
+export const CHAT_STEP_ROLES = ["system", "user", "assistant", "tool", "orchestration"] as const;
 
 export type ChatStepRole = (typeof CHAT_STEP_ROLES)[number];
 

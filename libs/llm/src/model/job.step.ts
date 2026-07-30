@@ -4,7 +4,7 @@ export const JOB_STEP_ROLE = {
     user: "user",
     assistant: "assistant",
     tool: "tool",
-    graph: "graph",
+    orchestration: "orchestration",
 } as const;
 
 export type JobStepRole = (typeof JOB_STEP_ROLE)[keyof typeof JOB_STEP_ROLE];
@@ -14,11 +14,11 @@ export const JOB_STEP_ROLES = [
     JOB_STEP_ROLE.user,
     JOB_STEP_ROLE.assistant,
     JOB_STEP_ROLE.tool,
-    JOB_STEP_ROLE.graph,
+    JOB_STEP_ROLE.orchestration,
 ] as const satisfies readonly JobStepRole[];
 
-/** 그래프 실행이 남기는 사건의 종류이며 값은 계약의 잡 단계 어휘가 소유한다. */
-export const JOB_STEP_GRAPH_EVENT_KIND = {
+/** 실행을 엮는 층이 남기는 사건의 종류이며 값은 계약의 잡 단계 어휘가 소유한다. */
+export const JOB_STEP_ORCHESTRATION_EVENT_KIND = {
     nodeStarted: "node.started",
     nodeCompleted: "node.completed",
     nodeFailed: "node.failed",
@@ -26,8 +26,8 @@ export const JOB_STEP_GRAPH_EVENT_KIND = {
     validationFailed: "validation.failed",
 } as const;
 
-export type JobStepGraphEventKind =
-    (typeof JOB_STEP_GRAPH_EVENT_KIND)[keyof typeof JOB_STEP_GRAPH_EVENT_KIND];
+export type JobStepOrchestrationEventKind =
+    (typeof JOB_STEP_ORCHESTRATION_EVENT_KIND)[keyof typeof JOB_STEP_ORCHESTRATION_EVENT_KIND];
 
 export interface JobStepToolCall {
     readonly id: string;
@@ -50,7 +50,7 @@ export interface JobStepPayload {
     readonly cacheCreationTokens?: number | undefined;
     readonly stopReason?: string | undefined;
     readonly nodeName?: string | undefined;
-    readonly eventKind?: JobStepGraphEventKind | undefined;
+    readonly eventKind?: JobStepOrchestrationEventKind | undefined;
     readonly durationMs?: number | undefined;
 }
 

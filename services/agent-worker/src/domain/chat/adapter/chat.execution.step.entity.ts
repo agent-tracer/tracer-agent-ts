@@ -1,4 +1,4 @@
-import type { JobStepGraphEventKind, JobStepRole, JobStepToolCall } from "@tracer-agent/llm";
+import type { JobStepOrchestrationEventKind, JobStepRole, JobStepToolCall } from "@tracer-agent/llm";
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 import type { ChatExecutionStepRecord } from "~agent-worker/domain/chat/port/chat.repository.port.js";
 
@@ -59,7 +59,7 @@ export class ChatExecutionStepEntity {
     nodeName!: string | null;
 
     @Column({ name: "event_kind", type: "text", nullable: true })
-    eventKind!: JobStepGraphEventKind | null;
+    eventKind!: JobStepOrchestrationEventKind | null;
 
     @Column({ name: "duration_ms", type: "integer", nullable: true })
     durationMs!: number | null;
