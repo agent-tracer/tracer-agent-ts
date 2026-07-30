@@ -27,3 +27,21 @@ export function listContractSchemaFiles(): readonly string[] {
 export function readContractSchemaFile(name: string): string {
     return readFileSync(path.join(CONTRACT_ROOT, "db", "migrations", name), "utf8");
 }
+
+/** 서비스를 넘어 오가는 알림 토픽의 이름과 봉투와 종류를 계약이 적은 그대로 담는다. */
+export interface NotificationTopicDeclaration {
+    readonly name: string;
+    readonly key: string;
+    readonly payload: Readonly<Record<string, unknown>>;
+    readonly types: {
+        readonly jobUpdated: {
+            readonly name: string;
+            readonly payload: Readonly<Record<string, { readonly required: boolean }>>;
+        };
+    };
+}
+
+export function readNotificationTopic(): NotificationTopicDeclaration {
+    return readContractJson<{ readonly notifications: NotificationTopicDeclaration }>("wire/topics.json")
+        .notifications;
+}

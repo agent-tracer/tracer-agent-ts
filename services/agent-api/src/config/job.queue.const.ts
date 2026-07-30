@@ -15,4 +15,4 @@ export const JOB_WORKFLOW_BY_KIND: Readonly<Record<string, string>> = {
 export const NOTIFICATIONS_TOPIC = "notifications";
 
 /** 잡 상태가 바뀌었음을 알리는 통지의 종류이며 값은 화면과 추적 서비스가 함께 읽는다. */
-export const JOB_UPDATED_NOTIFICATION = "sdk_job.updated";
+export const JOB_UPDATED_NOTIFICATION = "job.updated";
