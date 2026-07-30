@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import { JOB_API_KEY_SETTING, JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import {
@@ -6,6 +5,7 @@ import {
     JobIdempotencyConflictError,
     LlmKeyMissingError,
 } from "~agent-api/domain/job/model/job.errors.js";
+import { hashJobInput } from "~agent-api/domain/job/model/job.idempotency.model.js";
 import { Job } from "~agent-api/domain/job/model/job.model.js";
 import { mapJob, type JobDto } from "~agent-api/domain/job/model/job.view.model.js";
 import { JOB_CLOCK, type ClockPort } from "~agent-api/domain/job/port/clock.port.js";
@@ -52,7 +52,7 @@ export class EnqueueJobUseCase {
         }
 
         const idempotencyKey = normalizeIdempotencyKey(options.idempotencyKey);
-        const inputHash = idempotencyKey !== undefined ? hashJobInput(input) : undefined;
+        const inputHash = idempotencyKey !== undefined ? hashJobInput(kind, input) : undefined;
         const job = Job.create(
             this.idGenerator.next(),
             userId,
@@ -115,24 +115,6 @@ function readRequiredText(value: unknown): string | null {
     if (typeof value !== "string") return null;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
-}
-
-function hashJobInput(input: Record<string, unknown>): string {
-    return createHash("sha256")
-        .update(JSON.stringify(toCanonicalJsonValue(input)), "utf8")
-        .digest("hex");
-}
-
-function toCanonicalJsonValue(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(toCanonicalJsonValue);
-    if (value !== null && typeof value === "object") {
-        return Object.fromEntries(
-            Object.entries(value as Record<string, unknown>)
-                .sort(([left], [right]) => left.localeCompare(right))
-                .map(([key, child]) => [key, toCanonicalJsonValue(child)]),
-        );
-    }
-    return value;
 }
 
 function isUniqueViolation(error: unknown): boolean {
