@@ -8,7 +8,13 @@ export interface PromotionGateResult {
     readonly evidence: Readonly<Record<string, unknown>>;
 }
 
-const POLICY_VERSION = "promotion-path/1";
+/** 승격 게이트가 무엇을 보는지의 이름이며 값은 계약의 조각 레지스트리 선언이 소유한다. */
+export const PROMOTION_GATE_POLICY = "staging-first";
+
+/** 게이트 없이 움직이는 채널이며 값은 계약의 조각 레지스트리 선언이 소유한다. */
+export const UNGATED_PROMOTION_CHANNELS: readonly PromptChannel[] = ["candidate", "staging"];
+
+const POLICY_VERSION = `${PROMOTION_GATE_POLICY}/1`;
 
 /**
  * 계약의 promotionPath 가 candidate → staging → production 을 선언하므로 production 으로 가는 판은
@@ -21,7 +27,7 @@ export function evaluatePromotionGate(input: {
     readonly stagingVersionId: string | null;
 }): PromotionGateResult {
     const evidence = { channel: input.channel, versionId: input.versionId, stagingVersionId: input.stagingVersionId };
-    if (input.channel !== "production") {
+    if (UNGATED_PROMOTION_CHANNELS.includes(input.channel)) {
         return { passed: true, policyVersion: POLICY_VERSION, reasons: [], evidence };
     }
     const passed = input.stagingVersionId === input.versionId;
