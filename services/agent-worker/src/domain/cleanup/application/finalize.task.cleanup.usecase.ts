@@ -4,6 +4,7 @@ import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { buildJobUsage, type AgentUsageSummary } from "~agent-worker/support/llm/job.attempt.js";
 import { taskCleanupSummary } from "../model/cleanup.suggestion.model.js";
 import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";
+import type { CleanupOutputPort } from "../port/cleanup.output.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
 import type { GeneratedCleanupSuggestion } from "../model/cleanup.suggestion.model.js";
 
@@ -21,26 +22,33 @@ export interface TaskCleanupFinalizeInput {
     readonly output: TaskCleanupFinalizeOutput | null;
 }
 
-/** 제안 저장과 잡 종결을 한 커밋으로 묶고 결과를 알린다. */
+/** 제안을 산출물 창구에 맡긴 뒤 잡 원장을 종결하고 결과를 알린다. */
 export class FinalizeTaskCleanupUsecase {
     constructor(
         private readonly repository: CleanupRepositoryPort,
+        private readonly output: CleanupOutputPort,
         private readonly notification: CleanupNotificationPort,
         private readonly clock: IClock,
     ) {}
 
     async execute(input: TaskCleanupFinalizeInput): Promise<void> {
         const now = this.clock.now();
-        const output = input.output;
+        const generated = input.output;
+        // 산출물이 먼저 자리를 잡아야 재시도가 잡 종결 뒤에 제안을 잃지 않는다.
+        const suggestionsCreated = await this.output.createSuggestions({
+            userId: input.userId,
+            jobId: input.jobId,
+            suggestions: generated?.suggestions ?? [],
+        });
         const settled = await this.repository.commitCleanup({
             jobId: input.jobId,
             userId: input.userId,
             tasksScanned: input.tasksScanned,
-            suggestions: output?.suggestions ?? [],
-            steps: output?.jobSteps ?? [],
-            attempt: output?.attempt ?? 1,
-            usage: output !== null ? buildJobUsage(output) : {},
-            observation: output?.observation ?? null,
+            suggestionsCreated,
+            steps: generated?.jobSteps ?? [],
+            attempt: generated?.attempt ?? 1,
+            usage: generated !== null ? buildJobUsage(generated) : {},
+            observation: generated?.observation ?? null,
             now,
         });
         if (settled === null) return;
@@ -50,7 +58,7 @@ export class FinalizeTaskCleanupUsecase {
             kind: JOB_KIND.taskCleanup,
             status: JOB_STATUS.completed,
             summary: taskCleanupSummary(settled.suggestionsCreated, input.tasksScanned),
-            durationMs: output?.durationMs ?? 0,
+            durationMs: generated?.durationMs ?? 0,
         });
     }
 }

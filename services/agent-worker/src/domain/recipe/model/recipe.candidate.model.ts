@@ -15,9 +15,8 @@ import type {
     RecipeTouchedFilePayload,
 } from "./recipe.scan.schema.js";
 
-/** 저장 가능한 형태로 조립된 레시피 후보다. */
+/** 산출물 창구로 보낼 수 있는 형태로 조립된 레시피 후보이며 식별자와 상태와 판은 창구가 정한다. */
 export interface GeneratedRecipeCandidate {
-    readonly id: string;
     readonly title: string;
     readonly intent: string;
     readonly description: string;
@@ -30,9 +29,9 @@ export interface GeneratedRecipeCandidate {
     readonly touchedFiles: readonly RecipeTouchedFilePayload[];
     readonly contributingSlices: readonly RecipeSlicePayload[];
     readonly rationale: string;
-    readonly revisesRecipeId?: string;
-    /** 모델이 검색으로 관측한 대상 레시피의 개정 번호다. */
-    readonly revisesRecipeIdSeenRev?: number;
+    readonly parentRecipeId?: string;
+    /** 모델이 검색으로 관측한 부모 레시피의 판이며 지금 판과 어긋나면 창구가 부모를 비운다. */
+    readonly parentRecipeSeenRev?: number;
 }
 
 interface ProvenanceFilterResult {
@@ -40,8 +39,8 @@ interface ProvenanceFilterResult {
     readonly corrections: readonly RecipeCorrectionPayload[];
     readonly pitfalls: readonly RecipePitfallPayload[];
     readonly governingRules: readonly string[];
-    readonly revisesRecipeId?: string;
-    readonly revisesRecipeIdSeenRev?: number;
+    readonly parentRecipeId?: string;
+    readonly parentRecipeSeenRev?: number;
 }
 
 /** 사용자 소유가 아닌 태스크 인용과 이 실행의 장부에 없는 ID 인용을 제거한다. */
@@ -75,16 +74,16 @@ export function filterCandidateByProvenance(
 
     const governingRules = candidate.governing_rules.filter((ruleId) => isRuleVerified(provenance, ruleId));
 
-    const revisesRecipeId = candidate.revises_recipe_id ?? undefined;
-    const seenRev = revisesRecipeId !== undefined ? verifiedRecipeRev(provenance, revisesRecipeId) : undefined;
+    const parentRecipeId = candidate.revises_recipe_id ?? undefined;
+    const seenRev = parentRecipeId !== undefined ? verifiedRecipeRev(provenance, parentRecipeId) : undefined;
 
     return {
         contributingSlices,
         corrections,
         pitfalls,
         governingRules,
-        ...(revisesRecipeId !== undefined && seenRev !== undefined
-            ? { revisesRecipeId, revisesRecipeIdSeenRev: seenRev }
+        ...(parentRecipeId !== undefined && seenRev !== undefined
+            ? { parentRecipeId, parentRecipeSeenRev: seenRev }
             : {}),
     };
 }
@@ -94,14 +93,12 @@ export function assembleRecipeCandidates(
     candidates: readonly RecipeCandidatePayload[],
     ownedTaskIds: ReadonlySet<string>,
     provenance: ProvenanceSnapshot,
-    nextId: () => string,
 ): readonly GeneratedRecipeCandidate[] {
     const assembled: GeneratedRecipeCandidate[] = [];
     for (const candidate of candidates) {
         const filtered = filterCandidateByProvenance(candidate, ownedTaskIds, provenance);
         if (filtered === null) continue;
         assembled.push({
-            id: nextId(),
             title: candidate.title,
             intent: candidate.intent,
             description: candidate.description,
@@ -114,10 +111,10 @@ export function assembleRecipeCandidates(
             touchedFiles: candidate.touched_files,
             contributingSlices: filtered.contributingSlices,
             rationale: candidate.rationale,
-            ...(filtered.revisesRecipeId !== undefined
+            ...(filtered.parentRecipeId !== undefined
                 ? {
-                    revisesRecipeId: filtered.revisesRecipeId,
-                    revisesRecipeIdSeenRev: filtered.revisesRecipeIdSeenRev,
+                    parentRecipeId: filtered.parentRecipeId,
+                    parentRecipeSeenRev: filtered.parentRecipeSeenRev,
                 }
                 : {}),
         });

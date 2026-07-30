@@ -4,6 +4,7 @@ import {
     CapturingCleanupNotification,
     cleanupObservation,
     fixedClock,
+    InMemoryCleanupOutput,
     seedRepository,
 } from "../port/__fakes__/cleanup.test-support.js";
 import { FinalizeTaskCleanupUsecase, type TaskCleanupFinalizeOutput } from "./finalize.task.cleanup.usecase.js";
@@ -23,10 +24,10 @@ function output(): TaskCleanupFinalizeOutput {
 }
 
 describe("FinalizeTaskCleanupUsecase", () => {
-    it("제안을 저장하고 완료를 알린다", async () => {
+    it("제안을 창구에 맡기고 완료를 알린다", async () => {
         const repository = seedRepository();
         const notification = new CapturingCleanupNotification();
-        const target = new FinalizeTaskCleanupUsecase(repository, notification, fixedClock);
+        const target = new FinalizeTaskCleanupUsecase(repository, new InMemoryCleanupOutput(), notification, fixedClock);
 
         await target.execute({ jobId: "job-1", userId: "user-1", tasksScanned: 2, output: output() });
 
@@ -40,7 +41,7 @@ describe("FinalizeTaskCleanupUsecase", () => {
     it("후보가 없어 실행을 생략했으면 빈 사용량으로 종결한다", async () => {
         const repository = seedRepository();
         const notification = new CapturingCleanupNotification();
-        const target = new FinalizeTaskCleanupUsecase(repository, notification, fixedClock);
+        const target = new FinalizeTaskCleanupUsecase(repository, new InMemoryCleanupOutput(), notification, fixedClock);
 
         await target.execute({ jobId: "job-1", userId: "user-1", tasksScanned: 0, output: null });
 
@@ -52,7 +53,7 @@ describe("FinalizeTaskCleanupUsecase", () => {
         const repository = seedRepository();
         repository.commitWins = false;
         const notification = new CapturingCleanupNotification();
-        const target = new FinalizeTaskCleanupUsecase(repository, notification, fixedClock);
+        const target = new FinalizeTaskCleanupUsecase(repository, new InMemoryCleanupOutput(), notification, fixedClock);
 
         await target.execute({ jobId: "job-1", userId: "user-1", tasksScanned: 2, output: output() });
 

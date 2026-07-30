@@ -1,7 +1,5 @@
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
-import type { GeneratedRecipeCandidate } from "~agent-worker/domain/recipe/model/recipe.candidate.model.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
-import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 
 /** 잡의 실행 중 상태를 보는 최소 표현이다. */
 export interface RecipeJobSnapshot {
@@ -31,8 +29,8 @@ export interface RecipeScanCommit {
     readonly jobId: string;
     readonly userId: string;
     readonly sourceTaskId: string;
-    readonly language: OutputLanguage;
-    readonly recipes: readonly GeneratedRecipeCandidate[];
+    /** 산출물 창구가 이미 만든 후보의 수이며 잡의 결과에 그대로 실린다. */
+    readonly candidatesCreated: number;
     readonly steps: readonly GeneratedJobStep[];
     readonly attempt: number;
     readonly usage: Record<string, unknown>;
@@ -55,7 +53,7 @@ export interface RecipeRepositoryPort {
         readonly attempts: readonly JobAttemptRecord[] | undefined;
         readonly costUsd: number | null;
     }>;
-    /** 잡 종결과 후보 저장을 한 커밋으로 묶으며 경합에 지면 null을 낸다. */
+    /** 잡 원장을 자기 트랜잭션 안에서 종결하며 경합에 지면 null을 낸다. */
     commitScan(input: RecipeScanCommit): Promise<{ readonly candidatesCreated: number } | null>;
     failJob(jobId: string, message: string, now: Date): Promise<RecipeJobSnapshot | null>;
 }

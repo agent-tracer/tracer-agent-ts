@@ -1,121 +1,152 @@
-import type { DataSource } from "typeorm";
-import { EventEntity, TaskEntity } from "~agent-worker/config/ledger/tracer.entity.js";
+import type { TracerApiWindow } from "@tracer-agent/tracer-client";
+import {
+    wireDate,
+    wireItems,
+    wireNumber,
+    wireObject,
+    wireText,
+    wireTexts,
+} from "~agent-worker/support/wire.value.js";
 import type {
     RecipeEvent,
     RecipeEventReaderPort,
     RecipeRule,
+    RecipeRuleExpectation,
     RecipeRuleReaderPort,
     RecipeTask,
     RecipeTaskReaderPort,
 } from "~agent-worker/domain/recipe/port/recipe.reader.port.js";
 
-/** 추적 원장의 태스크와 이벤트와 규칙을 레시피 도구 표현으로 읽는다. */
+const TIMELINE_ORDER = { asc: "asc", desc: "desc" } as const;
+
+/** 태스크와 이벤트와 규칙을 추적 API의 조회 창구에서 레시피 도구 표현으로 읽는다. */
 export class RecipeReaderAdapter
     implements RecipeTaskReaderPort, RecipeEventReaderPort, RecipeRuleReaderPort
 {
-    constructor(private readonly dataSource: DataSource) {}
+    constructor(private readonly tracer: TracerApiWindow) {}
 
     async findById(userId: string, taskId: string): Promise<RecipeTask | null> {
-        const task = await this.dataSource.getRepository(TaskEntity).findOneBy({ userId, id: taskId });
-        return task === null ? null : toTask(task);
+        const found = await this.tracer.requestOrNull({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}`,
+            userId,
+        });
+        if (found === null) return null;
+        const task = wireObject(wireObject(found)["task"]);
+        return {
+            id: wireText(task["id"]) ?? taskId,
+            title: wireText(task["title"]) ?? "",
+            status: wireText(task["status"]) ?? "",
+            taskKind: wireText(task["taskKind"]) ?? "",
+            workspacePath: wireText(task["workspacePath"]),
+            createdAt: wireDate(task["createdAt"]),
+            updatedAt: wireDate(task["updatedAt"]),
+        };
     }
 
-    async findTimeline(
+    findTimeline(
         userId: string,
         taskId: string,
         cursor: { readonly seq: string } | undefined,
         limit: number,
     ): Promise<readonly RecipeEvent[]> {
-        const query = this.eventQuery(userId, taskId).orderBy("event.seq", "ASC").limit(limit);
-        if (cursor !== undefined) query.andWhere("event.seq > :cursor", { cursor: cursor.seq });
-        return (await query.getMany()).map(toEvent);
+        return this.readTimeline(userId, taskId, TIMELINE_ORDER.asc, cursor?.seq, limit);
     }
 
-    async findTimelineWindow(
+    findTimelineWindow(
         userId: string,
         taskId: string,
         cursor: string | undefined,
         limit: number,
     ): Promise<readonly RecipeEvent[]> {
-        const query = this.eventQuery(userId, taskId).orderBy("event.seq", "DESC").limit(limit);
-        if (cursor !== undefined) query.andWhere("event.seq < :cursor", { cursor });
-        return (await query.getMany()).map(toEvent);
+        return this.readTimeline(userId, taskId, TIMELINE_ORDER.desc, cursor, limit);
     }
 
-    countByTask(userId: string, taskId: string): Promise<number> {
-        return this.dataSource.getRepository(EventEntity).count({ where: { userId, taskId } });
+    async countByTask(userId: string, taskId: string): Promise<number> {
+        const page = await this.timeline(userId, taskId, TIMELINE_ORDER.asc, undefined, 1);
+        return wireNumber(wireObject(page)["total"]) ?? 0;
     }
 
     async findApplicable(userId: string, taskId: string): Promise<readonly RecipeRule[]> {
-        const rows = await this.dataSource.query<RecipeRuleRow[]>(
-            `SELECT id, name, expectation, task_id, anchor_event_id, source, severity,
-                    rationale, signature, created_at
-               FROM rules
-              WHERE user_id = $1 AND task_id = $2`,
-            [userId, taskId],
-        );
-        return rows.map(toRule);
+        const found = await this.tracer.request({
+            method: "GET",
+            path: "/api/v1/rules",
+            userId,
+            query: { taskId },
+        });
+        return wireItems(found).map(toRule);
     }
 
-    private eventQuery(userId: string, taskId: string) {
-        return this.dataSource
-            .getRepository(EventEntity)
-            .createQueryBuilder("event")
-            .where("event.user_id = :userId AND event.task_id = :taskId", { userId, taskId });
+    private async readTimeline(
+        userId: string,
+        taskId: string,
+        order: string,
+        cursor: string | undefined,
+        limit: number,
+    ): Promise<readonly RecipeEvent[]> {
+        const page = await this.timeline(userId, taskId, order, cursor, limit);
+        return wireItems(page).map(toEvent);
+    }
+
+    private timeline(
+        userId: string,
+        taskId: string,
+        order: string,
+        cursor: string | undefined,
+        limit: number,
+    ): Promise<unknown> {
+        return this.tracer.request({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}/timeline`,
+            userId,
+            query: { order, limit, ...(cursor !== undefined ? { cursor } : {}) },
+        });
     }
 }
 
-interface RecipeRuleRow {
-    readonly id: string;
-    readonly name: string;
-    readonly expectation: RecipeRule["expectation"];
-    readonly task_id: string;
-    readonly anchor_event_id: string;
-    readonly source: string;
-    readonly severity: string;
-    readonly rationale: string | null;
-    readonly signature: string;
-    readonly created_at: Date;
-}
-
-function toTask(task: TaskEntity): RecipeTask {
+function toEvent(item: Record<string, unknown>): RecipeEvent {
     return {
-        id: task.id,
-        title: task.title,
-        status: task.status,
-        taskKind: task.taskKind,
-        workspacePath: task.workspacePath,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
+        id: wireText(item["id"]) ?? "",
+        seq: wireText(item["seq"]) ?? String(wireNumber(item["seq"]) ?? 0),
+        turnId: wireText(item["turnId"]),
+        kind: wireText(item["kind"]) ?? "",
+        title: wireText(item["title"]) ?? "",
+        body: wireText(item["body"]),
+        toolName: wireText(item["toolName"]),
+        filePaths: wireTexts(item["filePaths"]),
+        metadata: wireObject(item["metadata"]),
+        occurredAt: wireDate(item["occurredAt"]),
     };
 }
 
-function toEvent(event: EventEntity): RecipeEvent {
+function toRule(item: Record<string, unknown>): RecipeRule {
     return {
-        id: event.id,
-        seq: event.seq,
-        turnId: event.turnId,
-        kind: event.kind,
-        title: event.title,
-        body: event.body,
-        toolName: event.toolName,
-        filePaths: event.filePaths,
-        metadata: event.metadata,
-        occurredAt: event.occurredAt,
+        id: wireText(item["id"]) ?? "",
+        name: wireText(item["name"]) ?? "",
+        expectation: toExpectation(item["expectation"]),
+        taskId: wireText(item["taskId"]) ?? "",
+        anchorEventId: wireText(item["anchorEventId"]) ?? "",
+        source: wireText(item["source"]) ?? "",
+        severity: wireText(item["severity"]) ?? "",
+        rationale: wireText(item["rationale"]),
+        signature: wireText(item["signature"]) ?? "",
+        createdAt: wireDate(item["createdAt"]),
     };
 }
 
-function toRule(row: RecipeRuleRow): RecipeRule {
-    return {
-        id: row.id,
-        name: row.name,
-        expectation: row.expectation,
-        taskId: row.task_id,
-        anchorEventId: row.anchor_event_id,
-        source: row.source,
-        severity: row.severity,
-        rationale: row.rationale,
-        signature: row.signature,
-        createdAt: row.created_at,
-    };
+function toExpectation(value: unknown): RecipeRuleExpectation {
+    const expectation = wireObject(value);
+    const tool = wireText(expectation["tool"]);
+    switch (wireText(expectation["kind"])) {
+        case "command":
+            return { kind: "command", commandMatches: wireTexts(expectation["commandMatches"]) };
+        case "action":
+            return { kind: "action", tool: tool ?? "" };
+        default:
+            return {
+                kind: "pattern",
+                pattern: wireText(expectation["pattern"]) ?? "",
+                ...(tool !== null ? { tool } : {}),
+            };
+    }
 }

@@ -9,15 +9,11 @@ import {
     type EvidenceTask,
 } from "~agent-worker/domain/evaluation/model/evaluation.snapshot.model.js";
 import {
-    SnapshotRecipeSearchClient,
+    SnapshotRecipeSearch,
     SnapshotRuleReader,
     SnapshotTaskAndEventReader,
     type SnapshotSearchHit,
 } from "~agent-worker/domain/evaluation/adapter/snapshot.readers.js";
-
-const EVENTS_INDEX = "events";
-const TASKS_INDEX = "tasks";
-const RECIPES_INDEX = "recipes";
 
 const EVIDENCE_KEY = {
     task: "task",
@@ -49,14 +45,14 @@ export function buildSnapshotRecipeDeps(evidence: Record<string, unknown>, taskI
     readonly tasks: SnapshotTaskAndEventReader;
     readonly events: SnapshotTaskAndEventReader;
     readonly rules: SnapshotRuleReader;
-    readonly search: SnapshotRecipeSearchClient;
+    readonly search: SnapshotRecipeSearch;
 } {
     const reader = buildTaskAndEventReader(evidence, taskId);
     const rules = readEvidenceArray<EvidenceRule>(evidence, EVIDENCE_KEY.listRules).map(toSnapshotRule);
-    const search = new SnapshotRecipeSearchClient({
-        [EVENTS_INDEX]: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.searchEvents),
-        [TASKS_INDEX]: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.findSimilarTasks),
-        [RECIPES_INDEX]: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.searchRecipes),
+    const search = new SnapshotRecipeSearch({
+        events: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.searchEvents),
+        tasks: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.findSimilarTasks),
+        recipes: readEvidenceArray<SnapshotSearchHit>(evidence, EVIDENCE_KEY.searchRecipes),
     });
     return { tasks: reader, events: reader, rules: new SnapshotRuleReader(rules), search };
 }

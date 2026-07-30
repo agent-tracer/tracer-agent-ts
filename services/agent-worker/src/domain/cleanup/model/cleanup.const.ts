@@ -11,8 +11,5 @@ export const CLEANUP_SETTING_KEY = {
     maxSuggestions: "taskCleanup.maxSuggestions",
 } as const;
 
-/** 저장된 제안이 처음 놓이는 상태이며 사람이 승인하거나 기각해야 종결된다. */
-export const CLEANUP_SUGGESTION_STATUS_PENDING = "pending";
-
-/** 이 슬라이스가 내는 유일한 제안 종류다. */
+/** 이 슬라이스가 내는 유일한 제안 종류이며 값은 산출물 창구의 어휘가 소유한다. */
 export const CLEANUP_SUGGESTION_KIND_ARCHIVE = "archive";

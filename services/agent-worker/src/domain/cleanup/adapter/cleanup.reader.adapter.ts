@@ -1,5 +1,12 @@
-import type { DataSource } from "typeorm";
-import { EventEntity, TaskEntity } from "~agent-worker/config/ledger/tracer.entity.js";
+import type { TracerApiWindow } from "@tracer-agent/tracer-client";
+import {
+    wireDate,
+    wireItems,
+    wireNumber,
+    wireObject,
+    wireText,
+    wireTexts,
+} from "~agent-worker/support/wire.value.js";
 import type {
     CleanupEvent,
     CleanupEventReaderPort,
@@ -7,58 +14,81 @@ import type {
     CleanupTaskReaderPort,
 } from "~agent-worker/domain/cleanup/port/cleanup.reader.port.js";
 
-/** 추적 원장의 태스크와 이벤트를 cleanup 도구 표현으로 읽는다. */
+const TIMELINE_ORDER = { asc: "asc", desc: "desc" } as const;
+
+/** 태스크와 이벤트를 추적 API의 조회 창구에서 cleanup 도구 표현으로 읽는다. */
 export class CleanupReaderAdapter implements CleanupTaskReaderPort, CleanupEventReaderPort {
-    constructor(private readonly dataSource: DataSource) {}
+    constructor(private readonly tracer: TracerApiWindow) {}
 
     async findById(userId: string, taskId: string): Promise<CleanupTask | null> {
-        const task = await this.dataSource.getRepository(TaskEntity).findOneBy({ userId, id: taskId });
-        return task === null ? null : { id: task.id };
+        const found = await this.tracer.requestOrNull({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}`,
+            userId,
+        });
+        if (found === null) return null;
+        return { id: wireText(wireObject(wireObject(found)["task"])["id"]) ?? taskId };
     }
 
-    async findTimeline(
+    findTimeline(
         userId: string,
         taskId: string,
         cursor: { readonly seq: string } | undefined,
         limit: number,
     ): Promise<readonly CleanupEvent[]> {
-        const query = this.eventQuery(userId, taskId).orderBy("event.seq", "ASC").limit(limit);
-        if (cursor !== undefined) query.andWhere("event.seq > :cursor", { cursor: cursor.seq });
-        return (await query.getMany()).map(toEvent);
+        return this.readTimeline(userId, taskId, TIMELINE_ORDER.asc, cursor?.seq, limit);
     }
 
-    async findTimelineWindow(
+    findTimelineWindow(
         userId: string,
         taskId: string,
         cursor: string | undefined,
         limit: number,
     ): Promise<readonly CleanupEvent[]> {
-        const query = this.eventQuery(userId, taskId).orderBy("event.seq", "DESC").limit(limit);
-        if (cursor !== undefined) query.andWhere("event.seq < :cursor", { cursor });
-        return (await query.getMany()).map(toEvent);
+        return this.readTimeline(userId, taskId, TIMELINE_ORDER.desc, cursor, limit);
     }
 
-    countByTask(userId: string, taskId: string): Promise<number> {
-        return this.dataSource.getRepository(EventEntity).count({ where: { userId, taskId } });
+    async countByTask(userId: string, taskId: string): Promise<number> {
+        const page = await this.timeline(userId, taskId, TIMELINE_ORDER.asc, undefined, 1);
+        return wireNumber(wireObject(page)["total"]) ?? 0;
     }
 
-    private eventQuery(userId: string, taskId: string) {
-        return this.dataSource
-            .getRepository(EventEntity)
-            .createQueryBuilder("event")
-            .where("event.user_id = :userId AND event.task_id = :taskId", { userId, taskId });
+    private async readTimeline(
+        userId: string,
+        taskId: string,
+        order: string,
+        cursor: string | undefined,
+        limit: number,
+    ): Promise<readonly CleanupEvent[]> {
+        const page = await this.timeline(userId, taskId, order, cursor, limit);
+        return wireItems(page).map(toEvent);
+    }
+
+    private timeline(
+        userId: string,
+        taskId: string,
+        order: string,
+        cursor: string | undefined,
+        limit: number,
+    ): Promise<unknown> {
+        return this.tracer.request({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}/timeline`,
+            userId,
+            query: { order, limit, ...(cursor !== undefined ? { cursor } : {}) },
+        });
     }
 }
 
-function toEvent(event: EventEntity): CleanupEvent {
+function toEvent(item: Record<string, unknown>): CleanupEvent {
     return {
-        id: event.id,
-        seq: event.seq,
-        kind: event.kind,
-        title: event.title,
-        body: event.body,
-        toolName: event.toolName,
-        filePaths: event.filePaths,
-        occurredAt: event.occurredAt,
+        id: wireText(item["id"]) ?? "",
+        seq: wireText(item["seq"]) ?? String(wireNumber(item["seq"]) ?? 0),
+        kind: wireText(item["kind"]) ?? "",
+        title: wireText(item["title"]) ?? "",
+        body: wireText(item["body"]),
+        toolName: wireText(item["toolName"]),
+        filePaths: wireTexts(item["filePaths"]),
+        occurredAt: wireDate(item["occurredAt"]),
     };
 }

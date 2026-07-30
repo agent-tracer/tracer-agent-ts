@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { ClaudeQueryRunner } from "@tracer-agent/llm";
+import { TracerApiWindow } from "@tracer-agent/tracer-client";
 import {
     createDataSource,
     errorMessage,
@@ -11,22 +12,16 @@ import {
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
 import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
-import {
-    EventEntity,
-    SearchOutboxEntity,
-    TaskEntity,
-    TaskUserStateEntity,
-    TurnEntity,
-} from "~agent-worker/config/ledger/tracer.entity.js";
 import { createKafka } from "~agent-worker/config/kafka.factory.js";
-import { createSearchClient } from "~agent-worker/config/search.factory.js";
 import { createNotificationPublisher } from "~agent-worker/config/notification.js";
+import { resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { JOB_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { createTemporalWorker } from "~agent-worker/config/temporal.worker.js";
 import { runUntilShutdown } from "~agent-worker/config/worker.lifecycle.js";
-import { RecipeEntity } from "~agent-worker/domain/recipe/adapter/recipe.entity.js";
 import { RecipeNotificationAdapter } from "~agent-worker/domain/recipe/adapter/recipe.notification.adapter.js";
+import { RecipeOutputAdapter } from "~agent-worker/domain/recipe/adapter/recipe.output.adapter.js";
 import { RecipeReaderAdapter } from "~agent-worker/domain/recipe/adapter/recipe.reader.adapter.js";
+import { RecipeSearchAdapter } from "~agent-worker/domain/recipe/adapter/recipe.search.adapter.js";
 import { RecipeRepositoryAdapter } from "~agent-worker/domain/recipe/adapter/recipe.repository.adapter.js";
 import { RecipeAgentAdapter } from "~agent-worker/domain/recipe/adapter/recipe.agent.adapter.js";
 import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
@@ -35,8 +30,8 @@ import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/applicati
 import { PrepareRecipeScanUsecase } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
 import { ScanRecipeUsecase } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { RecipeActivity } from "~agent-worker/domain/recipe/inbound/recipe.activity.js";
-import { TaskCleanupSuggestionEntity } from "~agent-worker/domain/cleanup/adapter/cleanup.entity.js";
 import { CleanupNotificationAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.notification.adapter.js";
+import { CleanupOutputAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.output.adapter.js";
 import { CleanupReaderAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.reader.adapter.js";
 import { CleanupRepositoryAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.repository.adapter.js";
 import { CleanupSdkAgentAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.sdk.agent.adapter.js";
@@ -57,21 +52,13 @@ import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/applic
 import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
 import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
 
-/** 잡 원장과 추적 읽기 모델을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
+/** 이 워커가 소유한 잡 원장을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
 const JOB_ENTITIES = [
     AiJobEntity,
     AiJobStepEntity,
     AgentRunObservationEntity,
-    TaskEntity,
-    TaskUserStateEntity,
-    EventEntity,
-    TurnEntity,
-    SearchOutboxEntity,
-    RecipeEntity,
-    TaskCleanupSuggestionEntity,
 ] as const;
 
-/** 검색 색인이 노출하는 REST 표면을 그대로 부르는 최소 클라이언트다. */
 async function bootstrap(): Promise<void> {
     const config = loadApplicationConfig();
     const dataSource = createDataSource({ db: config.agentDb, entities: [...JOB_ENTITIES] });
@@ -83,28 +70,30 @@ async function bootstrap(): Promise<void> {
     const publish = createNotificationPublisher(producer);
     const isLocal = config.profile === "local";
     const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
-    const search = createSearchClient();
+    const tracer = new TracerApiWindow(resolveTracerApiUrl());
 
     const recipeIds = new RecipeUlidGenerator();
-    const recipeReader = new RecipeReaderAdapter(dataSource);
-    const recipeRepository = new RecipeRepositoryAdapter(dataSource, recipeIds);
+    const recipeReader = new RecipeReaderAdapter(tracer);
+    const recipeSearch = new RecipeSearchAdapter(tracer);
+    const recipeRepository = new RecipeRepositoryAdapter(dataSource, tracer);
+    const recipeOutput = new RecipeOutputAdapter(tracer);
     const recipeNotification = new RecipeNotificationAdapter(publish);
     const recipeAgent = new RecipeAgentAdapter(claudeRunner, {
         tasks: recipeReader,
         events: recipeReader,
         rules: recipeReader,
-        search,
+        search: recipeSearch,
     });
     const recipe = new RecipeActivity(
         new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock),
         new ScanRecipeUsecase(recipeRepository, recipeAgent, clock, recipeIds),
-        new FinalizeRecipeScanUsecase(recipeRepository, recipeNotification, clock),
+        new FinalizeRecipeScanUsecase(recipeRepository, recipeOutput, recipeNotification, clock),
         new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock),
     );
 
     const titleIds = new TitleUlidGenerator(clock);
-    const titleReader = new TitleEventReaderAdapter(dataSource);
-    const titleRepository = new TitleRepositoryAdapter(dataSource);
+    const titleReader = new TitleEventReaderAdapter(tracer);
+    const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
     const titleNotification = new TitleNotificationAdapter(publish);
     const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader);
     const title = new TitleActivity(
@@ -115,8 +104,9 @@ async function bootstrap(): Promise<void> {
     );
 
     const cleanupIds = new CleanupUlidGenerator();
-    const cleanupReader = new CleanupReaderAdapter(dataSource);
-    const cleanupRepository = new CleanupRepositoryAdapter(dataSource);
+    const cleanupReader = new CleanupReaderAdapter(tracer);
+    const cleanupRepository = new CleanupRepositoryAdapter(dataSource, tracer);
+    const cleanupOutput = new CleanupOutputAdapter(tracer);
     const cleanupNotification = new CleanupNotificationAdapter(publish);
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
         tasks: cleanupReader,
@@ -125,7 +115,7 @@ async function bootstrap(): Promise<void> {
     const cleanup = new CleanupActivity(
         new PrepareTaskCleanupUsecase(cleanupRepository, cleanupAgent, cleanupNotification, clock),
         new SuggestCleanupUsecase(cleanupRepository, cleanupAgent, clock, cleanupIds),
-        new FinalizeTaskCleanupUsecase(cleanupRepository, cleanupNotification, clock),
+        new FinalizeTaskCleanupUsecase(cleanupRepository, cleanupOutput, cleanupNotification, clock),
         new FailCleanupJobUsecase(cleanupRepository, cleanupNotification, clock),
     );
 

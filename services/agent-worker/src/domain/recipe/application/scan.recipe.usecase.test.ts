@@ -122,7 +122,7 @@ describe("ScanRecipeUsecase", () => {
         const output = await target.execute(prep(), attemptRun());
 
         expect(output.recipes.map((recipe) => recipe.title)).toEqual(["첫 작업", "둘째 작업"]);
-        expect(output.recipes.map((recipe) => recipe.id)).toEqual(["recipe-id-1", "recipe-id-2"]);
+        expect(output.recipes.every((recipe) => !Object.hasOwn(recipe, "id"))).toBe(true);
     });
 
     it("내용이 없는 궤적 스텝을 저장 대상에서 제외한다", async () => {

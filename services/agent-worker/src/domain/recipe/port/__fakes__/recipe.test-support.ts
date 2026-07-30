@@ -9,6 +9,10 @@ import type {
 import type { RecipeIdGeneratorPort } from "~agent-worker/domain/recipe/port/recipe.id.generator.port.js";
 import type { RecipeNotificationPort } from "~agent-worker/domain/recipe/port/recipe.notification.port.js";
 import type {
+    RecipeCandidateBatch,
+    RecipeOutputPort,
+} from "~agent-worker/domain/recipe/port/recipe.output.port.js";
+import type {
     RecipeAnchorSnapshot,
     RecipeFailedAttempt,
     RecipeJobSnapshot,
@@ -136,13 +140,29 @@ export class InMemoryRecipeRepository implements RecipeRepositoryPort {
     async commitScan(input: RecipeScanCommit): Promise<{ readonly candidatesCreated: number } | null> {
         if (!this.commitWins) return null;
         this.commits.push(input);
-        return { candidatesCreated: input.recipes.length };
+        return { candidatesCreated: input.candidatesCreated };
     }
 
     async failJob(jobId: string, message: string): Promise<RecipeJobSnapshot | null> {
         if (this.job === null || this.job.id !== jobId) return null;
         this.failures.push({ jobId, message });
         return this.job;
+    }
+}
+
+/** 산출물 창구를 메모리로 구현한 테스트 대역이며 같은 실행 식별자를 두 번 받으면 앞의 수를 낸다. */
+export class InMemoryRecipeOutput implements RecipeOutputPort {
+    readonly batches: RecipeCandidateBatch[] = [];
+    failure: Error | null = null;
+    private readonly createdByJob = new Map<string, number>();
+
+    async createCandidates(batch: RecipeCandidateBatch): Promise<number> {
+        if (this.failure !== null) throw this.failure;
+        const seen = this.createdByJob.get(batch.sourceJobId);
+        if (seen !== undefined) return seen;
+        this.batches.push(batch);
+        this.createdByJob.set(batch.sourceJobId, batch.recipes.length);
+        return batch.recipes.length;
     }
 }
 

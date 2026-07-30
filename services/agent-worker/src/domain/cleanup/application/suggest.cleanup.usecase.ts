@@ -79,12 +79,7 @@ export class SuggestCleanupUsecase {
             throw error;
         }
 
-        const suggestions = assembleCleanupSuggestions(
-            output.suggestions,
-            prep.candidates,
-            prep.maxSuggestions,
-            () => this.ids.next(),
-        );
+        const suggestions = assembleCleanupSuggestions(output.suggestions, prep.candidates, prep.maxSuggestions);
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
         const { attempts, costUsd } = await this.repository.foldSuccessAttempt(

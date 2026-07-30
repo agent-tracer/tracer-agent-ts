@@ -20,11 +20,5 @@ export const RECIPE_SETTING_KEY = {
     anthropicApiKey: "anthropic.api_key",
 } as const;
 
-/** 후보가 처음 놓이는 상태이며 사람이 승인해야 살아난다. */
-export const RECIPE_STATUS_CANDIDATE = "candidate";
-
-/** 후보를 만든 주체이며 사람이 고치면 값이 바뀐다. */
-export const RECIPE_EDITOR_AGENT = "agent";
-
-/** 검색 색인 아웃박스가 가리키는 대상 종류다. */
-export const SEARCH_OUTBOX_TARGET_RECIPE = "recipe";
+/** 후보를 낸 주체이며 값은 산출물 창구의 어휘가 소유한다. */
+export const RECIPE_AUTHOR_AGENT = "agent";

@@ -16,7 +16,7 @@ import {
     buildSnapshotRecipeDeps,
     buildSnapshotTitleEvents,
 } from "~agent-worker/domain/evaluation/adapter/evaluation.snapshot.tool.deps.js";
-import type { SnapshotRecipeSearchClient, SnapshotRuleReader, SnapshotTaskAndEventReader } from "~agent-worker/domain/evaluation/adapter/snapshot.readers.js";
+import type { SnapshotRecipeSearch, SnapshotRuleReader, SnapshotTaskAndEventReader } from "~agent-worker/domain/evaluation/adapter/snapshot.readers.js";
 
 /** cleanup.suggestion.schema.ts의 CLEANUP_MAX_SUGGESTIONS를 그대로 따르는 상한이며, 형제 슬라이스를 import할 수 없어 값만 옮겨 고정한다. */
 const CLEANUP_MAX_SUGGESTIONS_CAP = 50;
@@ -89,7 +89,7 @@ export interface EvaluationRecipeSnapshotDeps {
     readonly tasks: SnapshotTaskAndEventReader;
     readonly events: SnapshotTaskAndEventReader;
     readonly rules: SnapshotRuleReader;
-    readonly search: SnapshotRecipeSearchClient;
+    readonly search: SnapshotRecipeSearch;
 }
 
 /** recipe 에이전트 인스턴스 하나를 그 실행이 쓸 스냅샷 도구 의존과 프롬프트 조각 해석기로 만드는 조립 근원의 표면이다. */

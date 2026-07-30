@@ -1,6 +1,5 @@
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
 import type { CleanupTaskSnapshot } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
-import type { GeneratedCleanupSuggestion } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.model.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
 /** 잡의 실행 중 상태를 보는 최소 표현이다. */
@@ -34,7 +33,8 @@ export interface CleanupCommit {
     readonly jobId: string;
     readonly userId: string;
     readonly tasksScanned: number;
-    readonly suggestions: readonly GeneratedCleanupSuggestion[];
+    /** 산출물 창구가 이미 만든 제안의 수이며 잡의 결과에 그대로 실린다. */
+    readonly suggestionsCreated: number;
     readonly steps: readonly GeneratedJobStep[];
     readonly attempt: number;
     readonly usage: Record<string, unknown>;
@@ -54,7 +54,7 @@ export interface CleanupRepositoryPort {
         jobId: string,
         record: JobAttemptRecord,
     ): Promise<{ readonly attempts: readonly JobAttemptRecord[] | undefined; readonly costUsd: number | null }>;
-    /** 잡 종결과 제안 저장을 한 커밋으로 묶으며 경합에 지면 null을 낸다. */
+    /** 잡 원장을 자기 트랜잭션 안에서 종결하며 경합에 지면 null을 낸다. */
     commitCleanup(input: CleanupCommit): Promise<{ readonly suggestionsCreated: number } | null>;
     failJob(jobId: string, message: string, now: Date): Promise<CleanupJobSnapshot | null>;
 }

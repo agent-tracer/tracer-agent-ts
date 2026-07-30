@@ -59,30 +59,119 @@ export class SnapshotRuleReader {
     }
 }
 
-/** OpenSearch가 낼 응답의 hit 하나이며, id는 별도 필드로 온다. */
+/** example의 evidence가 적은 검색 적중 하나이며 id는 별도 칸으로 온다. */
 export interface SnapshotSearchHit {
     readonly id: string;
     readonly [field: string]: unknown;
 }
 
-/** recipe 검색 도구가 요구하는 검색 표면을 각 도구별 evidence 배열로 되돌린다. */
-export class SnapshotRecipeSearchClient {
-    constructor(private readonly byIndex: Readonly<Record<string, readonly SnapshotSearchHit[]>>) {}
+/** 검색 적중 세 벌을 담은 evidence이며 도구마다 자기 칸을 읽는다. */
+export interface SnapshotSearchEvidence {
+    readonly events: readonly SnapshotSearchHit[];
+    readonly tasks: readonly SnapshotSearchHit[];
+    readonly recipes: readonly SnapshotSearchHit[];
+}
 
-    search(request: { readonly index: string; readonly body: Record<string, unknown> }): Promise<unknown> {
-        const hits = this.byIndex[request.index] ?? [];
+/** 검색이 되돌리는 이벤트 한 건이며 형제 슬라이스의 도구가 요구하는 칸과 같다. */
+export interface SnapshotSearchEventView {
+    readonly id: string;
+    readonly taskId: string;
+    readonly seq: string;
+    readonly kind: string;
+    readonly title: string;
+    readonly body?: string;
+    readonly toolName?: string;
+    readonly filePaths: readonly string[];
+    readonly occurredAt: string;
+}
+
+/** 검색이 되돌리는 태스크 한 건이다. */
+export interface SnapshotSlimTaskView {
+    readonly id: string;
+    readonly title: string;
+    readonly status: string;
+    readonly taskKind?: string;
+    readonly updatedAt?: string;
+}
+
+/** 검색이 되돌리는 레시피 한 건이다. */
+export interface SnapshotSlimRecipeView {
+    readonly id: string;
+    readonly title: string;
+    readonly intent: string;
+    readonly status: string;
+    readonly userEdited: boolean;
+    readonly rev?: number;
+    readonly updatedAt?: string;
+}
+
+/** recipe 검색 도구가 요구하는 표면을 example의 evidence로 되돌리며, 실제 포트 대조는 조립 근원이 한다. */
+export class SnapshotRecipeSearch {
+    constructor(private readonly evidence: SnapshotSearchEvidence) {}
+
+    searchEvents(
+        _userId: string,
+        query: { readonly limit: number; readonly offset: number },
+    ): Promise<{
+        readonly events: readonly SnapshotSearchEventView[];
+        readonly truncated: boolean;
+        readonly total: number;
+    }> {
+        const page = this.evidence.events.slice(query.offset, query.offset + query.limit);
         return Promise.resolve({
-            hits: {
-                total: { value: hits.length },
-                hits: hits.map((hit) => ({ _id: hit.id, _source: withoutId(hit) })),
-            },
+            events: page.map(toSearchEventView),
+            truncated: this.evidence.events.length > query.offset + query.limit,
+            total: this.evidence.events.length,
         });
+    }
+
+    searchTasks(_userId: string, _q: string, limit: number): Promise<readonly SnapshotSlimTaskView[]> {
+        return Promise.resolve(this.evidence.tasks.slice(0, limit).map(toSlimTaskView));
+    }
+
+    searchRecipes(_userId: string, _q: string, limit: number): Promise<readonly SnapshotSlimRecipeView[]> {
+        return Promise.resolve(this.evidence.recipes.slice(0, limit).map(toSlimRecipeView));
     }
 }
 
-function withoutId(hit: SnapshotSearchHit): Record<string, unknown> {
-    const { id: _id, ...rest } = hit;
-    return rest;
+function toSearchEventView(hit: SnapshotSearchHit): SnapshotSearchEventView {
+    return {
+        id: hit.id,
+        taskId: text(hit["taskId"]),
+        seq: text(hit["seq"]),
+        kind: text(hit["kind"]),
+        title: text(hit["title"]),
+        ...(typeof hit["body"] === "string" ? { body: hit["body"] } : {}),
+        ...(typeof hit["toolName"] === "string" ? { toolName: hit["toolName"] } : {}),
+        filePaths: Array.isArray(hit["filePaths"]) ? (hit["filePaths"] as readonly string[]) : [],
+        occurredAt: text(hit["occurredAt"]),
+    };
+}
+
+function toSlimTaskView(hit: SnapshotSearchHit): SnapshotSlimTaskView {
+    return {
+        id: hit.id,
+        title: text(hit["title"]),
+        status: text(hit["status"]),
+        ...(typeof hit["taskKind"] === "string" ? { taskKind: hit["taskKind"] } : {}),
+        ...(typeof hit["updatedAt"] === "string" ? { updatedAt: hit["updatedAt"] } : {}),
+    };
+}
+
+function toSlimRecipeView(hit: SnapshotSearchHit): SnapshotSlimRecipeView {
+    return {
+        id: hit.id,
+        title: text(hit["title"]),
+        intent: text(hit["intent"]),
+        status: text(hit["status"]),
+        userEdited: hit["userEdited"] === true,
+        ...(typeof hit["rev"] === "number" ? { rev: hit["rev"] } : {}),
+        ...(typeof hit["updatedAt"] === "string" ? { updatedAt: hit["updatedAt"] } : {}),
+    };
+}
+
+function text(value: unknown): string {
+    return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
 }
 
 function toStringTimestamp(event: SnapshotEvent): Omit<SnapshotEvent, "occurredAt" | "metadata"> & { readonly occurredAt: string } {

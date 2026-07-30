@@ -21,6 +21,9 @@ import {
     DEFAULT_SIMILAR_TASK_LIMIT,
     EVENT_ORDER,
     MAX_EVENT_LIMIT,
+    MAX_SEARCH_LIMIT,
+    MAX_SEARCH_OFFSET,
+    MAX_SIMILAR_TASK_LIMIT,
     MAX_SUMMARY_EVENT_WINDOW,
     parseFindSimilarTasksArgs,
     parseGetTaskEventsArgs,
@@ -33,8 +36,7 @@ import {
     SUMMARY_EVENT_WINDOW,
 } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import { toSlimRule } from "./recipe.rule.view.js";
-import type { RecipeSearchClient } from "~agent-worker/domain/recipe/port/recipe.search.port.js";
-import { findSimilarTasks, searchEvents, searchRecipes } from "./recipe.search.js";
+import type { RecipeSearchPort } from "~agent-worker/domain/recipe/port/recipe.search.port.js";
 
 const AGENT_NAME = AGENT.recipeScan.id;
 
@@ -43,7 +45,7 @@ export interface RecipeToolDeps {
     readonly tasks: RecipeTaskReaderPort;
     readonly events: RecipeEventReaderPort;
     readonly rules: RecipeRuleReaderPort;
-    readonly search: RecipeSearchClient;
+    readonly search: RecipeSearchPort;
 }
 
 /** 사용자 범위와 실행 단위 근거 장부를 고정한 recipe 도구 핸들러를 만든다. */
@@ -121,36 +123,31 @@ export function buildRecipeToolHandlers(
             return telemetry(
                 RECIPE_SCAN_TOOL.searchEvents,
                 { q, taskId, kind, toolName, limit, offset },
-                async () =>
-                    dump(
-                        await searchEvents(
-                            deps.search,
-                            userId,
-                            {
-                                q,
-                                ...(taskId !== undefined ? { taskId } : {}),
-                                ...(kind !== undefined ? { kind } : {}),
-                                ...(toolName !== undefined ? { toolName } : {}),
-                            },
-                            limit ?? DEFAULT_SEARCH_LIMIT,
-                            offset ?? 0,
-                            ledger,
-                        ),
-                    ),
+                async () => {
+                    const page = await deps.search.searchEvents(userId, {
+                        q,
+                        ...(taskId !== undefined ? { taskId } : {}),
+                        ...(kind !== undefined ? { kind } : {}),
+                        ...(toolName !== undefined ? { toolName } : {}),
+                        limit: clampInt(limit, DEFAULT_SEARCH_LIMIT, 1, MAX_SEARCH_LIMIT),
+                        offset: clampInt(offset, 0, 0, MAX_SEARCH_OFFSET),
+                    });
+                    for (const event of page.events) {
+                        if (event.taskId !== "" && event.id !== "") ledger.recordEvents(event.taskId, [event]);
+                    }
+                    return dump(page);
+                },
             );
         },
 
         [RECIPE_SCAN_TOOL.findSimilarTasks]: async (raw) => {
             const { anchorTaskId, limit } = parseFindSimilarTasksArgs(raw);
             return telemetry(RECIPE_SCAN_TOOL.findSimilarTasks, { anchorTaskId, limit }, async () => {
-                const found = await findSimilarTasks(
-                    deps.search,
-                    userId,
-                    deps.tasks,
-                    anchorTaskId,
-                    limit ?? DEFAULT_SIMILAR_TASK_LIMIT,
-                );
-                return found === null ? notFound(anchorTaskId) : dump(found);
+                const anchor = await deps.tasks.findById(userId, anchorTaskId);
+                if (anchor === null) return notFound(anchorTaskId);
+                const size = clampInt(limit, DEFAULT_SIMILAR_TASK_LIMIT, 1, MAX_SIMILAR_TASK_LIMIT);
+                const found = await deps.search.searchTasks(userId, anchor.title, size + 1);
+                return dump(found.filter((task) => task.id !== anchorTaskId).slice(0, size));
             });
         },
 
@@ -171,9 +168,17 @@ export function buildRecipeToolHandlers(
 
         [RECIPE_SCAN_TOOL.searchRecipes]: async (raw) => {
             const { q, limit } = parseSearchRecipesArgs(raw);
-            return telemetry(RECIPE_SCAN_TOOL.searchRecipes, { q, limit }, async () =>
-                dump(await searchRecipes(deps.search, userId, q, limit ?? DEFAULT_SIMILAR_TASK_LIMIT, ledger)),
-            );
+            return telemetry(RECIPE_SCAN_TOOL.searchRecipes, { q, limit }, async () => {
+                const found = await deps.search.searchRecipes(
+                    userId,
+                    q,
+                    clampInt(limit, DEFAULT_SIMILAR_TASK_LIMIT, 1, MAX_SIMILAR_TASK_LIMIT),
+                );
+                for (const recipe of found) {
+                    if (recipe.rev !== undefined) ledger.recordRecipe(recipe.id, recipe.rev);
+                }
+                return dump(found);
+            });
         },
     };
 }

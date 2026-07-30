@@ -1,5 +1,6 @@
 import type { GeneratedJobStep } from "@tracer-agent/llm";
-import { In, type DataSource, type EntityManager } from "typeorm";
+import type { TracerApiWindow } from "@tracer-agent/tracer-client";
+import type { DataSource, EntityManager } from "typeorm";
 import { readAppSetting } from "~agent-worker/config/app.setting.reader.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
@@ -10,9 +11,8 @@ import {
     TypeOrmAiJobStepRepository,
 } from "~agent-worker/config/ledger/job.repository.js";
 import { TypeOrmAgentRunObservationRepository } from "~agent-worker/config/ledger/observation.repository.js";
-import { TaskEntity, TaskUserStateEntity } from "~agent-worker/config/ledger/tracer.entity.js";
-import type { RecipeIdGeneratorPort } from "~agent-worker/domain/recipe/port/recipe.id.generator.port.js";
 import type {
+    RecipeAnchorSnapshot,
     RecipeFailedAttempt,
     RecipeJobSnapshot,
     RecipeRepositoryPort,
@@ -20,13 +20,19 @@ import type {
 } from "~agent-worker/domain/recipe/port/recipe.repository.port.js";
 import { JobTransitionLostError, isJobTransitionLost } from "~agent-worker/support/job.const.js";
 import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
-import { persistRecipeCandidates } from "./recipe.candidate.persistence.js";
+import { wireObject, wireText } from "~agent-worker/support/wire.value.js";
 
-/** 레시피 슬라이스의 저장 포트를 잡 원장과 추적 읽기 모델로 구현한다. */
+/** 서버 자신의 에이전트가 만든 태스크를 나타내는 출처 값이며 앵커 자격에서 뺀다. */
+const SERVER_SDK_TASK_ORIGIN = "server-sdk";
+
+/** 스캔이 근거로 삼을 수 있는 태스크의 종결 상태다. */
+const COMPLETED_TASK_STATUS = "completed";
+
+/** 레시피 슬라이스의 저장 포트를 잡 원장과 추적 조회 창구로 구현한다. */
 export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
     constructor(
         private readonly dataSource: DataSource,
-        private readonly ids: RecipeIdGeneratorPort,
+        private readonly tracer: TracerApiWindow,
     ) {}
 
     private jobs(manager: EntityManager = this.dataSource.manager): TypeOrmAiJobRepository {
@@ -46,16 +52,15 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
         return jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES);
     }
 
-    async findAnchor(userId: string, taskId: string) {
-        const task = await this.dataSource.getRepository(TaskEntity).findOneBy({ userId, id: taskId });
+    async findAnchor(userId: string, taskId: string): Promise<RecipeAnchorSnapshot | null> {
+        const task = await this.findTask(userId, taskId);
         if (task === null) return null;
-        const state = await this.dataSource.getRepository(TaskUserStateEntity).findOneBy({ userId, taskId });
-        const visible = state?.hiddenAt === null || state === null;
-        const rootUserTask = task.origin !== "server-sdk" && task.parentTaskId === null;
+        const rootUserTask =
+            wireText(task["origin"]) !== SERVER_SDK_TASK_ORIGIN && wireText(task["parentTaskId"]) === null;
         return {
             ownedByUser: true,
-            scanEligible: visible && rootUserTask && task.status === "completed",
-            sessionScanEligible: visible && rootUserTask,
+            scanEligible: rootUserTask && wireText(task["status"]) === COMPLETED_TASK_STATUS,
+            sessionScanEligible: rootUserTask,
         };
     }
 
@@ -64,12 +69,8 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
     }
 
     async findOwnedTaskIds(userId: string, taskIds: readonly string[]): Promise<readonly string[]> {
-        if (taskIds.length === 0) return [];
-        const rows = await this.dataSource.getRepository(TaskEntity).find({
-            where: { userId, id: In([...taskIds]) },
-            select: { id: true },
-        });
-        return rows.map(({ id }) => id);
+        const found = await Promise.all(taskIds.map((taskId) => this.findTask(userId, taskId)));
+        return taskIds.filter((_taskId, position) => found[position] !== null);
     }
 
     async recordFailedAttempt(input: RecipeFailedAttempt): Promise<void> {
@@ -105,20 +106,17 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
                 const jobs = this.jobs(manager);
                 const job = await jobs.findById(input.jobId);
                 if (job === null || job.isTerminal()) throw new JobTransitionLostError(input.jobId);
-                const candidatesCreated = await persistRecipeCandidates(
-                    manager,
-                    { userId: input.userId, language: input.language, sourceJobId: job.id },
-                    input.recipes,
-                    input.now,
-                    this.ids,
-                );
                 await insertSteps(manager, job.id, input.userId, input.steps, input.attempt, input.now);
-                job.complete({ candidatesCreated, sourceTaskId: input.sourceTaskId }, input.usage, input.now);
+                job.complete(
+                    { candidatesCreated: input.candidatesCreated, sourceTaskId: input.sourceTaskId },
+                    input.usage,
+                    input.now,
+                );
                 if (!(await jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES))) {
                     throw new JobTransitionLostError(job.id);
                 }
                 await observations(manager).record(input.userId, input.observation, input.now);
-                return { candidatesCreated };
+                return { candidatesCreated: input.candidatesCreated };
             });
         } catch (error) {
             if (isJobTransitionLost(error)) return null;
@@ -142,6 +140,15 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
             if (isJobTransitionLost(error)) return null;
             throw error;
         }
+    }
+
+    private async findTask(userId: string, taskId: string): Promise<Record<string, unknown> | null> {
+        const found = await this.tracer.requestOrNull({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}`,
+            userId,
+        });
+        return found === null ? null : wireObject(wireObject(found)["task"]);
     }
 }
 

@@ -1,4 +1,5 @@
 import type { GeneratedJobStep } from "@tracer-agent/llm";
+import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import type { DataSource, EntityManager } from "typeorm";
 import { readAppSetting } from "~agent-worker/config/app.setting.reader.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
@@ -11,8 +12,8 @@ import {
     TypeOrmAiJobStepRepository,
 } from "~agent-worker/config/ledger/job.repository.js";
 import { TypeOrmAgentRunObservationRepository } from "~agent-worker/config/ledger/observation.repository.js";
-import { TaskEntity, TurnEntity } from "~agent-worker/config/ledger/tracer.entity.js";
 import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
+import { wireItems, wireNumber, wireObject, wireText } from "~agent-worker/support/wire.value.js";
 import { buildTitleContext } from "~agent-worker/domain/title/model/title.context.model.js";
 import type {
     TitleFailedAttempt,
@@ -22,9 +23,12 @@ import type {
     TitleTaskContext,
 } from "~agent-worker/domain/title/port/title.repository.port.js";
 
-/** 이 슬라이스의 저장 포트를 잡 원장과 추적 읽기 모델로 구현한다. */
+/** 이 슬라이스의 저장 포트를 잡 원장과 추적 조회 창구로 구현한다. */
 export class TitleRepositoryAdapter implements TitleRepositoryPort {
-    constructor(private readonly dataSource: DataSource) {}
+    constructor(
+        private readonly dataSource: DataSource,
+        private readonly tracer: TracerApiWindow,
+    ) {}
 
     private jobs(manager: EntityManager = this.dataSource.manager): TypeOrmAiJobRepository {
         return new TypeOrmAiJobRepository(manager.getRepository(AiJobEntity));
@@ -44,24 +48,39 @@ export class TitleRepositoryAdapter implements TitleRepositoryPort {
     }
 
     async findTaskContext(userId: string, taskId: string): Promise<TitleTaskContext | null> {
-        const task = await this.dataSource.getRepository(TaskEntity).findOne({ where: { userId, id: taskId } });
-        if (task === null) return null;
+        const detail = await this.tracer.requestOrNull({
+            method: "GET",
+            path: `/api/v1/tasks/${encodeURIComponent(taskId)}`,
+            userId,
+        });
+        if (detail === null) return null;
+        const task = wireObject(wireObject(detail)["task"]);
+        const workspacePath = wireText(task["workspacePath"]);
 
-        const turnRepo = this.dataSource.getRepository(TurnEntity);
-        const [totalEventCount, turns] = await Promise.all([
-            this.countEvents(userId, taskId),
-            turnRepo.find({ where: { userId, taskId }, order: { turnIndex: "ASC" } }),
+        const [timeline, turnPage] = await Promise.all([
+            this.tracer.request({
+                method: "GET",
+                path: `/api/v1/tasks/${encodeURIComponent(taskId)}/timeline`,
+                userId,
+                query: { order: "asc", limit: 1 },
+            }),
+            this.tracer.request({
+                method: "GET",
+                path: `/api/v1/tasks/${encodeURIComponent(taskId)}/turns`,
+                userId,
+            }),
         ]);
+        const totalEventCount = wireNumber(wireObject(timeline)["total"]) ?? 0;
         const context = buildTitleContext(
             {
-                title: task.title,
-                status: task.status,
-                ...(task.workspacePath !== null ? { workspacePath: task.workspacePath } : {}),
+                title: wireText(task["title"]) ?? "",
+                status: wireText(task["status"]) ?? "",
+                ...(workspacePath !== null ? { workspacePath } : {}),
             },
-            turns.map((turn) => ({
-                turnIndex: turn.turnIndex,
-                askedText: turn.askedText ?? "",
-                assistantText: turn.assistantText,
+            wireItems(turnPage).map((turn) => ({
+                turnIndex: wireNumber(turn["turnIndex"]) ?? 0,
+                askedText: wireText(turn["askedText"]) ?? "",
+                assistantText: wireText(turn["assistantText"]),
             })),
             totalEventCount,
         );
@@ -148,15 +167,6 @@ export class TitleRepositoryAdapter implements TitleRepositoryPort {
         }
     }
 
-    private async countEvents(userId: string, taskId: string): Promise<number> {
-        const rows: unknown = await this.dataSource.query(
-            `SELECT COUNT(*)::int AS count FROM events WHERE user_id = $1 AND task_id = $2`,
-            [userId, taskId],
-        );
-        if (!Array.isArray(rows) || rows.length === 0) return 0;
-        const count = (rows[0] as { readonly count?: unknown }).count;
-        return typeof count === "number" ? count : 0;
-    }
 }
 
 function toSnapshot(job: AiJobEntity): TitleJobSnapshot {

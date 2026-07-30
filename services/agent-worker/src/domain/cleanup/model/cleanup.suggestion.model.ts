@@ -1,13 +1,10 @@
 import type { CleanupCandidate } from "./cleanup.candidate.model.js";
 import type { CleanupSuggestionPayload } from "./cleanup.suggestion.schema.js";
 
-/** 저장 가능한 형태로 조립된 보관 제안이다. */
+/** 산출물 창구로 보낼 수 있는 형태로 조립된 보관 제안이며 식별자와 대조할 값은 창구가 정한다. */
 export interface GeneratedCleanupSuggestion {
-    readonly id: string;
     readonly taskId: string;
     readonly rationale: string;
-    /** 제안을 만들 때 서버가 관찰한 대상 태스크의 마지막 이벤트 시각이다. */
-    readonly observedLastEventAt: string | null;
 }
 
 /** 후보 목록에 없는 태스크 인용과 같은 태스크의 중복 제안을 걷어낸다. */
@@ -15,7 +12,6 @@ export function assembleCleanupSuggestions(
     suggestions: readonly CleanupSuggestionPayload[],
     candidates: readonly CleanupCandidate[],
     maxSuggestions: number,
-    nextId: () => string,
 ): readonly GeneratedCleanupSuggestion[] {
     const candidatesById = new Map(candidates.map((candidate) => [candidate.id, candidate] as const));
     const seen = new Set<string>();
@@ -25,12 +21,7 @@ export function assembleCleanupSuggestions(
         const candidate = candidatesById.get(suggestion.taskId);
         if (candidate === undefined || seen.has(suggestion.taskId)) continue;
         seen.add(suggestion.taskId);
-        assembled.push({
-            id: nextId(),
-            taskId: suggestion.taskId,
-            rationale: suggestion.rationale,
-            observedLastEventAt: candidate.lastEventAt,
-        });
+        assembled.push({ taskId: suggestion.taskId, rationale: suggestion.rationale });
     }
     return assembled;
 }

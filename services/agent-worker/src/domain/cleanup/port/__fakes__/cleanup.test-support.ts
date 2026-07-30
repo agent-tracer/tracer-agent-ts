@@ -9,6 +9,10 @@ import type {
 import type { CleanupIdGeneratorPort } from "~agent-worker/domain/cleanup/port/cleanup.id.generator.port.js";
 import type { CleanupNotificationPort } from "~agent-worker/domain/cleanup/port/cleanup.notification.port.js";
 import type {
+    CleanupOutputPort,
+    CleanupSuggestionBatch,
+} from "~agent-worker/domain/cleanup/port/cleanup.output.port.js";
+import type {
     CleanupCommit,
     CleanupFailedAttempt,
     CleanupJobSnapshot,
@@ -132,13 +136,29 @@ export class InMemoryCleanupRepository implements CleanupRepositoryPort {
     async commitCleanup(input: CleanupCommit): Promise<{ readonly suggestionsCreated: number } | null> {
         if (!this.commitWins) return null;
         this.commits.push(input);
-        return { suggestionsCreated: input.suggestions.length };
+        return { suggestionsCreated: input.suggestionsCreated };
     }
 
     async failJob(jobId: string, message: string): Promise<CleanupJobSnapshot | null> {
         if (this.job === null || this.job.id !== jobId) return null;
         this.failures.push({ jobId, message });
         return this.job;
+    }
+}
+
+/** 산출물 창구를 메모리로 구현한 테스트 대역이며 같은 실행 식별자를 두 번 받으면 앞의 수를 낸다. */
+export class InMemoryCleanupOutput implements CleanupOutputPort {
+    readonly batches: CleanupSuggestionBatch[] = [];
+    failure: Error | null = null;
+    private readonly createdByJob = new Map<string, number>();
+
+    async createSuggestions(batch: CleanupSuggestionBatch): Promise<number> {
+        if (this.failure !== null) throw this.failure;
+        const seen = this.createdByJob.get(batch.jobId);
+        if (seen !== undefined) return seen;
+        this.batches.push(batch);
+        this.createdByJob.set(batch.jobId, batch.suggestions.length);
+        return batch.suggestions.length;
     }
 }
 

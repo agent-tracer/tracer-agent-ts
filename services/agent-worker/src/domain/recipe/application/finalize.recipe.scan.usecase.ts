@@ -10,6 +10,7 @@ import {
     type GeneratedRecipeCandidate,
 } from "../model/recipe.candidate.model.js";
 import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
+import type { RecipeOutputPort } from "../port/recipe.output.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 
@@ -27,21 +28,28 @@ export interface RecipeScanFinalizeInput {
     readonly output: RecipeScanFinalizeOutput;
 }
 
-/** 후보 저장과 잡 종결을 한 커밋으로 묶고 결과를 알린다. */
+/** 후보를 산출물 창구에 맡긴 뒤 잡 원장을 종결하고 결과를 알린다. */
 export class FinalizeRecipeScanUsecase {
     constructor(
         private readonly repository: RecipeRepositoryPort,
+        private readonly output: RecipeOutputPort,
         private readonly notification: RecipeNotificationPort,
         private readonly clock: IClock,
     ) {}
 
     async execute(input: RecipeScanFinalizeInput): Promise<void> {
+        // 산출물이 먼저 자리를 잡아야 재시도가 잡 종결 뒤에 후보를 잃지 않는다.
+        const candidatesCreated = await this.output.createCandidates({
+            userId: input.userId,
+            language: input.language,
+            sourceJobId: input.jobId,
+            recipes: input.output.recipes,
+        });
         const settled = await this.repository.commitScan({
             jobId: input.jobId,
             userId: input.userId,
             sourceTaskId: input.sourceTaskId,
-            language: input.language,
-            recipes: input.output.recipes,
+            candidatesCreated,
             steps: input.output.jobSteps,
             attempt: input.output.attempt,
             usage: buildJobUsage(input.output),
