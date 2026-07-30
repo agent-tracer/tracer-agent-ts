@@ -37,6 +37,7 @@ export class PromptFragmentVersionEntity {
 @Entity({ name: "prompt_fragment_bindings" })
 export class PromptFragmentBindingEntity {
     @PrimaryColumn({ type: "text" }) id!: string;
+    @Column({ type: "text" }) backend!: PromptBackend;
     @Column({ name: "template_key", type: "text" }) templateKey!: string;
     @Column({ name: "fragment_slot", type: "text" }) fragmentSlot!: string;
     @Column({ name: "definition_id", type: "text" }) definitionId!: string;

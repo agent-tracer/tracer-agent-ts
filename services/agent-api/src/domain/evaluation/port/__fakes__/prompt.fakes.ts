@@ -4,7 +4,7 @@ import type {
 } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
 import {
     newFragmentBinding, newFragmentChannel, newFragmentDefinition, newFragmentVersion, promptFragmentChannel,
-    resolveFragment, SEEDED_FRAGMENT_CHANNEL,
+    resolveFragment,
 } from "~agent-api/domain/evaluation/model/prompt.fragment.policy.js";
 import type {
     PromptBackend, PromptChannel, PromptChannelAssignment, PromptDefinition, PromptPromotion, PromptVersion,
@@ -102,16 +102,28 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
         const index = this.fragmentChannels.findIndex((item) => item.definitionId === input.channel.definitionId && item.channel === input.channel.channel);
         if (index < 0) this.fragmentChannels.push(input.channel); else this.fragmentChannels[index] = input.channel;
     }
+    async findFragmentVersion(definitionId: string, versionId: string): Promise<PromptFragmentVersion | null> {
+        return this.fragmentVersions.find((item) => item.id === versionId && item.definitionId === definitionId) ?? null;
+    }
+    async findFragmentChannel(definitionId: string, channel: PromptChannel): Promise<PromptFragmentChannelAssignment | null> {
+        return this.fragmentChannels.find((item) => item.definitionId === definitionId && item.channel === channel) ?? null;
+    }
+    async saveFragmentChannel(channel: PromptFragmentChannelAssignment): Promise<void> {
+        const index = this.fragmentChannels.findIndex((item) => item.definitionId === channel.definitionId && item.channel === channel.channel);
+        if (index < 0) this.fragmentChannels.push(channel); else this.fragmentChannels[index] = channel;
+    }
     private registerManifestEntry(entry: PromptFragmentManifestEntry, channel: PromptChannel): readonly ResolvedPromptFragment[] {
         const definition = this.ensureFragmentDefinition(entry);
         const seed = this.ensureFragmentVersion(entry, definition.id);
         for (const binding of entry.bindings) this.ensureFragmentBinding(entry, binding, definition.id);
-        this.ensureFragmentChannel(definition.id, seed.id);
+        this.ensureFragmentChannel(definition.id, channel, seed.id);
         const selected = this.selectFragmentVersion(definition.id, channel);
         return selected === null ? [] : entry.bindings.map((binding) => resolveFragment(binding, definition, selected));
     }
     private ensureFragmentDefinition(entry: PromptFragmentManifestEntry): PromptFragmentDefinition {
-        const found = this.fragmentDefinitions.find((item) => item.definitionKey === entry.definitionKey);
+        const found = this.fragmentDefinitions.find(
+            (item) => item.backend === entry.backend && item.definitionKey === entry.definitionKey,
+        );
         if (found) return found;
         const created = newFragmentDefinition(entry, this.fragmentIds.next("declared-fragment"), FRAGMENT_EPOCH);
         this.fragmentDefinitions.push(created);
@@ -127,12 +139,13 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
         return created;
     }
     private ensureFragmentBinding(entry: PromptFragmentManifestEntry, binding: PromptFragmentManifestBinding, definitionId: string): void {
-        if (this.fragmentBindings.some((item) => item.templateKey === binding.templateKey && item.fragmentSlot === binding.fragmentSlot)) return;
+        if (this.fragmentBindings.some((item) => item.backend === entry.backend
+            && item.templateKey === binding.templateKey && item.fragmentSlot === binding.fragmentSlot)) return;
         this.fragmentBindings.push(newFragmentBinding(entry, binding, this.fragmentIds.next("declared-fragment-binding"), definitionId, FRAGMENT_EPOCH));
     }
-    private ensureFragmentChannel(definitionId: string, versionId: string): void {
-        if (this.fragmentChannels.some((item) => item.definitionId === definitionId)) return;
-        this.fragmentChannels.push(newFragmentChannel(this.fragmentIds.next("declared-fragment-channel"), definitionId, SEEDED_FRAGMENT_CHANNEL, versionId, FRAGMENT_EPOCH));
+    private ensureFragmentChannel(definitionId: string, channel: PromptChannel, versionId: string): void {
+        if (this.fragmentChannels.some((item) => item.definitionId === definitionId && item.channel === channel)) return;
+        this.fragmentChannels.push(newFragmentChannel(this.fragmentIds.next("declared-fragment-channel"), definitionId, channel, versionId, FRAGMENT_EPOCH));
     }
     private selectFragmentVersion(definitionId: string, channel: PromptChannel): PromptFragmentVersion | null {
         const assignment = this.fragmentChannels.find(

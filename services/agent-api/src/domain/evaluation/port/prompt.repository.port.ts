@@ -34,4 +34,7 @@ export interface PromptRepositoryPort {
     saveCandidateFragmentVersion(input: {
         version: PromptFragmentVersion; channel: PromptFragmentChannelAssignment;
     }): Promise<void>;
+    findFragmentVersion(definitionId: string, versionId: string): Promise<PromptFragmentVersion | null>;
+    findFragmentChannel(definitionId: string, channel: PromptChannel): Promise<PromptFragmentChannelAssignment | null>;
+    saveFragmentChannel(channel: PromptFragmentChannelAssignment): Promise<void>;
 }

@@ -6,9 +6,9 @@ import { RegisterCandidateFragmentVersionUseCase } from "./register.candidate.fr
 
 const SCOPE = { backend: "claude-sdk", agentName: "chat", fragmentName: "role", language: "en" } as const;
 const MANIFEST: readonly PromptFragmentManifestEntry[] = [{
-    ...SCOPE, codeName: "SDK_ROLE", definitionKey: "sdk.chat.role.en", defaultVersion: "v1",
+    ...SCOPE, codeName: "CHAT_ROLE", definitionKey: "chat.role.en", defaultVersion: "v1",
     defaultContent: "코드가 정한 ${name}", toolContractVersion: "1", outputSchemaVersion: "1",
-    bindings: [{ templateKey: "sdk.chat", fragmentSlot: "role" }],
+    bindings: [{ templateKey: "chat", fragmentSlot: "role" }],
 }];
 
 async function declared() {
@@ -45,7 +45,7 @@ describe("RegisterCandidateFragmentVersionUseCase", () => {
             .execute({ ...SCOPE, content: "본문", changeSummary: null, createdBy: "u" });
         const definition = repository.fragmentDefinitions.find((item) => item.id === definitionId);
         const version = repository.fragmentVersions.find((item) => item.id === versionId);
-        expect(definition?.definitionKey).toBe("sdk.chat.role.en");
+        expect(definition?.definitionKey).toBe("chat.role.en");
         expect(version?.toolContractVersion).toBe("1");
         expect(version?.outputSchemaVersion).toBe("1");
     });

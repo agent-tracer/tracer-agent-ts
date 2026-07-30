@@ -1,5 +1,5 @@
 import { computePromptFragmentHash, extractPromptFragmentPlaceholders, type ResolvedPromptFragment } from "@tracer-agent/llm";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { CHAT_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/chat/model/chat.prompt.fragments.js";
 import { initializeChatPromptFragments } from "./chat.prompt.fragment.bootstrap.js";
 import { ChatPromptFragmentSnapshot } from "./chat.prompt.fragment.snapshot.js";
@@ -23,8 +23,6 @@ const RESOLVED: readonly ResolvedPromptFragment[] = CHAT_PROMPT_FRAGMENT_MANIFES
     })),
 );
 
-afterEach(() => vi.restoreAllMocks());
-
 describe("initializeChatPromptFragments", () => {
     it("창구가 낸 판으로 스냅샷을 세운다", async () => {
         const snapshot = new ChatPromptFragmentSnapshot();
@@ -32,22 +30,28 @@ describe("initializeChatPromptFragments", () => {
         expect(snapshot.read()).toHaveLength(RESOLVED.length);
     });
 
-    it("창구에 닿지 못하면 파일 기본값으로 돌고 경고를 남긴다", async () => {
-        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    it("창구에 닿지 못하면 부팅을 멈춘다", async () => {
         const snapshot = new ChatPromptFragmentSnapshot();
-        await initializeChatPromptFragments(snapshot, {
+        await expect(initializeChatPromptFragments(snapshot, {
             registerAndResolve: () => Promise.reject(new Error("the prompt fragment registry answered 404")),
-        }, "local");
+        }, "local")).rejects.toThrow();
         expect(snapshot.read()).toHaveLength(0);
-        expect(String(written.mock.calls[0]?.[0])).toContain("\"msg\":\"agent.prompt.fallback\"");
     });
 
-    it("빠진 조각이 있으면 파일 기본값으로 돈다", async () => {
-        vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    it("빠진 조각이 있으면 부팅을 멈춘다", async () => {
         const snapshot = new ChatPromptFragmentSnapshot();
-        await initializeChatPromptFragments(snapshot, {
+        await expect(initializeChatPromptFragments(snapshot, {
             registerAndResolve: async () => RESOLVED.slice(1),
-        }, "local");
+        }, "local")).rejects.toThrow("chat.prompt-fragment.incomplete-resolution");
         expect(snapshot.read()).toHaveLength(0);
+    });
+
+    it("판의 해시가 어긋나면 부팅을 멈춘다", async () => {
+        const snapshot = new ChatPromptFragmentSnapshot();
+        const drifted = RESOLVED.map((fragment, index) =>
+            index === 0 ? { ...fragment, content: `${fragment.content} 어긋난 판` } : fragment);
+        await expect(initializeChatPromptFragments(snapshot, {
+            registerAndResolve: async () => drifted,
+        }, "local")).rejects.toThrow("chat.prompt-fragment.hash-mismatch");
     });
 });

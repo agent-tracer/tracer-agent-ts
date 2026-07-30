@@ -15,7 +15,7 @@ describe("ExportSftUseCase", () => {
         repository.seedExecutions("experiment-1", [{
             id: "execution-1",
             exampleId: "example-1",
-            variantId: "sdk.candidate",
+            variantId: "candidate",
             status: "succeeded",
             output: { answer: "결과" },
         }]);

@@ -13,7 +13,7 @@ describe("ExportDpoUseCase", () => {
             status: "completed",
         });
         repository.seedExecutions("experiment-1", [
-            { id: "high", exampleId: "example-1", variantId: "sdk.candidate", status: "succeeded", output: { answer: "좋음" } },
+            { id: "high", exampleId: "example-1", variantId: "candidate", status: "succeeded", output: { answer: "좋음" } },
             { id: "low", exampleId: "example-1", variantId: "lan.candidate", status: "succeeded", output: { answer: "나쁨" } },
         ]);
         repository.seedScores("high", [{ score: 1 }]);

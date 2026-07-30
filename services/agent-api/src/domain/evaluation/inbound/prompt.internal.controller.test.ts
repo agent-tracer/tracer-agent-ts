@@ -7,10 +7,10 @@ import { registerAndResolvePromptFragmentsSchema, registerPythonPromptSchema } f
 const MANIFEST_BODY = {
     profile: "local",
     manifest: [{
-        backend: "claude-sdk", agentName: "chat", language: "en", codeName: "SDK_CHAT_MEMORY_RULE",
-        definitionKey: "sdk.chat.memory-rule.en", fragmentName: "memoryRule", defaultVersion: "v1",
+        backend: "claude-sdk", agentName: "chat", language: "en", codeName: "CHAT_MEMORY_RULE",
+        definitionKey: "chat.memory-rule.en", fragmentName: "memoryRule", defaultVersion: "v1",
         defaultContent: "Save only stable preferences.", toolContractVersion: "1", outputSchemaVersion: "1",
-        bindings: [{ templateKey: "sdk.chat.assistant.system", fragmentSlot: "memoryRule" }],
+        bindings: [{ templateKey: "chat.assistant.system", fragmentSlot: "memoryRule" }],
     }],
 };
 

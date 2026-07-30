@@ -25,6 +25,7 @@ import { CreatePromptUseCase } from "~agent-api/domain/evaluation/application/co
 import { CreatePromptVersionUseCase } from "~agent-api/domain/evaluation/application/command/create.prompt.version.usecase.js";
 import { PromotePromptUseCase } from "~agent-api/domain/evaluation/application/command/promote.prompt.usecase.js";
 import { RegisterAndResolvePromptFragmentsUseCase } from "~agent-api/domain/evaluation/application/command/register.and.resolve.prompt.fragments.usecase.js";
+import { PromotePromptFragmentUseCase } from "~agent-api/domain/evaluation/application/command/promote.prompt.fragment.usecase.js";
 import { RegisterCandidateFragmentVersionUseCase } from "~agent-api/domain/evaluation/application/command/register.candidate.fragment.version.usecase.js";
 import { RegisterPythonPromptUseCase } from "~agent-api/domain/evaluation/application/command/register.python.prompt.usecase.js";
 import { RollbackPromptChannelUseCase } from "~agent-api/domain/evaluation/application/command/rollback.prompt.channel.usecase.js";
@@ -96,6 +97,7 @@ const useCases = [
     PromotePromptUseCase,
     RegisterAndResolvePromptFragmentsUseCase,
     RegisterCandidateFragmentVersionUseCase,
+    PromotePromptFragmentUseCase,
     RegisterPythonPromptUseCase,
     RollbackPromptChannelUseCase,
     GetPromptChannelsUseCase,

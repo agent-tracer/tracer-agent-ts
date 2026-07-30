@@ -6,12 +6,17 @@ import {
 } from "~agent-api/domain/evaluation/model/prompt.fragment.model.js";
 import type { PromptChannel } from "~agent-api/domain/evaluation/model/prompt.model.js";
 
-/** 부팅 등록이 심는 채널이다. */
-export const SEEDED_FRAGMENT_CHANNEL: PromptChannel = "production";
+/** 배포 프로파일마다 실행에 쓰는 조각 채널이며 값은 계약의 조각 레지스트리 선언이 소유한다. */
+export const PROFILE_FRAGMENT_CHANNELS: Readonly<Record<string, PromptChannel>> = {
+    local: "staging",
+    prd: "production",
+};
 
-/** 배포 프로파일이 해소에 쓰는 채널이며 어느 이름이든 production을 본다. */
-export function promptFragmentChannel(_profile: string): PromptChannel {
-    return "production";
+/** 이 배포가 실행에 쓸 조각 채널이며 선언되지 않은 프로파일은 거절한다. */
+export function promptFragmentChannel(profile: string): PromptChannel {
+    const channel = PROFILE_FRAGMENT_CHANNELS[profile];
+    if (channel === undefined) throw new Error(`prompt-fragment.unknown-profile:${profile}`);
+    return channel;
 }
 
 const CANDIDATE_VERSION = /^candidate-(\d+)$/u;
@@ -70,8 +75,8 @@ export function newFragmentVersion(entry: PromptFragmentManifestEntry, id: strin
 export function newFragmentBinding(entry: PromptFragmentManifestEntry, binding: PromptFragmentManifestBinding,
     id: string, definitionId: string, now: Date): PromptFragmentBinding {
     return Object.assign(new PromptFragmentBinding(), {
-        id, templateKey: binding.templateKey, fragmentSlot: binding.fragmentSlot, definitionId,
-        codeDefaultVersion: entry.defaultVersion, createdAt: now, updatedAt: now,
+        id, backend: entry.backend, templateKey: binding.templateKey, fragmentSlot: binding.fragmentSlot,
+        definitionId, codeDefaultVersion: entry.defaultVersion, createdAt: now, updatedAt: now,
     });
 }
 

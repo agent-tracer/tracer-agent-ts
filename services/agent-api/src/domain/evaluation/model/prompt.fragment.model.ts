@@ -34,6 +34,7 @@ export class PromptFragmentVersion {
 
 export class PromptFragmentBinding {
     id!: string;
+    backend!: PromptBackend;
     templateKey!: string;
     fragmentSlot!: string;
     definitionId!: string;
