@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { requiredJobNotificationFields } from "~agent-worker/support/contract.js";
 import { OUTPUT_LANGUAGE } from "~agent-worker/support/output.language.js";
 import { JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { RECIPE_SCAN_TRIGGER, RECIPE_SETTING_KEY } from "../model/recipe.const.js";
@@ -42,6 +43,9 @@ describe("PrepareRecipeScanUsecase", () => {
         });
         expect(repository.started).toEqual(["job-1"]);
         expect(notification.published[0]?.payload["status"]).toBe(JOB_STATUS.running);
+        expect(Object.keys(notification.published[0]?.payload ?? {})).toEqual(
+            expect.arrayContaining(requiredJobNotificationFields()),
+        );
     });
 
     it("지원하지 않는 출력 언어는 auto로 정규화한다", async () => {

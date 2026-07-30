@@ -1,6 +1,6 @@
 import type { IClock } from "@tracer-agent/platform";
 import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
-import { JOB_STATUS } from "~agent-worker/support/job.const.js";
+import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { TITLE_SETTING_KEY } from "~agent-worker/domain/title/model/title.const.js";
 import {
     JobAlreadySettledError,
@@ -46,6 +46,7 @@ export class PrepareTitleSuggestionUsecase {
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
         await this.notification.jobUpdated(job.userId, {
             jobId: job.id,
+            kind: JOB_KIND.titleSuggestion,
             status: JOB_STATUS.running,
             taskId: input.taskId,
         });

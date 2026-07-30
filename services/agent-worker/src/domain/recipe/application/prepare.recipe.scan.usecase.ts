@@ -1,7 +1,7 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import { normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
-import { JOB_STATUS } from "~agent-worker/support/job.const.js";
+import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { RECIPE_SCAN_TRIGGER, RECIPE_SETTING_KEY, type RecipeScanTrigger } from "../model/recipe.const.js";
 import {
     JobAlreadySettledError,
@@ -60,6 +60,7 @@ export class PrepareRecipeScanUsecase {
         }
         await this.notification.jobUpdated(job.userId, {
             jobId: job.id,
+            kind: JOB_KIND.recipeScan,
             status: JOB_STATUS.running,
             taskId: input.taskId,
         });

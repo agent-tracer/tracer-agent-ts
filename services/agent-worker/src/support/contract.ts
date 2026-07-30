@@ -73,3 +73,11 @@ export function readNotificationTopic(): NotificationTopicDeclaration {
     return readContractJson<{ readonly notifications: NotificationTopicDeclaration }>("wire/topics.json")
         .notifications;
 }
+
+/** 잡 갱신 알림이 반드시 실어야 한다고 계약이 적은 칸이다. */
+export function requiredJobNotificationFields(): string[] {
+    const { payload } = readNotificationTopic().types.jobUpdated;
+    return Object.entries(payload)
+        .filter(([, rule]) => rule.required)
+        .map(([field]) => field);
+}

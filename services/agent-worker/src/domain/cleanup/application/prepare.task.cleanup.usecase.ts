@@ -1,7 +1,7 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import { normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
-import { JOB_STATUS } from "~agent-worker/support/job.const.js";
+import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { clampInt } from "~agent-worker/support/clamp.js";
 import { buildCleanupCandidates, type CleanupCandidate } from "../model/cleanup.candidate.model.js";
 import { CLEANUP_SETTING_KEY } from "../model/cleanup.const.js";
@@ -51,7 +51,11 @@ export class PrepareTaskCleanupUsecase {
 
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
-        await this.notification.jobUpdated(job.userId, { jobId: job.id, status: JOB_STATUS.running });
+        await this.notification.jobUpdated(job.userId, {
+            jobId: job.id,
+            kind: JOB_KIND.taskCleanup,
+            status: JOB_STATUS.running,
+        });
 
         if (this.agent.requiresLocalApiKey()) {
             const apiKey = await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.anthropicApiKey);
