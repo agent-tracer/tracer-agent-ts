@@ -50,6 +50,18 @@ export interface JobUsageModelRule {
     readonly rateKey: string;
 }
 
+/** 계약이 끝내지 못한 잡의 usage 한 칸에 못 박은 모양이다. */
+export interface JobFailedUsageRule {
+    readonly shape: string;
+    readonly fields: readonly string[];
+}
+
+export function readJobFailedUsageRule(): JobFailedUsageRule {
+    return readContractJson<{
+        readonly response: { readonly usage: { readonly failed: JobFailedUsageRule } };
+    }>("conformance/cases/job.intake.json").response.usage.failed;
+}
+
 export function readJobUsageModelRule(): JobUsageModelRule {
     return readContractJson<{ readonly response: { readonly usage: { readonly model: JobUsageModelRule } } }>(
         "conformance/cases/job.intake.json",
