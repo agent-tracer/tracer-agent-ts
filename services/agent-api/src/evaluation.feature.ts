@@ -61,6 +61,7 @@ import { SuggestDatasetCandidatesUseCase } from "~agent-api/domain/evaluation/ap
 import { EvaluationCandidateController } from "~agent-api/domain/evaluation/inbound/evaluation.candidate.controller.js";
 import { EvaluationDatasetController } from "~agent-api/domain/evaluation/inbound/evaluation.dataset.controller.js";
 import { EvaluationEvaluatorController } from "~agent-api/domain/evaluation/inbound/evaluation.evaluator.controller.js";
+import { EvaluationExperimentController } from "~agent-api/domain/evaluation/inbound/evaluation.experiment.controller.js";
 import { EVALUATION_CLOCK } from "~agent-api/domain/evaluation/port/clock.port.js";
 import { EVALUATION_REPOSITORY } from "~agent-api/domain/evaluation/port/evaluation.repository.port.js";
 import { EVALUATION_EXECUTION_READER } from "~agent-api/domain/evaluation/port/execution.reader.port.js";
@@ -107,7 +108,15 @@ const useCases = [
 
 /** 평가 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
 export const evaluationFeature = {
-    controllers: [EvaluationDatasetController, EvaluationEvaluatorController, EvaluationCandidateController, PromptController, PromptFragmentController, PromptInternalController],
+    controllers: [
+        EvaluationDatasetController,
+        EvaluationEvaluatorController,
+        EvaluationCandidateController,
+        EvaluationExperimentController,
+        PromptController,
+        PromptFragmentController,
+        PromptInternalController,
+    ],
     providers: [
         ...useCases,
         EvaluationUlidGenerator,

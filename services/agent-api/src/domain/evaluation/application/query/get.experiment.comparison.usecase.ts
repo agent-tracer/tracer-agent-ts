@@ -6,11 +6,16 @@ import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api
 export class GetExperimentComparisonUseCase {
     constructor(@Inject(EXPERIMENT_REPOSITORY) private readonly repository: ExperimentRepositoryPort) {}
     async execute(userId: string, id: string) {
-        if (await this.repository.findExperiment(userId, id) === null) throw new Error("Experiment not found");
-        return compareExperiment(
-            await this.repository.listVariants(userId, id),
-            await this.repository.listExecutions(userId, id),
-            await this.repository.listScores(userId, id),
-        );
+        const experiment = await this.repository.findExperiment(userId, id);
+        if (experiment === null) throw new Error("Experiment not found");
+        return {
+            experimentId: experiment.id,
+            status: experiment.status,
+            variants: compareExperiment(
+                await this.repository.listVariants(userId, id),
+                await this.repository.listExecutions(userId, id),
+                await this.repository.listScores(userId, id),
+            ),
+        };
     }
 }

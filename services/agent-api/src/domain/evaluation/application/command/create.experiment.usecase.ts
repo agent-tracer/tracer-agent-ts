@@ -18,9 +18,9 @@ export interface CreateExperimentInput {
     readonly repetitions: number;
     readonly variants: readonly {
         readonly name: string; readonly baseline: boolean; readonly backend: PromptBackend;
-        readonly agentName: string; readonly promptVersionId?: string; readonly toolContractVersion: string;
-        readonly limits?: Readonly<Record<string, unknown>>;
-        readonly fragmentSelections?: Readonly<Record<string, string>>;
+        readonly agentName: string; readonly promptVersionId?: string | undefined; readonly toolContractVersion: string;
+        readonly limits?: Readonly<Record<string, unknown>> | undefined;
+        readonly fragmentSelections?: Readonly<Record<string, string>> | undefined;
     }[];
 }
 

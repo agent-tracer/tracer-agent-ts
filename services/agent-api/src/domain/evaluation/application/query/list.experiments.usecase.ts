@@ -4,7 +4,7 @@ import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api
 @Injectable()
 export class ListExperimentsUseCase {
     constructor(@Inject(EXPERIMENT_REPOSITORY) private readonly repository: ExperimentRepositoryPort) {}
-    execute(userId: string) {
-        return this.repository.listExperiments(userId);
+    async execute(userId: string) {
+        return { experiments: await this.repository.listExperiments(userId) };
     }
 }
