@@ -28,6 +28,8 @@ import { JOB_REPOSITORY } from "~agent-api/domain/job/port/job.repository.port.j
 import { JOB_STATUS_NOTIFIER } from "~agent-api/domain/job/port/job.status.notifier.port.js";
 import { JOB_STEP_REPOSITORY } from "~agent-api/domain/job/port/job.step.repository.port.js";
 import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.js";
+import { TracerApiWindow } from "@tracer-agent/tracer-client";
+import { TRACER_API_WINDOW } from "~agent-api/config/tracer.api.token.js";
 import { RULE_ANCHOR_READER } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
 import { JOB_SETTING_READER } from "~agent-api/domain/job/port/setting.reader.port.js";
 import { SETTING_REPOSITORY } from "~agent-api/domain/settings/port/setting.repository.port.js";
@@ -52,6 +54,10 @@ export const jobFeature = {
         StructuredJobEventLogAdapter,
         { provide: JOB_EVENT_LOG, useExisting: StructuredJobEventLogAdapter },
         { provide: JOB_SETTING_READER, useExisting: SETTING_REPOSITORY },
+        {
+            provide: TRACER_API_WINDOW,
+            useFactory: (): TracerApiWindow => new TracerApiWindow(resolveTracerApiBaseUrl()),
+        },
         RuleAnchorReaderAdapter,
         { provide: RULE_ANCHOR_READER, useExisting: RuleAnchorReaderAdapter },
         { provide: JOB_CLOCK, useClass: SystemClock },
@@ -74,3 +80,8 @@ export const jobFeature = {
 
 /** 잡 원장의 표를 비추는 엔티티다. */
 export const JOB_ENTITIES = [JobEntity, JobStepEntity] as const;
+
+/** 접수가 근거 이벤트를 확인하러 부르는 추적 API의 기점이다. */
+function resolveTracerApiBaseUrl(): string {
+    return process.env["TRACER_API_URL"] ?? "http://127.0.0.1:3902";
+}

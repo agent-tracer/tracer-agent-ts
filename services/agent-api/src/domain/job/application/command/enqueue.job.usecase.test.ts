@@ -25,8 +25,11 @@ function makeHarness(options: { readonly apiKey?: string | null; readonly localC
     const jobLog = new RecordingJobEventLog();
     const settings = new FakeJobSettingReader(options.apiKey === undefined ? "sk-test" : options.apiKey);
     const anchors = new InMemoryRuleAnchorReader();
-    anchors.seed({ id: "e1", userId: "local", taskId: "task-1", userMessage: true });
-    anchors.seed({ id: "e2", userId: "local", taskId: "task-1", userMessage: false });
+    anchors.seed(
+        "local",
+        { id: "e1", taskId: "task-1", userMessage: true },
+        { id: "e2", taskId: "task-1", userMessage: false },
+    );
     return {
         useCase: new EnqueueJobUseCase(
             jobs,

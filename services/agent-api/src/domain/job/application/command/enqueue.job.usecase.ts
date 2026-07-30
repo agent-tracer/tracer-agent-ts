@@ -75,13 +75,9 @@ export class EnqueueJobUseCase {
         const taskId = readRequiredText(input["taskId"]);
         const anchorEventId = readRequiredText(input["anchorEventId"]);
         if (taskId === null || anchorEventId === null) throw new InvalidRuleAnchorError();
-        const anchor = await this.anchors.findById(anchorEventId);
-        if (
-            anchor === null
-            || anchor.userId !== userId
-            || anchor.taskId !== taskId
-            || !anchor.userMessage
-        ) {
+        // 창구가 남의 근거를 없는 것으로 내므로 소유자 검사는 그 자리가 갖는다.
+        const anchor = await this.anchors.findById(userId, anchorEventId);
+        if (anchor === null || anchor.taskId !== taskId || !anchor.userMessage) {
             throw new InvalidRuleAnchorError();
         }
     }
