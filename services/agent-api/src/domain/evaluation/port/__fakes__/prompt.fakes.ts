@@ -10,7 +10,7 @@ import type {
     PromptBackend, PromptChannel, PromptChannelAssignment, PromptDefinition, PromptPromotion, PromptVersion,
 } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import type { PromptRepositoryPort, PromptFragmentCatalogItem } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
-import type { PromptClockPort, PromptIdGeneratorPort, PromptPromotionGatePort, PromotionGateResult } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
+import type { PromptClockPort, PromptIdGeneratorPort } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
 
 const FRAGMENT_EPOCH = new Date(0);
 
@@ -30,11 +30,6 @@ export class SequentialPromptIdGenerator implements PromptIdGeneratorPort {
     private sequence = 0;
     next(prefix: string): string { this.sequence += 1; return `${prefix}-${this.sequence}`; }
 }
-export class FixedPromptPromotionGate implements PromptPromotionGatePort {
-    constructor(private readonly result: PromotionGateResult) {}
-    async evaluate(): Promise<PromotionGateResult> { return this.result; }
-}
-
 export class InMemoryPromptRepository implements PromptRepositoryPort {
     readonly definitions: PromptDefinition[] = [];
     readonly versions: PromptVersion[] = [];

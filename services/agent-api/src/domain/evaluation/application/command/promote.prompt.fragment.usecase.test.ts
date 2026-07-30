@@ -23,8 +23,10 @@ describe("PromotePromptFragmentUseCase", () => {
         const repository = await declared();
         const candidate = await new RegisterCandidateFragmentVersionUseCase(repository, ids(), clock())
             .execute({ ...SCOPE, content: "작성한 판", changeSummary: null, createdBy: "u" });
-        const promoted = await new PromotePromptFragmentUseCase(repository, ids(), clock())
-            .execute({ definitionId: candidate.definitionId, versionId: candidate.versionId, channel: "production" });
+        const promote = new PromotePromptFragmentUseCase(repository, ids(), clock());
+        const target = { definitionId: candidate.definitionId, versionId: candidate.versionId };
+        await promote.execute({ ...target, channel: "staging" });
+        const promoted = await promote.execute({ ...target, channel: "production" });
         expect(promoted).toStrictEqual({
             definitionId: candidate.definitionId, channel: "production", versionId: candidate.versionId,
         });
@@ -39,10 +41,23 @@ describe("PromotePromptFragmentUseCase", () => {
         const first = await register.execute({ ...SCOPE, content: "첫 판", changeSummary: null, createdBy: "u" });
         const second = await register.execute({ ...SCOPE, content: "둘째 판", changeSummary: null, createdBy: "u" });
         const promote = new PromotePromptFragmentUseCase(repository, ids(), clock());
+        await promote.execute({ definitionId: first.definitionId, versionId: first.versionId, channel: "staging" });
         await promote.execute({ definitionId: first.definitionId, versionId: first.versionId, channel: "production" });
+        await promote.execute({ definitionId: second.definitionId, versionId: second.versionId, channel: "staging" });
         await promote.execute({ definitionId: second.definitionId, versionId: second.versionId, channel: "production" });
         expect(repository.fragmentChannels.filter((item) => item.channel === "production")).toHaveLength(1);
         expect((await repository.findFragmentChannel(first.definitionId, "production"))?.versionId).toBe(second.versionId);
+    });
+
+    it("staging 을 지나지 않은 판은 production 으로 올리지 않는다", async () => {
+        const repository = await declared();
+        const candidate = await new RegisterCandidateFragmentVersionUseCase(repository, ids(), clock())
+            .execute({ ...SCOPE, content: "작성한 판", changeSummary: null, createdBy: "u" });
+        await expect(new PromotePromptFragmentUseCase(repository, ids(), clock()).execute({
+            definitionId: candidate.definitionId, versionId: candidate.versionId, channel: "production",
+        })).rejects.toThrow("Prompt fragment promotion gate failed");
+        const production = await repository.findFragmentChannel(candidate.definitionId, "production");
+        expect(production?.versionId).not.toBe(candidate.versionId);
     });
 
     it("그 정의의 판이 아니면 승격하지 않는다", async () => {

@@ -1,13 +1,10 @@
 import { computePromptFragmentHash } from "@tracer-agent/llm";
 import { PromptDefinition, PromptVersion } from "~agent-api/domain/evaluation/model/prompt.model.js";
-import { FixedPromptClock, FixedPromptPromotionGate, InMemoryPromptRepository, SequentialPromptIdGenerator } from "~agent-api/domain/evaluation/port/__fakes__/prompt.fakes.js";
+import { FixedPromptClock, InMemoryPromptRepository, SequentialPromptIdGenerator } from "~agent-api/domain/evaluation/port/__fakes__/prompt.fakes.js";
 
 export const NOW = new Date("2026-01-01T00:00:00.000Z");
 export const clock = () => new FixedPromptClock(NOW);
 export const ids = () => new SequentialPromptIdGenerator();
-export const gate = (passed = true) => new FixedPromptPromotionGate({
-    passed, policyVersion: "gate/1", reasons: passed ? [] : ["failed"], evidence: {},
-});
 export function promptFixture() {
     const repository = new InMemoryPromptRepository();
     const definition = Object.assign(new PromptDefinition(), {

@@ -15,7 +15,6 @@ import { TemporalExperimentDispatcher } from "~agent-api/domain/evaluation/adapt
 import { PromptChannelEntity, PromptDefinitionEntity, PromptPromotionEntity, PromptVersionEntity } from "~agent-api/domain/evaluation/adapter/prompt.entity.js";
 import { PromptFragmentBindingEntity, PromptFragmentChannelEntity, PromptFragmentDefinitionEntity, PromptFragmentVersionEntity } from "~agent-api/domain/evaluation/adapter/prompt.fragment.entity.js";
 import { TypeOrmPromptRepositoryAdapter } from "~agent-api/domain/evaluation/adapter/typeorm.prompt.repository.adapter.js";
-import { UnconfiguredPromotionGate } from "~agent-api/domain/evaluation/adapter/unconfigured.promotion.gate.js";
 import { CancelExperimentUseCase } from "~agent-api/domain/evaluation/application/command/cancel.experiment.usecase.js";
 import { CreateExperimentUseCase } from "~agent-api/domain/evaluation/application/command/create.experiment.usecase.js";
 import { CreateReviewUseCase } from "~agent-api/domain/evaluation/application/command/create.review.usecase.js";
@@ -45,7 +44,7 @@ import { PromptInternalController } from "~agent-api/domain/evaluation/inbound/p
 import { EXPERIMENT_REPOSITORY } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import { EXPERIMENT_CLOCK, EXPERIMENT_DISPATCHER, EXPERIMENT_ID_GENERATOR, EXPERIMENT_RANDOM } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
 import { PROMPT_REPOSITORY } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
-import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, PROMPT_PROMOTION_GATE } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
+import { PROMPT_CLOCK, PROMPT_ID_GENERATOR } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
 import { CreateDatasetUseCase } from "~agent-api/domain/evaluation/application/command/create.dataset.usecase.js";
 import { DeleteDatasetUseCase } from "~agent-api/domain/evaluation/application/command/delete.dataset.usecase.js";
 import { ReviseDatasetUseCase } from "~agent-api/domain/evaluation/application/command/revise.dataset.usecase.js";
@@ -122,8 +121,6 @@ export const evaluationFeature = {
         { provide: EXPERIMENT_RANDOM, useExisting: ExperimentRandomAdapter },
         TemporalExperimentDispatcher,
         { provide: EXPERIMENT_DISPATCHER, useExisting: TemporalExperimentDispatcher },
-        UnconfiguredPromotionGate,
-        { provide: PROMPT_PROMOTION_GATE, useExisting: UnconfiguredPromotionGate },
         TypeOrmPromptRepositoryAdapter,
         { provide: PROMPT_REPOSITORY, useExisting: TypeOrmPromptRepositoryAdapter },
         {

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { newFragmentChannel } from "~agent-api/domain/evaluation/model/prompt.fragment.policy.js";
 import type { PromptChannel } from "~agent-api/domain/evaluation/model/prompt.model.js";
+import { evaluatePromotionGate } from "~agent-api/domain/evaluation/model/prompt.promotion.policy.js";
 import { PROMPT_REPOSITORY, type PromptRepositoryPort } from "~agent-api/domain/evaluation/port/prompt.repository.port.js";
 import { PROMPT_CLOCK, PROMPT_ID_GENERATOR, type PromptClockPort, type PromptIdGeneratorPort } from "~agent-api/domain/evaluation/port/prompt.runtime.port.js";
 
@@ -12,6 +13,10 @@ export class PromotePromptFragmentUseCase {
     async execute(input: { definitionId: string; versionId: string; channel: PromptChannel }) {
         const version = await this.repository.findFragmentVersion(input.definitionId, input.versionId);
         if (version === null) throw new Error("Prompt fragment version not found");
+        const staging = await this.repository.findFragmentChannel(input.definitionId, "staging");
+        const gate = evaluatePromotionGate({ channel: input.channel, versionId: version.id,
+            stagingVersionId: staging?.versionId ?? null });
+        if (!gate.passed) throw new Error(`Prompt fragment promotion gate failed: ${gate.reasons.join(", ")}`);
         const current = await this.repository.findFragmentChannel(input.definitionId, input.channel);
         const channel = newFragmentChannel(current?.id ?? this.ids.next("fragment-channel"), input.definitionId,
             input.channel, version.id, this.clock.now());

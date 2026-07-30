@@ -16,6 +16,7 @@ export const createPromptSchema = z.object({
     backend: backendNameSchema, language: z.string().trim().min(1), version,
 }).strict();
 export const createPromptVersionSchema = version;
+/** 승격 원장이 근거 실험을 반드시 싣게 하며 채널을 여는 게이트는 승격 경로가 정한다. */
 export const promotePromptSchema = z.object({
     versionId: z.string().trim().min(1), channel: z.enum(["candidate", "staging", "production"]),
     experimentId: z.string().trim().min(1),
