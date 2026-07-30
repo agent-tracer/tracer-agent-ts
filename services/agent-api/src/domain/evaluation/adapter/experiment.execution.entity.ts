@@ -4,29 +4,29 @@ import type { EvaluationScore, ExperimentExecution } from "../model/experiment.m
 @Entity({ name: "experiment_executions" })
 export class ExperimentExecutionRow {
     @PrimaryColumn("text") id!: string;
-    @Column("text") experimentId!: string;
-    @Column("text") variantId!: string;
-    @Column("text") exampleId!: string;
+    @Column({ name: "experiment_id", type: "text" }) experimentId!: string;
+    @Column({ name: "variant_id", type: "text" }) variantId!: string;
+    @Column({ name: "example_id", type: "text" }) exampleId!: string;
     @Column("integer") repetition!: number;
     @Column("text") status!: ExperimentExecution["status"];
     @Column("jsonb", { nullable: true }) output!: Record<string, unknown> | null;
     @Column("text", { nullable: true }) error!: string | null;
-    @Column("double precision") costUsd!: number;
-    @Column("timestamptz", { nullable: true }) startedAt!: Date | null;
-    @Column("timestamptz", { nullable: true }) completedAt!: Date | null;
+    @Column({ name: "cost_usd", type: "double precision" }) costUsd!: number;
+    @Column({ name: "started_at", type: "timestamptz", nullable: true }) startedAt!: Date | null;
+    @Column({ name: "completed_at", type: "timestamptz", nullable: true }) completedAt!: Date | null;
 }
 
 @Entity({ name: "evaluation_scores" })
 export class EvaluationScoreRow {
     @PrimaryColumn("text") id!: string;
-    @Column("text") executionId!: string;
-    @Column("text") evaluatorId!: string;
-    @Column("text") evaluatorVersion!: string;
+    @Column({ name: "execution_id", type: "text" }) executionId!: string;
+    @Column({ name: "evaluator_id", type: "text" }) evaluatorId!: string;
+    @Column({ name: "evaluator_version", type: "text" }) evaluatorVersion!: string;
     @Column("double precision") score!: number;
     @Column("text", { nullable: true }) label!: string | null;
     @Column("text", { nullable: true }) reason!: string | null;
-    @Column("double precision") judgeCostUsd!: number;
-    @Column("timestamptz") createdAt!: Date;
+    @Column({ name: "judge_cost_usd", type: "double precision" }) judgeCostUsd!: number;
+    @Column({ name: "created_at", type: "timestamptz" }) createdAt!: Date;
 }
 
 export function toExperimentExecution(row: ExperimentExecutionRow): ExperimentExecution {

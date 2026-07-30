@@ -58,6 +58,30 @@ export function readContractSchemaFile(name: string): string {
     return readFileSync(path.join(CONTRACT_ROOT, "db", "migrations", name), "utf8");
 }
 
+const CREATE_TABLE = /CREATE TABLE IF NOT EXISTS\s+"(\w+)"\s*\(([\s\S]*?)\n\);/g;
+const COLUMN_LINE = /^\s*"(\w+)"\s+\S/;
+const ADD_COLUMN = /ALTER TABLE\s+"(\w+)"\s+ADD COLUMN IF NOT EXISTS\s+"(\w+)"/g;
+const DROP_COLUMN = /ALTER TABLE\s+"(\w+)"\s+DROP COLUMN IF EXISTS\s+"(\w+)"/g;
+
+/** 계약의 마이그레이션을 파일 이름 순서대로 적용했을 때 남는 표와 칸을 낸다. */
+export function readContractTables(): ReadonlyMap<string, ReadonlySet<string>> {
+    const tables = new Map<string, Set<string>>();
+    for (const file of listContractSchemaFiles()) {
+        const sql = readContractSchemaFile(file);
+        for (const [, table, body] of sql.matchAll(CREATE_TABLE)) {
+            const columns = tables.get(table!) ?? new Set<string>();
+            for (const line of body!.split("\n")) {
+                const column = COLUMN_LINE.exec(line);
+                if (column !== null) columns.add(column[1]!);
+            }
+            tables.set(table!, columns);
+        }
+        for (const [, table, column] of sql.matchAll(ADD_COLUMN)) tables.get(table!)?.add(column!);
+        for (const [, table, column] of sql.matchAll(DROP_COLUMN)) tables.get(table!)?.delete(column!);
+    }
+    return tables;
+}
+
 /** 서비스를 넘어 오가는 알림 토픽의 이름과 봉투와 종류를 계약이 적은 그대로 담는다. */
 export interface NotificationTopicDeclaration {
     readonly name: string;
