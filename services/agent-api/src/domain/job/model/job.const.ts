@@ -1,3 +1,6 @@
+/** 사용자 설정에서 모델 자격을 찾는 키다. */
+export const JOB_API_KEY_SETTING = "anthropic.api_key";
+
 /** 사용자가 접수할 수 있는 잡의 종류이며 값은 계약의 잡 어휘가 소유한다. */
 export const JOB_KIND = {
     titleSuggestion: "title.suggestion",
@@ -19,6 +22,22 @@ export const JOB_EXECUTOR = {
 } as const satisfies Record<JobKind, "temporal" | "local">;
 
 export type JobExecutor = (typeof JOB_EXECUTOR)[JobKind];
+
+/** 워크플로가 태우는 잡 종류이며 실행 봉투는 이 셋에만 발급된다. */
+export const WORKFLOW_JOB_KINDS = [
+    JOB_KIND.titleSuggestion,
+    JOB_KIND.recipeScan,
+    JOB_KIND.taskCleanup,
+] as const;
+
+export type WorkflowJobKind = (typeof WORKFLOW_JOB_KINDS)[number];
+
+/** 잡 종류가 모델과 한도를 가져오는 카탈로그 기능의 이름이다. */
+export const JOB_FEATURE_BY_KIND = {
+    [JOB_KIND.titleSuggestion]: "title-suggestion",
+    [JOB_KIND.recipeScan]: "recipe-scan",
+    [JOB_KIND.taskCleanup]: "task-cleanup",
+} as const satisfies Record<WorkflowJobKind, string>;
 
 export const JOB_STATUS = {
     pending: "pending",

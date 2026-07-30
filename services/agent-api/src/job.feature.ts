@@ -14,6 +14,7 @@ import { TypeOrmJobRepository } from "~agent-api/domain/job/adapter/typeorm.job.
 import { TypeOrmJobStepRepository } from "~agent-api/domain/job/adapter/typeorm.job.step.repository.adapter.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
 import { EnqueueJobUseCase } from "~agent-api/domain/job/application/command/enqueue.job.usecase.js";
+import { IssueJobExecutionEnvelopeUseCase } from "~agent-api/domain/job/application/command/issue.job.execution.envelope.usecase.js";
 import { GetGraphJobExecutionUseCase } from "~agent-api/domain/job/application/query/get.graph.job.execution.usecase.js";
 import { GetJobStepsUseCase } from "~agent-api/domain/job/application/query/get.job.steps.usecase.js";
 import { GetJobUseCase } from "~agent-api/domain/job/application/query/get.job.usecase.js";
@@ -22,6 +23,7 @@ import { ListJobHistoryUseCase } from "~agent-api/domain/job/application/query/l
 import { ListPendingJobsUseCase } from "~agent-api/domain/job/application/query/list.pending.jobs.usecase.js";
 import { JobCommandController } from "~agent-api/domain/job/inbound/job.command.controller.js";
 import { JobGraphQueryController } from "~agent-api/domain/job/inbound/job.graph.query.controller.js";
+import { JobInternalController } from "~agent-api/domain/job/inbound/job.internal.controller.js";
 import { JobQueryController } from "~agent-api/domain/job/inbound/job.query.controller.js";
 import { JOB_CLOCK } from "~agent-api/domain/job/port/clock.port.js";
 import { GRAPH_JOB_EXECUTION_READER } from "~agent-api/domain/job/port/graph.job.execution.reader.port.js";
@@ -38,10 +40,11 @@ import { WORKFLOW_DISPATCHER } from "~agent-api/domain/job/port/workflow.dispatc
 
 /** job 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
 export const jobFeature = {
-    controllers: [JobQueryController, JobCommandController, JobGraphQueryController],
+    controllers: [JobQueryController, JobCommandController, JobGraphQueryController, JobInternalController],
     providers: [
         CancelJobUseCase,
         EnqueueJobUseCase,
+        IssueJobExecutionEnvelopeUseCase,
         GetGraphJobExecutionUseCase,
         GetJobStepsUseCase,
         GetJobUseCase,

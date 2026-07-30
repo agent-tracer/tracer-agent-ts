@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
-import { JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
+import { JOB_API_KEY_SETTING, JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import {
     InvalidRuleAnchorError,
     JobIdempotencyConflictError,
@@ -16,9 +16,6 @@ import { LOCAL_CLI_AUTH, type LocalCliAuthPort } from "~agent-api/domain/job/por
 import { RULE_ANCHOR_READER, type RuleAnchorReaderPort } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
 import { JOB_SETTING_READER, type JobSettingReaderPort } from "~agent-api/domain/job/port/setting.reader.port.js";
 import { WORKFLOW_DISPATCHER, type WorkflowDispatcherPort } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
-
-/** 사용자 설정에서 모델 자격을 찾는 키다. */
-export const JOB_API_KEY_SETTING = "anthropic.api_key";
 
 export interface EnqueueJobOptions {
     readonly idempotencyKey?: string;
