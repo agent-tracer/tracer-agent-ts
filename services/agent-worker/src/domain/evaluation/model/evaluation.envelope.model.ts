@@ -17,7 +17,7 @@ export interface EvaluationRunEnvelope {
     readonly evaluatorDefinitions?: readonly EvaluationEvaluatorDefinition[];
     /** 동결된 prompt version과 해시이며 실행기는 파일에서 렌더링한 프롬프트를 이 해시와 대조한다. */
     readonly prompt: ResolvedAgentPrompt;
-    /** 없으면 legacy full prompt 검증이며, override 실행은 resolved-fragments mode를 반드시 명시한다. */
+    /** 없으면 full-prompt 검증이며, override 실행은 resolved-fragments mode를 반드시 명시한다. */
     readonly promptIntegrity?: PromptIntegrityContract;
     readonly model?: string;
     /** local이 아닌 프로파일에서 구독 인증을 못 쓰는 실행에만 필요하며, agent-worker가 내부 실행 계약으로 전달받는다. */

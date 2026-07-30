@@ -175,8 +175,8 @@ export class ChatAgentAdapter implements ChatAgentPort {
     }
 
     private resolvePromptFragments(input: ChatTurnInput) {
-        if (input.promptIntegrity?.mode === "legacy-full-prompt") {
-            throw new Error("chat.prompt-fragment.legacy-integrity-rejected");
+        if (input.promptIntegrity?.mode === "full-prompt") {
+            throw new Error("chat.prompt-fragment.full-prompt-integrity-rejected");
         }
         if (input.promptIntegrity?.mode === "fragment-content-only") {
             throw new Error("chat.prompt-fragment.content-only-integrity-rejected");

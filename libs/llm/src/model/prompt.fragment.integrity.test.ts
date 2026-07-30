@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+    PROMPT_INTEGRITY_MODES,
     canonicalizePromptFragment,
     computePromptFragmentHash,
     extractPromptFragmentPlaceholders,
@@ -21,13 +22,18 @@ const CONTRACT_ROOT = path.resolve(
     "../../../../contract",
 );
 
-const { cases } = JSON.parse(
+const { cases, modes } = JSON.parse(
     readFileSync(path.join(CONTRACT_ROOT, "agent/shared/prompt.fragment.integrity.json"), "utf8"),
-) as { readonly cases: readonly IntegrityCase[] };
+) as { readonly cases: readonly IntegrityCase[]; readonly modes: Readonly<Record<string, string>> };
 
 describe("프롬프트 조각 무결성", () => {
     it("계약이 대조할 케이스를 갖고 있다", () => {
         expect(cases.length).toBeGreaterThan(0);
+    });
+
+    it("무결성 모드의 이름을 계약이 선언한 그대로 쓴다", () => {
+        const declared = Object.keys(modes).filter((key) => key !== "meaning");
+        expect([...PROMPT_INTEGRITY_MODES].sort()).toEqual([...declared].sort());
     });
 
     for (const entry of cases) {

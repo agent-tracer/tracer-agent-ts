@@ -90,8 +90,13 @@ export interface ResolvedPromptBundleHash {
     readonly resolvedPromptHash: string;
 }
 
+/** 봉투의 promptIntegrity.mode 로 오가는 값이며 이름은 계약의 조각 무결성 선언이 소유한다. */
+export const PROMPT_INTEGRITY_MODES = ["full-prompt", "resolved-fragments", "fragment-content-only"] as const;
+
+export type PromptIntegrityMode = (typeof PROMPT_INTEGRITY_MODES)[number];
+
 export type PromptIntegrityContract =
-    | { readonly mode: "legacy-full-prompt" }
+    | { readonly mode: "full-prompt" }
     | {
           readonly mode: "resolved-fragments";
           readonly fragments: readonly ResolvedPromptFragment[];
