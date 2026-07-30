@@ -220,7 +220,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         fragmentResolver,
       );
       ctx.renderedTemplates.set(
-        "sdk.recipe-scan.investigator.repair",
+        "recipe-scan.investigator.repair",
         buildRecipeRepairDirective(fragmentResolver),
       );
       repaired = await runRecipeSynthesis(

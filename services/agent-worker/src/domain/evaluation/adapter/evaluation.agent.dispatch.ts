@@ -169,7 +169,7 @@ export async function runTitleEvaluation(
 ): Promise<EvaluationRunResult> {
     const taskId = requireStringField(envelope.input, "taskId");
     const userId = envelope.experimentId;
-    const agent = createAgent(buildSnapshotTitleEvents(envelope.evidence, taskId), resolverFor("sdk.title-suggestion.", envelope, operationalFragments));
+    const agent = createAgent(buildSnapshotTitleEvents(envelope.evidence, taskId), resolverFor("title-suggestion.", envelope, operationalFragments));
     if (agent.requiresLocalApiKey() && envelope.apiKey === undefined) throw new EvaluationMissingApiKeyError();
 
     // example.input은 대화 발췌를 싣지 않으므로(계약: taskId만 필수) 컨텍스트를 얇게 시작해, 이미
@@ -203,7 +203,7 @@ export async function runRecipeEvaluation(
 ): Promise<EvaluationRunResult> {
     const taskId = requireStringField(envelope.input, "taskId");
     const userId = envelope.experimentId;
-    const agent = createAgent(buildSnapshotRecipeDeps(envelope.evidence, taskId), resolverFor("sdk.recipe-scan.", envelope, operationalFragments));
+    const agent = createAgent(buildSnapshotRecipeDeps(envelope.evidence, taskId), resolverFor("recipe-scan.", envelope, operationalFragments));
     if (agent.requiresLocalApiKey() && envelope.apiKey === undefined) throw new EvaluationMissingApiKeyError();
 
     const language = normalizeOutputLanguage(readOptionalStringField(envelope.input, "language") ?? null);
@@ -237,7 +237,7 @@ export async function runCleanupEvaluation(
 ): Promise<EvaluationRunResult> {
     const userId = envelope.experimentId;
     const events = buildSnapshotCleanupEvents(envelope.evidence, CANDIDATE_SCOPE_PLACEHOLDER);
-    const agent = createAgent(events, resolverFor("sdk.task-cleanup.", envelope, operationalFragments));
+    const agent = createAgent(events, resolverFor("task-cleanup.", envelope, operationalFragments));
     if (agent.requiresLocalApiKey() && envelope.apiKey === undefined) throw new EvaluationMissingApiKeyError();
 
     const candidates = readEvidenceArrayField(envelope.evidence, "list_candidate_tasks");

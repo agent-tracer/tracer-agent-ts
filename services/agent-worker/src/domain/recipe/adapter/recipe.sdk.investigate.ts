@@ -34,7 +34,7 @@ export function runRecipeSynthesis(
 ): Promise<RecipeSynthesisRun> {
   const systemPrompt = buildRecipeSystemPrompt(ctx.fragmentResolver);
   ctx.renderedTemplates.set(
-    "sdk.recipe-scan.investigator.system",
+    "recipe-scan.investigator.system",
     systemPrompt,
   );
   return runRecipeQuery(ctx, {

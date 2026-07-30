@@ -49,7 +49,7 @@ export async function runRecipeProbe(
   const handlers = buildRecipeToolHandlers(ctx.input.userId, deps, ledger);
   const toolNames = probeToolNames(assignment.probe);
   const systemPrompt = buildRecipeProbeSystemPrompt(ctx.fragmentResolver);
-  ctx.renderedTemplates.set("sdk.recipe-scan.probe.system", systemPrompt);
+  ctx.renderedTemplates.set("recipe-scan.probe.system", systemPrompt);
 
   try {
     const run = await runRecipeQuery(ctx, {

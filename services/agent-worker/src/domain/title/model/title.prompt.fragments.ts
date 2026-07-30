@@ -4,8 +4,8 @@ import {
 } from "~agent-worker/support/prompt.fragment.js";
 
 export const TITLE_CONTEXT_SHAPE = definePromptFragment({
-    codeName: "SDK_TITLE_CONTEXT_SHAPE",
-    definitionKey: "sdk.title-suggestion.context-shape.en",
+    agentName: "title-suggestion",
+    fragmentKey: "context-shape",
     defaultVersion: "v1",
     defaultContent: [
         "The user message carries the task's current title and an excerpt of its conversation turns (what the",
@@ -15,8 +15,8 @@ export const TITLE_CONTEXT_SHAPE = definePromptFragment({
 });
 
 export const TITLE_SPEC_FRAGMENT = definePromptFragment({
-    codeName: "SDK_TITLE_SPEC",
-    definitionKey: "sdk.title-suggestion.title-spec.en",
+    agentName: "title-suggestion",
+    fragmentKey: "title-spec",
     defaultVersion: "v1",
     defaultContent: [
         "Each title must be concrete — naming the area or action — under 80 characters, and normally 4-9 words",
@@ -27,8 +27,8 @@ export const TITLE_SPEC_FRAGMENT = definePromptFragment({
 });
 
 export const TITLE_ANSWER_SHAPE = definePromptFragment({
-    codeName: "SDK_TITLE_ANSWER_SHAPE",
-    definitionKey: "sdk.title-suggestion.answer-shape.en",
+    agentName: "title-suggestion",
+    fragmentKey: "answer-shape",
     defaultVersion: "v1",
     defaultContent: [
         "If the current title is already concrete, accurate, and readable, return an empty list: that is a",
@@ -39,8 +39,8 @@ export const TITLE_ANSWER_SHAPE = definePromptFragment({
 });
 
 export const TITLE_REPAIR_DIRECTIVE = definePromptFragment({
-    codeName: "SDK_TITLE_REPAIR_DIRECTIVE",
-    definitionKey: "sdk.title-suggestion.repair-directive.en",
+    agentName: "title-suggestion",
+    fragmentKey: "repair-directive",
     defaultVersion: "v1",
     defaultContent: [
         "Change only what is necessary to satisfy these errors. Return either an empty suggestions list or 2-3",
@@ -49,9 +49,9 @@ export const TITLE_REPAIR_DIRECTIVE = definePromptFragment({
     ].join("\n"),
 });
 
-export const TITLE_SYSTEM_TEMPLATE_KEY = "sdk.title-suggestion.investigator.system" as const;
+export const TITLE_SYSTEM_TEMPLATE_KEY = "title-suggestion.investigator.system" as const;
 
-export const TITLE_REPAIR_TEMPLATE_KEY = "sdk.title-suggestion.investigator.repair" as const;
+export const TITLE_REPAIR_TEMPLATE_KEY = "title-suggestion.investigator.repair" as const;
 
 export const TITLE_PROMPT_FRAGMENT_BINDINGS: readonly PromptFragmentBindingSpec[] = [
     {
