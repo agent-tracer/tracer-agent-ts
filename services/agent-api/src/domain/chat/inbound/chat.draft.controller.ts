@@ -7,7 +7,7 @@ import { checkpointDraftSchema, type CheckpointDraftPayload } from "./chat.schem
 
 /** 실행기의 draft 통지를 받는 창구이며, 자격은 실행 시도에 묶인 토큰 하나뿐이다. */
 @SkipGate()
-@Controller("api/v1/chat/executions")
+@Controller("api/agent/chat/executions")
 export class ChatDraftController {
     constructor(private readonly checkpointDraft: CheckpointChatDraftUseCase) {}
 

@@ -5,7 +5,7 @@ import { BuildExecutionExampleCandidateUseCase } from "../application/query/buil
 import { pathParamPipe } from "~agent-api/support/path-param.pipe.js";
 import { resolveUserId } from "~agent-api/support/request-user.js";
 
-@Controller("api/v1/evaluation")
+@Controller("api/agent/evaluation")
 export class EvaluationCandidateController {
     constructor(
         private readonly buildJobCandidate: BuildExecutionExampleCandidateUseCase,

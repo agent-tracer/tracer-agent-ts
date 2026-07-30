@@ -165,8 +165,9 @@ export const chatFeature = {
         { provide: CHAT_AGENT_API_BASE_URL, useFactory: resolveAgentApiBaseUrl },
         {
             provide: CHAT_TOOL_EXECUTORS,
-            inject: [CHAT_TRACER_API_BASE_URL],
-            useFactory: (baseUrl: string) => buildChatToolExecutors(new TracerApiClient(baseUrl)),
+            inject: [CHAT_TRACER_API_BASE_URL, CHAT_AGENT_API_BASE_URL],
+            useFactory: (tracerBaseUrl: string, agentBaseUrl: string) =>
+                buildChatToolExecutors(new TracerApiClient(tracerBaseUrl), new TracerApiClient(agentBaseUrl)),
         },
     ],
 };

@@ -153,8 +153,8 @@ describe("대화 조회 표면", () => {
         const listed = await new ListThreadsUseCase(threads()).execute("local");
         const detail = await new GetThreadUseCase(threads()).execute("local", "t1");
 
-        expect(Object.keys(listed)).toEqual(envelopeKeys("GET", "/api/v1/chat/threads"));
-        expect(Object.keys(detail)).toEqual(envelopeKeys("GET", "/api/v1/chat/threads/{threadId}"));
+        expect(Object.keys(listed)).toEqual(envelopeKeys("GET", "/api/agent/chat/threads"));
+        expect(Object.keys(detail)).toEqual(envelopeKeys("GET", "/api/agent/chat/threads/{threadId}"));
         expect(Object.keys(listed.items[0] ?? {})).toEqual(fields("thread"));
         expect(Object.keys(detail.thread)).toEqual(fields("thread"));
     });
@@ -163,7 +163,7 @@ describe("대화 조회 표면", () => {
         const listed = await new GetMessagesUseCase(threads(), messages()).execute("local", "t1");
 
         expect(Object.keys(listed))
-            .toEqual(envelopeKeys("GET", "/api/v1/chat/threads/{threadId}/messages"));
+            .toEqual(envelopeKeys("GET", "/api/agent/chat/threads/{threadId}/messages"));
         expect(Object.keys(listed.items[0] ?? {})).toEqual(fields("message"));
     });
 
@@ -172,7 +172,7 @@ describe("대화 조회 표면", () => {
             .execute("local", "t1");
 
         expect(Object.keys(listed))
-            .toEqual(envelopeKeys("GET", "/api/v1/chat/threads/{threadId}/executions"));
+            .toEqual(envelopeKeys("GET", "/api/agent/chat/threads/{threadId}/executions"));
         expect(Object.keys(listed.items[0] ?? {})).toEqual(fields("execution"));
         expect(Object.keys(listed.confirmations[0] ?? {})).toEqual(fields("confirmation"));
     });
@@ -183,7 +183,7 @@ describe("대화 조회 표면", () => {
         const shape = contract.shapes["step"];
 
         expect(Object.keys(listed))
-            .toEqual(envelopeKeys("GET", "/api/v1/chat/threads/{threadId}/executions/{executionId}/steps"));
+            .toEqual(envelopeKeys("GET", "/api/agent/chat/threads/{threadId}/executions/{executionId}/steps"));
         expect(Object.keys(listed.items[0] ?? {})).toEqual(shape?.required);
         expect(Object.keys(listed.items[1] ?? {}).sort())
             .toEqual([...(shape?.required ?? []), ...(shape?.optional ?? [])].sort());

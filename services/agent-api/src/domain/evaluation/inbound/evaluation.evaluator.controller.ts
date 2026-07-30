@@ -3,7 +3,7 @@ import { GetEvaluatorSetUseCase } from "../application/query/get.evaluator.set.u
 import { ListEvaluatorsUseCase } from "../application/query/list.evaluators.usecase.js";
 import { pathParamPipe } from "~agent-api/support/path-param.pipe.js";
 
-@Controller("api/v1/evaluation/evaluators")
+@Controller("api/agent/evaluation/evaluators")
 export class EvaluationEvaluatorController {
     constructor(
         private readonly listEvaluators: ListEvaluatorsUseCase,

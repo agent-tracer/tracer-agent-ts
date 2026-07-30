@@ -57,7 +57,7 @@ describe("IssueChatExecutionEnvelopeUseCase", () => {
         const envelope = await makeUseCase().execute("e1");
 
         expect(envelope.readApiBaseUrl).toBe("http://tracer-api:3902");
-        expect(envelope.draft.url).toBe("http://agent-api:3904/api/v1/chat/executions/e1/drafts");
+        expect(envelope.draft.url).toBe("http://agent-api:3904/api/agent/chat/executions/e1/drafts");
     });
 
     it("자격을 만들 수 없는 환경에서는 범위 자격을 비운다", async () => {

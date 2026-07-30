@@ -17,7 +17,7 @@ import {
 } from "./chat.schema.js";
 
 /** 대화 스레드와 그 메시지의 HTTP 계약을 제공한다. */
-@Controller("api/v1/chat/threads")
+@Controller("api/agent/chat/threads")
 export class ChatThreadController {
     constructor(
         private readonly listThreads: ListThreadsUseCase,

@@ -10,7 +10,7 @@ import { SchemaValidationPipe } from "~agent-api/support/schema.validation.pipe.
 import { postMessageSchema, type PostMessagePayload } from "./chat.schema.js";
 
 /** 연결보다 오래 사는 대화 턴의 접수와 중단과 되읽기의 HTTP 계약을 제공한다. */
-@Controller("api/v1/chat/threads")
+@Controller("api/agent/chat/threads")
 export class ChatTurnController {
     constructor(
         private readonly enqueueChatTurn: EnqueueChatTurnUseCase,

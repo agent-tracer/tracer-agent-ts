@@ -18,7 +18,7 @@ import {
 } from "./job.query.schema.js";
 
 /** 잡 목록과 상세와 실행 궤적 조회의 HTTP 계약을 제공한다. */
-@Controller("api/v1/jobs")
+@Controller("api/agent/jobs")
 export class JobQueryController {
     constructor(
         private readonly getLatestJob: GetLatestJobUseCase,

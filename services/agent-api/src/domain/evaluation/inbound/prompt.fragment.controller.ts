@@ -7,7 +7,7 @@ import { SchemaValidationPipe } from "~agent-api/support/schema.validation.pipe.
 import { promptFragmentCatalogQuerySchema, registerCandidateFragmentVersionSchema,
     type PromptFragmentCatalogQuery, type RegisterCandidateFragmentVersionPayload } from "./prompt.schema.js";
 
-@Controller("api/v1/evaluation/prompt-fragments")
+@Controller("api/agent/evaluation/prompt-fragments")
 export class PromptFragmentController {
     constructor(private readonly catalog: ListPromptFragmentCatalogUseCase,
         private readonly registerCandidate: RegisterCandidateFragmentVersionUseCase) {}

@@ -35,7 +35,7 @@ import {
     type TrainingExportPayload,
 } from "./evaluation.schema.js";
 
-@Controller("api/v1/evaluation/datasets")
+@Controller("api/agent/evaluation/datasets")
 export class EvaluationDatasetController {
     constructor(
         private readonly createDataset: CreateDatasetUseCase,

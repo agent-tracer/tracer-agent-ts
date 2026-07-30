@@ -8,7 +8,7 @@ import { resolveUserId } from "~agent-api/support/request-user.js";
 import { streamChatExecution } from "./chat.execution.stream.js";
 
 /** 실행 이력 조회와 연결이 살아 있는 동안 이어지는 스냅샷 스트림의 HTTP 계약을 제공한다. */
-@Controller("api/v1/chat/threads")
+@Controller("api/agent/chat/threads")
 export class ChatStreamController {
     constructor(
         private readonly listChatExecutions: ListChatExecutionsUseCase,

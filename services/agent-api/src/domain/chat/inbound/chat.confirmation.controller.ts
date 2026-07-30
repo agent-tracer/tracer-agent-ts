@@ -13,7 +13,7 @@ import {
 } from "./chat.schema.js";
 
 /** 쓰기 도구를 대기 행으로 세우고 사용자의 승인이나 거절로 해소하는 HTTP 계약을 제공한다. */
-@Controller("api/v1/chat/threads")
+@Controller("api/agent/chat/threads")
 export class ChatConfirmationController {
     constructor(
         private readonly proposeTool: ProposeToolUseCase,

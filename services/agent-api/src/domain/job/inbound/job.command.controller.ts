@@ -8,7 +8,7 @@ import { SchemaValidationPipe } from "~agent-api/support/schema.validation.pipe.
 import { enqueueBodySchema, type EnqueueBody } from "./job.command.schema.js";
 
 /** 잡 접수와 취소의 HTTP 계약을 제공한다. */
-@Controller("api/v1/jobs")
+@Controller("api/agent/jobs")
 export class JobCommandController {
     constructor(
         private readonly enqueueJob: EnqueueJobUseCase,

@@ -16,7 +16,7 @@ import {
     type RollbackPromptChannelPayload,
 } from "./prompt.schema.js";
 
-@Controller("api/v1/evaluation/prompts")
+@Controller("api/agent/evaluation/prompts")
 export class PromptController {
     constructor(private readonly createPrompt: CreatePromptUseCase, private readonly createVersion: CreatePromptVersionUseCase,
         private readonly listPrompts: ListPromptsUseCase, private readonly listVersions: ListPromptVersionsUseCase,

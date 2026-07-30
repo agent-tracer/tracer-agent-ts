@@ -8,7 +8,7 @@ import { SchemaValidationPipe } from "~agent-api/support/schema.validation.pipe.
 import { rememberFactBodySchema, type RememberFactBody } from "./chat.memory.schema.js";
 
 /** 사용자 장기기억의 HTTP 계약을 제공하며 recall_facts와 remember_fact 도구가 이 자리를 본다. */
-@Controller("api/v1/chat/memories")
+@Controller("api/agent/chat/memories")
 export class ChatMemoryController {
     constructor(
         private readonly recallFacts: RecallFactsUseCase,

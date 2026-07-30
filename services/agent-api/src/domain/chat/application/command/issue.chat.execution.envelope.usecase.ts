@@ -62,7 +62,7 @@ export class IssueChatExecutionEnvelopeUseCase {
             toolDescriptions: CHAT_TOOL_CONTRACT.descriptions,
             draft: {
                 url: new URL(
-                    `/api/v1/chat/executions/${encodeURIComponent(executionId)}/drafts`,
+                    `/api/agent/chat/executions/${encodeURIComponent(executionId)}/drafts`,
                     this.agentApiBaseUrl,
                 ).toString(),
                 token: grant.token,
