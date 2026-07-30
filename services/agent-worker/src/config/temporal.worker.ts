@@ -1,6 +1,6 @@
 import { NativeConnection, Runtime, Worker } from "@temporalio/worker";
 import { logInfo } from "@tracer-agent/platform";
-import { JOB_TASK_QUEUE, TEMPORAL_SDK_METRICS_PORT, type GENERATE_TASK_QUEUE } from "./queue.const.js";
+import { JOB_TASK_QUEUE, TEMPORAL_SDK_METRICS_PORT } from "./queue.const.js";
 
 /** 활동 이름을 활동 구현에 잇는 등록표다. */
 export type ActivityTable = Record<string, (...args: never[]) => Promise<unknown>>;
@@ -9,7 +9,7 @@ export interface TemporalWorkerOptions {
     readonly address: string;
     readonly namespace: string;
     /** 이 프로세스가 폴링할 큐 하나이며 값에 따라 워크플로 번들 포함 여부와 동시성 설정이 갈린다. */
-    readonly taskQueue: typeof JOB_TASK_QUEUE | typeof GENERATE_TASK_QUEUE;
+    readonly taskQueue: string;
     readonly activities: ActivityTable;
     /** 생성 큐의 파드별 동시 활동 상한이며 replica 수를 곱한 값이 전체 동시 모델 호출 총량이다. */
     readonly generateMaxConcurrentActivities?: number;

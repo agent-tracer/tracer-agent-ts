@@ -1,4 +1,4 @@
-import { isCancellation, proxyActivities } from "@temporalio/workflow";
+import { isCancellation, proxyActivities, workflowInfo } from "@temporalio/workflow";
 import type { FailCleanupJobInput } from "~agent-worker/domain/cleanup/application/fail.cleanup.job.usecase.js";
 import type { TaskCleanupFinalizeInput } from "~agent-worker/domain/cleanup/application/finalize.task.cleanup.usecase.js";
 import type {
@@ -7,9 +7,7 @@ import type {
 } from "~agent-worker/domain/cleanup/application/prepare.task.cleanup.usecase.js";
 import type { TaskCleanupGenerateOutput } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { messageOf } from "~agent-worker/support/failure.message.js";
-
-/** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 큐다. */
-const GENERATE_TASK_QUEUE = "sdk-generate";
+import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
 
 interface CleanupPrepareActivities {
     prepareTaskCleanup(input: TaskCleanupInput): Promise<TaskCleanupPrep>;
@@ -29,21 +27,25 @@ const { prepareTaskCleanup } = proxyActivities<CleanupPrepareActivities>({
     retry: { maximumAttempts: 5 },
 });
 
-const { generateTaskCleanupSuggestions } = proxyActivities<CleanupGenerateActivities>({
-    taskQueue: GENERATE_TASK_QUEUE,
-    startToCloseTimeout: "10 minutes",
-    scheduleToCloseTimeout: "30 minutes",
-    heartbeatTimeout: "30 seconds",
-    retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
-});
-
 const { finalizeTaskCleanup, markCleanupJobFailed } = proxyActivities<CleanupFinalizeActivities>({
     startToCloseTimeout: "1 minute",
     retry: { maximumAttempts: 5 },
 });
 
+/** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 생성 큐로 보낸다. */
+function generateActivities() {
+    return proxyActivities<CleanupGenerateActivities>({
+        taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),
+        startToCloseTimeout: "10 minutes",
+        scheduleToCloseTimeout: "30 minutes",
+        heartbeatTimeout: "30 seconds",
+        retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
+    });
+}
+
 /** 태스크 정리 제안 잡을 실행한다. */
 export async function taskCleanupWorkflow(input: TaskCleanupInput): Promise<void> {
+    const { generateTaskCleanupSuggestions } = generateActivities();
     try {
         const prep = await prepareTaskCleanup(input);
         const output = prep.candidates.length === 0 ? null : await generateTaskCleanupSuggestions(prep);

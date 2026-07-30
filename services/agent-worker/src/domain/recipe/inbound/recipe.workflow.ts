@@ -1,4 +1,4 @@
-import { isCancellation, proxyActivities } from "@temporalio/workflow";
+import { isCancellation, proxyActivities, workflowInfo } from "@temporalio/workflow";
 import type { FailRecipeJobInput } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
 import type { RecipeScanFinalizeInput } from "~agent-worker/domain/recipe/application/finalize.recipe.scan.usecase.js";
 import type {
@@ -7,9 +7,7 @@ import type {
 } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
 import type { RecipeScanGenerateOutput } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { messageOf } from "~agent-worker/support/failure.message.js";
-
-/** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 큐다. */
-const GENERATE_TASK_QUEUE = "sdk-generate";
+import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
 
 interface RecipePrepareActivities {
     prepareRecipeScan(input: RecipeScanInput): Promise<RecipeScanPrep>;
@@ -29,21 +27,25 @@ const { prepareRecipeScan } = proxyActivities<RecipePrepareActivities>({
     retry: { maximumAttempts: 5 },
 });
 
-const { generateRecipeCandidates } = proxyActivities<RecipeGenerateActivities>({
-    taskQueue: GENERATE_TASK_QUEUE,
-    startToCloseTimeout: "15 minutes",
-    scheduleToCloseTimeout: "1 hour",
-    heartbeatTimeout: "30 seconds",
-    retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
-});
-
 const { finalizeRecipeScan, markRecipeJobFailed } = proxyActivities<RecipeFinalizeActivities>({
     startToCloseTimeout: "1 minute",
     retry: { maximumAttempts: 5 },
 });
 
+/** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 생성 큐로 보낸다. */
+function generateActivities() {
+    return proxyActivities<RecipeGenerateActivities>({
+        taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),
+        startToCloseTimeout: "15 minutes",
+        scheduleToCloseTimeout: "1 hour",
+        heartbeatTimeout: "30 seconds",
+        retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
+    });
+}
+
 /** 레시피 후보 생성 잡을 실행한다. */
 export async function recipeScanWorkflow(input: RecipeScanInput): Promise<void> {
+    const { generateRecipeCandidates } = generateActivities();
     try {
         const prep = await prepareRecipeScan(input);
         const output = await generateRecipeCandidates(prep);
