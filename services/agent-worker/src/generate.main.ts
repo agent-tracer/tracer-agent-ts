@@ -170,7 +170,7 @@ async function bootstrap(): Promise<void> {
     );
 
     // replica 수와 이 값의 곱이 동시 모델 호출 총량이므로, 총량을 늘리려면 이 값을 replica 수로 나눠 정한다.
-    const generateMaxConcurrentActivities = Number(process.env["SDK_GENERATE_MAX_CONCURRENT_ACTIVITIES"] ?? "6");
+    const generateMaxConcurrentActivities = Number(process.env["GENERATE_MAX_CONCURRENT_ACTIVITIES"] ?? "6");
 
     const workers = await createTemporalWorker({
         address: config.temporal.address,
