@@ -96,4 +96,18 @@ describe("runStructuredQuery", () => {
             expect.objectContaining({ code: "OUTPUT_SCHEMA_INVALID" }) as object,
         );
     });
+
+    it("공급자가 판까지 붙은 식별자를 내도 요청한 별칭을 적는다", async () => {
+        const runner = new FakeRunner(
+            result({
+                structuredOutput: { title: "제목" },
+                actualModel: "claude-sonnet-4-6-20260115",
+            }),
+        );
+
+        const response = await runStructuredQuery(runner, REQUEST, schema);
+
+        // 단가 표의 키와 같은 값이어야 한 기록의 model과 costUsd가 같은 모델을 가리킨다.
+        expect(response.modelUsed).toBe("claude-sonnet-4-6");
+    });
 });

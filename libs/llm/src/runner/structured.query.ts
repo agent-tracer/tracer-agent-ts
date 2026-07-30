@@ -41,8 +41,8 @@ export async function runStructuredQuery<T, ProviderOptions = undefined>(
         return {
             data: parsed.data,
             rawOutput: result.rawOutput,
-            // 공급자가 실제로 응답한 모델을 우선하고 응답이 없던 경우에만 요청 모델로 대체한다.
-            modelUsed: result.actualModel ?? request.model,
+            // 단가 표의 키와 같은 별칭을 적어 한 기록의 model과 costUsd가 같은 모델을 가리킨다.
+            modelUsed: request.model,
             durationMs: result.durationMs,
             costUsd: result.costUsd,
             numTurns: result.numTurns,
