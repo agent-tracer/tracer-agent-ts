@@ -35,10 +35,10 @@ export function mergeApplicationConfig(
         listenHost: env["MONITOR_LISTEN_HOST"] ?? (merged["listenHost"] as string | undefined) ?? "127.0.0.1",
         agentDb: {
             host: env["AGENT_DB_HOST"] ?? (agentDb["host"] as string | undefined) ?? "127.0.0.1",
-            port: envInt(env, "AGENT_DB_PORT", (agentDb["port"] as number | undefined) ?? 5433),
+            port: envInt(env, "AGENT_DB_PORT", (agentDb["port"] as number | undefined) ?? 5434),
             username: env["AGENT_DB_USER"] ?? user,
             password: env["AGENT_DB_PASSWORD"] ?? password,
-            database: env["AGENT_DB_NAME"] ?? (agentDb["database"] as string | undefined) ?? "tracer",
+            database: env["AGENT_DB_NAME"] ?? (agentDb["database"] as string | undefined) ?? "agent",
         },
         kafka: { brokers },
         temporal: {
