@@ -1,5 +1,5 @@
-export const PROMPT_BACKENDS = ["python", "claude-sdk"] as const;
-export type PromptBackend = (typeof PROMPT_BACKENDS)[number];
+/** 조각을 올린 에이전트 서비스를 가르는 이름이며 배포의 상류 선언이 그 값을 정한다. */
+export type PromptBackend = string;
 export const PROMPT_CHANNELS = ["candidate", "staging", "production"] as const;
 export type PromptChannel = (typeof PROMPT_CHANNELS)[number];
 

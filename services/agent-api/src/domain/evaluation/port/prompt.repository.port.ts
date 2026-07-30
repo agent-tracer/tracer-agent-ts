@@ -24,7 +24,7 @@ export interface PromptRepositoryPort {
     findPromptChannel(userId: string, definitionId: string, channel: PromptChannel): Promise<PromptChannelAssignment | null>;
     listPromptChannels(userId: string, definitionId: string): Promise<readonly PromptChannelAssignment[]>;
     savePromptChannel(userId: string, channel: PromptChannelAssignment, promotion: PromptPromotion): Promise<void>;
-    registerPythonPrompt(userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void>;
+    registerBackendPrompt(userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void>;
     registerAndResolveFragments(profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]>;
     listFragmentCatalog(filter: { agentName?: string | undefined; backend?: PromptBackend | undefined }): Promise<readonly PromptFragmentCatalogItem[]>;
     findFragmentDefinition(scope: {

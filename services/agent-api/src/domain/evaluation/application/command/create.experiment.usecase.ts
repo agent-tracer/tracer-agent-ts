@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import type { Experiment, ExperimentVariant, PromptBackend } from "~agent-api/domain/evaluation/model/experiment.model.js";
+import type { Experiment, ExperimentVariant } from "~agent-api/domain/evaluation/model/experiment.model.js";
+import type { PromptBackend } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import {
     EXPERIMENT_CLOCK,

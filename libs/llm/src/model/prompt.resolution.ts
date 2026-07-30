@@ -2,7 +2,8 @@ import { sha256 } from "~llm/support/sha256.js";
 
 const PLACEHOLDER_PATTERN = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
-export type PromptFragmentBackend = "claude-sdk" | "python";
+/** 조각을 올린 에이전트 서비스를 가르는 이름이며 배포의 상류 선언이 그 값을 정한다. */
+export type PromptFragmentBackend = string;
 
 export type PromptFragmentSource = "code-default" | "database-override";
 

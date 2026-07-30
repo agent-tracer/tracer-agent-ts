@@ -1,6 +1,7 @@
+import type { PromptBackend } from "~agent-api/domain/evaluation/model/prompt.model.js";
+
 export type ExperimentStatus = "draft" | "running" | "completed" | "failed" | "cancelled";
 export type ExecutionStatus = "pending" | "running" | "succeeded" | "failed" | "cancelled";
-export type PromptBackend = "python" | "claude-sdk";
 
 export interface Experiment {
     readonly id: string;

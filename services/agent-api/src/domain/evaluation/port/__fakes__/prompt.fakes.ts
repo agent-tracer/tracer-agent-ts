@@ -82,7 +82,7 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
         if (index < 0) this.channels.push(channel); else this.channels[index] = channel;
         this.promotions.push(promotion);
     }
-    async registerPythonPrompt(_userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void> {
+    async registerBackendPrompt(_userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void> {
         await this.savePrompt(definition, version); this.channels.push(channel);
     }
     async registerAndResolveFragments(profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]> {

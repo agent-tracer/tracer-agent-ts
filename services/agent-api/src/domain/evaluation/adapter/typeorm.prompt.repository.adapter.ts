@@ -74,7 +74,7 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
         await this.requireDefinition(userId, channel.definitionId);
         await this.source.transaction(async (manager) => this.writeChannel(manager, channel, promotion));
     }
-    async registerPythonPrompt(_userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void> {
+    async registerBackendPrompt(_userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void> {
         await this.source.transaction(async (manager) => {
             await manager.getRepository(PromptDefinitionEntity).insert(toPromptDefinitionRow(definition));
             await manager.getRepository(PromptVersionEntity).insert(toPromptVersionRow(version));

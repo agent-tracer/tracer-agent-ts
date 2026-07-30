@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** 조각을 올린 에이전트 서비스를 가르는 이름이며 배포의 상류 선언이 후보를 정하므로 문법만 검사한다. */
+export const backendNameSchema = z.string().trim().min(1).max(64).regex(/^[a-z][a-z0-9-]*$/);
+
 const version = z.object({
     semanticVersion: z.string().trim().min(1),
     content: z.string().min(1),
@@ -10,7 +13,7 @@ const version = z.object({
 
 export const createPromptSchema = z.object({
     name: z.string().trim().min(1), agentName: z.string().trim().min(1),
-    backend: z.enum(["python", "claude-sdk"]), language: z.string().trim().min(1), version,
+    backend: backendNameSchema, language: z.string().trim().min(1), version,
 }).strict();
 export const createPromptVersionSchema = version;
 export const promotePromptSchema = z.object({
@@ -20,12 +23,12 @@ export const promotePromptSchema = z.object({
 export const rollbackPromptChannelSchema = z.object({
     versionId: z.string().trim().min(1), channel: z.enum(["candidate", "staging", "production"]),
 }).strict();
-export const registerPythonPromptSchema = z.object({
+export const registerBackendPromptSchema = z.object({
     name: z.string().trim().min(1), agentName: z.string().trim().min(1),
     language: z.string().trim().min(1), version,
 }).strict();
 const fragmentManifestEntry = z.object({
-    backend: z.enum(["python", "claude-sdk"]), agentName: z.string().trim().min(1),
+    backend: backendNameSchema, agentName: z.string().trim().min(1),
     language: z.string().trim().min(1), codeName: z.string().trim().min(1),
     definitionKey: z.string().trim().min(1), fragmentName: z.string().trim().min(1),
     defaultVersion: z.string().trim().min(1), defaultContent: z.string().min(1),
@@ -41,10 +44,10 @@ export const promotePromptFragmentSchema = z.object({
     versionId: z.string().trim().min(1), channel: z.enum(["candidate", "staging", "production"]),
 }).strict();
 export const promptFragmentCatalogQuerySchema = z.object({
-    agentName: z.string().trim().min(1).optional(), backend: z.enum(["python", "claude-sdk"]).optional(),
+    agentName: z.string().trim().min(1).optional(), backend: backendNameSchema.optional(),
 });
 export const registerCandidateFragmentVersionSchema = z.object({
-    backend: z.enum(["python", "claude-sdk"]), agentName: z.string().trim().min(1),
+    backend: backendNameSchema, agentName: z.string().trim().min(1),
     fragmentName: z.string().trim().min(1), language: z.string().trim().min(1),
     content: z.string().min(1), changeSummary: z.string().trim().min(1).nullable().default(null),
 }).strict();
@@ -53,7 +56,7 @@ export type CreatePromptPayload = z.infer<typeof createPromptSchema>;
 export type CreatePromptVersionPayload = z.infer<typeof createPromptVersionSchema>;
 export type PromotePromptPayload = z.infer<typeof promotePromptSchema>;
 export type RollbackPromptChannelPayload = z.infer<typeof rollbackPromptChannelSchema>;
-export type RegisterPythonPromptPayload = z.infer<typeof registerPythonPromptSchema>;
+export type RegisterBackendPromptPayload = z.infer<typeof registerBackendPromptSchema>;
 export type RegisterAndResolvePromptFragmentsPayload = z.infer<typeof registerAndResolvePromptFragmentsSchema>;
 export type PromptFragmentCatalogQuery = z.infer<typeof promptFragmentCatalogQuerySchema>;
 export type PromotePromptFragmentPayload = z.infer<typeof promotePromptFragmentSchema>;
