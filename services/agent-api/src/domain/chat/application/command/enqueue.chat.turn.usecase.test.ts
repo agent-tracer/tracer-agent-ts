@@ -86,7 +86,7 @@ describe("EnqueueChatTurnUseCase", () => {
         await useCase.execute(TURN);
 
         await expect(useCase.execute({ ...TURN, clientRequestId: "r2", content: "이어서" }))
-            .rejects.toMatchObject({ code: "chat.execution-backend-conflict" });
+            .rejects.toMatchObject({ code: "chat.execution-active-conflict" });
     });
 
     it("소유하지 않은 스레드에는 접수하지 않는다", async () => {

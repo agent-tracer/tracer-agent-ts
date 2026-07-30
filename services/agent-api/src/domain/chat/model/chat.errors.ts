@@ -11,9 +11,9 @@ export class ChatMissingApiKeyError extends DomainError {
 }
 
 /** 아직 끝나지 않은 턴이 있는데 새 턴을 접수하면 두 워크플로가 같은 스레드를 나눠 집어 순서가 뒤집힌다. */
-export class ChatBackendConflictError extends DomainError {
+export class ChatActiveTurnConflictError extends DomainError {
     readonly httpStatus = 409;
-    readonly code = "chat.execution-backend-conflict";
+    readonly code = "chat.execution-active-conflict";
 
     constructor() {
         super("Chat thread already has an active turn");

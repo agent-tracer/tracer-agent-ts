@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CHAT_EXECUTION_STATUS, CHAT_MESSAGE_ROLE } from "~agent-api/domain/chat/model/chat.const.js";
 import {
-    ChatBackendConflictError,
+    ChatActiveTurnConflictError,
     ChatExecutionIdempotencyConflictError,
 } from "~agent-api/domain/chat/model/chat.errors.js";
 import { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
@@ -98,7 +98,7 @@ export class EnqueueChatTurnUseCase {
 
         // 진행 중인 턴이 남아 있으면 두 실행이 같은 스레드를 나눠 집어 순서가 뒤집힌다.
         const active = await tx.chatExecutions.findLatestActiveByThread(input.threadId);
-        if (active !== null) throw new ChatBackendConflictError();
+        if (active !== null) throw new ChatActiveTurnConflictError();
 
         const now = this.clock.now();
         const message = ChatMessage.create({
