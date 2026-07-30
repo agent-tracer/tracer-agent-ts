@@ -1,4 +1,6 @@
+import type { PromptFragmentManifestEntry } from "@tracer-agent/llm";
 import {
+    buildPromptFragmentManifest,
     definePromptFragment,
     type PromptFragmentBindingSpec,
 } from "~agent-worker/support/prompt.fragment.js";
@@ -105,3 +107,7 @@ export const RECIPE_PROMPT_FRAGMENT_BINDINGS: readonly PromptFragmentBindingSpec
         fragment: RECIPE_SPECIALIST_REPORTING,
     },
 ];
+
+/** 조립 근원이 등록 경계에 건네는 recipe-scan 프롬프트 조각 manifest다. */
+export const RECIPE_PROMPT_FRAGMENT_MANIFEST: readonly PromptFragmentManifestEntry[] =
+    buildPromptFragmentManifest("recipe-scan", RECIPE_PROMPT_FRAGMENT_BINDINGS);

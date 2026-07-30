@@ -14,7 +14,8 @@ import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
 import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
 import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { createNotificationPublisher } from "~agent-worker/config/notification.js";
-import { resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
+import { registerAndResolvePromptFragments } from "~agent-worker/config/prompt.fragment.registration.js";
+import { resolveAgentApiUrl, resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { JOB_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { createTemporalWorker } from "~agent-worker/config/temporal.worker.js";
 import { runUntilShutdown } from "~agent-worker/config/worker.lifecycle.js";
@@ -51,6 +52,17 @@ import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/appli
 import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
 import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
 import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
+import { CLEANUP_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/cleanup/model/cleanup.prompt.fragments.js";
+import { RECIPE_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/recipe/model/recipe.prompt.fragments.js";
+import { TITLE_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/title/model/title.prompt.fragments.js";
+import { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
+
+/** 이 워커가 조립하는 세 에이전트가 부팅 한 번에 함께 올리는 조각 선언이다. */
+const JOB_PROMPT_FRAGMENT_MANIFEST = [
+    ...RECIPE_PROMPT_FRAGMENT_MANIFEST,
+    ...CLEANUP_PROMPT_FRAGMENT_MANIFEST,
+    ...TITLE_PROMPT_FRAGMENT_MANIFEST,
+];
 
 /** 이 워커가 소유한 잡 원장을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
 const JOB_ENTITIES = [
@@ -72,6 +84,13 @@ async function bootstrap(): Promise<void> {
     const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
     const tracer = new TracerApiWindow(resolveTracerApiUrl());
 
+    const promptFragments = await registerAndResolvePromptFragments(
+        resolveAgentApiUrl(config.agentApi.port),
+        config.profile,
+        JOB_PROMPT_FRAGMENT_MANIFEST,
+    );
+    const resolveJobFragments = (): PromptFragmentRunResolver => new PromptFragmentRunResolver(promptFragments);
+
     const recipeIds = new RecipeUlidGenerator();
     const recipeReader = new RecipeReaderAdapter(tracer);
     const recipeSearch = new RecipeSearchAdapter(tracer);
@@ -83,7 +102,7 @@ async function bootstrap(): Promise<void> {
         events: recipeReader,
         rules: recipeReader,
         search: recipeSearch,
-    });
+    }, resolveJobFragments);
     const recipe = new RecipeActivity(
         new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock),
         new ScanRecipeUsecase(recipeRepository, recipeAgent, clock, recipeIds),
@@ -95,7 +114,7 @@ async function bootstrap(): Promise<void> {
     const titleReader = new TitleEventReaderAdapter(tracer);
     const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
     const titleNotification = new TitleNotificationAdapter(publish);
-    const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader);
+    const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader, resolveJobFragments);
     const title = new TitleActivity(
         new PrepareTitleSuggestionUsecase(titleRepository, titleAgent, titleNotification, clock),
         new SuggestTitleUsecase(titleRepository, titleAgent, clock, titleIds),
@@ -111,7 +130,7 @@ async function bootstrap(): Promise<void> {
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
         tasks: cleanupReader,
         events: cleanupReader,
-    });
+    }, resolveJobFragments);
     const cleanup = new CleanupActivity(
         new PrepareTaskCleanupUsecase(cleanupRepository, cleanupAgent, cleanupNotification, clock),
         new SuggestCleanupUsecase(cleanupRepository, cleanupAgent, clock, cleanupIds),
