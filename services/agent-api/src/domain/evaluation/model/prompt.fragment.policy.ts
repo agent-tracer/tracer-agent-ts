@@ -21,6 +21,42 @@ export function resolveFragmentIntegrityHash(content: string, claimed?: string):
     return computed;
 }
 
+const CANDIDATE_VERSION = /^candidate-(\d+)$/u;
+
+/** candidate 채널에 쌓인 판 다음의 이름과 그 앞 판이며 한 정의 안에서 판 이름이 겹치지 않게 한다. */
+export function nextCandidateFragmentVersion(versions: readonly PromptFragmentVersion[]): {
+    readonly semanticVersion: string;
+    readonly previousVersionId: string | null;
+} {
+    const authored = versions
+        .flatMap((item) => {
+            const match = CANDIDATE_VERSION.exec(item.semanticVersion);
+            return match ? [{ ordinal: Number(match[1]), id: item.id }] : [];
+        })
+        .sort((left, right) => right.ordinal - left.ordinal);
+    const latest = authored[0];
+    return {
+        semanticVersion: `candidate-${(latest?.ordinal ?? 0) + 1}`,
+        previousVersionId: latest?.id ?? null,
+    };
+}
+
+/** 저작한 조각 판이며 계약 판은 코드가 선언한 정의의 것을 그대로 따른다. */
+export function authoredFragmentVersion(input: {
+    id: string; definitionId: string; semanticVersion: string; content: string; changeSummary: string | null;
+    createdBy: string; previousVersionId: string | null; toolContractVersion: string; outputSchemaVersion: string;
+    now: Date;
+}): PromptFragmentVersion {
+    return Object.assign(new PromptFragmentVersion(), {
+        id: input.id, definitionId: input.definitionId, semanticVersion: input.semanticVersion,
+        content: input.content, contentHash: computePromptFragmentHash(input.content),
+        placeholders: extractPromptFragmentPlaceholders(input.content),
+        toolContractVersion: input.toolContractVersion, outputSchemaVersion: input.outputSchemaVersion,
+        origin: "database-authored", previousVersionId: input.previousVersionId,
+        changeSummary: input.changeSummary, createdBy: input.createdBy, createdAt: input.now,
+    });
+}
+
 export function newFragmentDefinition(entry: PromptFragmentManifestEntry, id: string, now: Date): PromptFragmentDefinition {
     return Object.assign(new PromptFragmentDefinition(), {
         id, definitionKey: entry.definitionKey, agentName: entry.agentName, backend: entry.backend,

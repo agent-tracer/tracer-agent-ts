@@ -27,7 +27,11 @@ export interface PromptRepositoryPort {
     registerPythonPrompt(userId: string, definition: PromptDefinition, version: PromptVersion, channel: PromptChannelAssignment): Promise<void>;
     registerAndResolveFragments(profile: string, manifest: readonly PromptFragmentManifestEntry[]): Promise<readonly ResolvedPromptFragment[]>;
     listFragmentCatalog(filter: { agentName?: string | undefined; backend?: PromptBackend | undefined }): Promise<readonly PromptFragmentCatalogItem[]>;
-    saveCandidateFragment(input: {
-        definition: PromptFragmentDefinition; version: PromptFragmentVersion; channel: PromptFragmentChannelAssignment;
+    findFragmentDefinition(scope: {
+        backend: PromptBackend; agentName: string; fragmentName: string; language: string;
+    }): Promise<PromptFragmentDefinition | null>;
+    listFragmentVersions(definitionId: string): Promise<readonly PromptFragmentVersion[]>;
+    saveCandidateFragmentVersion(input: {
+        version: PromptFragmentVersion; channel: PromptFragmentChannelAssignment;
     }): Promise<void>;
 }

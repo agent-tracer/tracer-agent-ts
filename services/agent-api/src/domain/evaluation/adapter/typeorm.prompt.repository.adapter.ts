@@ -101,9 +101,16 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
         }
         return result;
     }
-    async saveCandidateFragment(input: Parameters<PromptRepositoryPort["saveCandidateFragment"]>[0]): Promise<void> {
+    async findFragmentDefinition(scope: Parameters<PromptRepositoryPort["findFragmentDefinition"]>[0]): Promise<PromptFragmentDefinition | null> {
+        const row = await this.source.getRepository(PromptFragmentDefinitionEntity).findOne({ where: { ...scope } });
+        return row ? toPromptFragmentDefinition(row) : null;
+    }
+    async listFragmentVersions(definitionId: string): Promise<readonly PromptFragmentVersion[]> {
+        return (await this.source.getRepository(PromptFragmentVersionEntity).find({ where: { definitionId }, order: { createdAt: "ASC" } }))
+            .map(toPromptFragmentVersion);
+    }
+    async saveCandidateFragmentVersion(input: Parameters<PromptRepositoryPort["saveCandidateFragmentVersion"]>[0]): Promise<void> {
         await this.source.transaction(async (manager) => {
-            await manager.getRepository(PromptFragmentDefinitionEntity).upsert(toPromptFragmentDefinitionRow(input.definition), ["id"]);
             await manager.getRepository(PromptFragmentVersionEntity).insert(toPromptFragmentVersionRow(input.version));
             await manager.getRepository(PromptFragmentChannelEntity).upsert(toPromptFragmentChannelRow(input.channel), ["definitionId", "channel"]);
         });
