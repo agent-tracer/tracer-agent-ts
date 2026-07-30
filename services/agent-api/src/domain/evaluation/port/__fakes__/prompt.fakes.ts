@@ -14,6 +14,14 @@ import type { PromptClockPort, PromptIdGeneratorPort, PromptPromotionGatePort, P
 
 const FRAGMENT_EPOCH = new Date(0);
 
+const FRAGMENT_DEFINITION_SCOPE = ["backend", "agentName", "fragmentName", "language"] as const;
+
+/** 조회 조건에 엔티티가 모르는 칸이 섞이면 실제 저장소가 거절하므로 이 대역도 같게 거절한다. */
+function rejectUnknownColumns(scope: object, columns: readonly string[], entity: string): void {
+    const unknown = Object.keys(scope).find((key) => !columns.includes(key));
+    if (unknown !== undefined) throw new Error(`Property "${unknown}" was not found in "${entity}".`);
+}
+
 export class FixedPromptClock implements PromptClockPort {
     constructor(private readonly value: Date) {}
     now(): Date { return this.value; }
@@ -89,6 +97,7 @@ export class InMemoryPromptRepository implements PromptRepositoryPort {
         });
     }
     async findFragmentDefinition(scope: { backend: PromptBackend; agentName: string; fragmentName: string; language: string }): Promise<PromptFragmentDefinition | null> {
+        rejectUnknownColumns(scope, FRAGMENT_DEFINITION_SCOPE, "PromptFragmentDefinitionEntity");
         return this.fragmentDefinitions.find((item) => item.backend === scope.backend && item.agentName === scope.agentName
             && item.fragmentName === scope.fragmentName && item.language === scope.language) ?? null;
     }

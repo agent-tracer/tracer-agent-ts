@@ -103,7 +103,12 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
         return result;
     }
     async findFragmentDefinition(scope: Parameters<PromptRepositoryPort["findFragmentDefinition"]>[0]): Promise<PromptFragmentDefinition | null> {
-        const row = await this.source.getRepository(PromptFragmentDefinitionEntity).findOne({ where: { ...scope } });
+        const row = await this.source.getRepository(PromptFragmentDefinitionEntity).findOne({
+            where: {
+                backend: scope.backend, agentName: scope.agentName,
+                fragmentName: scope.fragmentName, language: scope.language,
+            },
+        });
         return row ? toPromptFragmentDefinition(row) : null;
     }
     async listFragmentVersions(definitionId: string): Promise<readonly PromptFragmentVersion[]> {
@@ -145,38 +150,40 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
     }
     private async ensureFragmentDefinition(manager: EntityManager, entry: PromptFragmentManifestEntry): Promise<PromptFragmentDefinition> {
         const repository = manager.getRepository(PromptFragmentDefinitionEntity);
-        const found = await repository.findOne({ where: { backend: entry.backend, definitionKey: entry.definitionKey } });
+        const scope = {
+            backend: entry.backend, agentName: entry.agentName,
+            fragmentName: entry.fragmentName, language: entry.language,
+        };
+        const found = await repository.findOne({ where: scope });
         if (found) return toPromptFragmentDefinition(found);
         const created = newFragmentDefinition(entry, this.ids.next("fragment"), this.clock.now());
-        await repository.insert(toPromptFragmentDefinitionRow(created));
-        return created;
+        await insertIgnoringConflicts(manager, PromptFragmentDefinitionEntity, toPromptFragmentDefinitionRow(created));
+        const settled = await repository.findOne({ where: scope });
+        if (settled === null) throw new Error(`prompt-fragment.definition-unresolvable:${entry.definitionKey}`);
+        return toPromptFragmentDefinition(settled);
     }
     private async ensureFragmentVersion(manager: EntityManager, entry: PromptFragmentManifestEntry,
         definitionId: string): Promise<PromptFragmentVersion> {
         const repository = manager.getRepository(PromptFragmentVersionEntity);
-        const found = await repository.findOne({ where: { definitionId, semanticVersion: entry.defaultVersion } });
+        const scope = { definitionId, semanticVersion: entry.defaultVersion };
+        const found = await repository.findOne({ where: scope });
         if (found) return toPromptFragmentVersion(found);
         const created = newFragmentVersion(entry, this.ids.next("fragment-version"), definitionId, this.clock.now());
-        await repository.insert(toPromptFragmentVersionRow(created));
-        return created;
+        await insertIgnoringConflicts(manager, PromptFragmentVersionEntity, toPromptFragmentVersionRow(created));
+        const settled = await repository.findOne({ where: scope });
+        if (settled === null) throw new Error(`prompt-fragment.version-unresolvable:${entry.definitionKey}`);
+        return toPromptFragmentVersion(settled);
     }
     private async ensureFragmentBindings(manager: EntityManager, entry: PromptFragmentManifestEntry, definitionId: string): Promise<void> {
-        const repository = manager.getRepository(PromptFragmentBindingEntity);
         for (const binding of entry.bindings) {
-            const found = await repository.findOne({
-                where: { backend: entry.backend, templateKey: binding.templateKey, fragmentSlot: binding.fragmentSlot },
-            });
-            if (found) continue;
-            await repository.insert(toPromptFragmentBindingRow(
+            await insertIgnoringConflicts(manager, PromptFragmentBindingEntity, toPromptFragmentBindingRow(
                 newFragmentBinding(entry, binding, this.ids.next("fragment-binding"), definitionId, this.clock.now()),
             ));
         }
     }
     private async ensureFragmentChannel(manager: EntityManager, definitionId: string, channel: PromptChannel,
         versionId: string): Promise<void> {
-        const repository = manager.getRepository(PromptFragmentChannelEntity);
-        if (await repository.findOne({ where: { definitionId, channel } })) return;
-        await repository.insert(toPromptFragmentChannelRow(
+        await insertIgnoringConflicts(manager, PromptFragmentChannelEntity, toPromptFragmentChannelRow(
             newFragmentChannel(this.ids.next("fragment-channel"), definitionId, channel, versionId, this.clock.now()),
         ));
     }
@@ -188,4 +195,11 @@ export class TypeOrmPromptRepositoryAdapter implements PromptRepositoryPort {
         const version = await manager.getRepository(PromptFragmentVersionEntity).findOne({ where: { id: assignment.versionId } });
         return version ? toPromptFragmentVersion(version) : null;
     }
+}
+
+/** 워커 셋이 같은 조각을 동시에 올리므로 심는 쪽이 충돌을 견디고 이긴 행을 다시 읽는다. */
+async function insertIgnoringConflicts<T extends object>(
+    manager: EntityManager, entity: new () => T, row: T,
+): Promise<void> {
+    await manager.createQueryBuilder().insert().into(entity).values(row).orIgnore().execute();
 }

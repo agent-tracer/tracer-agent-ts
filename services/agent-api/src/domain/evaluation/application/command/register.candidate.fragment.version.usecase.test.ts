@@ -50,6 +50,19 @@ describe("RegisterCandidateFragmentVersionUseCase", () => {
         expect(version?.outputSchemaVersion).toBe("1");
     });
 
+    it("정의를 찾을 때 조각을 가르는 네 칸만 묻는다", async () => {
+        const repository = await declared();
+        const asked: object[] = [];
+        const find = repository.findFragmentDefinition.bind(repository);
+        repository.findFragmentDefinition = async (scope) => {
+            asked.push(scope);
+            return find(scope);
+        };
+        await usecase(repository).execute({ ...SCOPE, content: "본문", changeSummary: "요약", createdBy: "u" });
+        expect(Object.keys(asked[0] ?? {}).sort())
+            .toStrictEqual(["agentName", "backend", "fragmentName", "language"]);
+    });
+
     it("코드가 선언하지 않은 조각은 등록하지 않는다", async () => {
         const repository = await declared();
         await expect(usecase(repository).execute({ ...SCOPE, fragmentName: "unknown", content: "본문", changeSummary: null, createdBy: "u" }))

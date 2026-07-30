@@ -12,7 +12,10 @@ export class RegisterCandidateFragmentVersionUseCase {
         @Inject(PROMPT_CLOCK) private readonly clock: PromptClockPort) {}
     async execute(input: { backend: PromptBackend; agentName: string; fragmentName: string; language: string;
         content: string; changeSummary: string | null; createdBy: string }) {
-        const definition = await this.repository.findFragmentDefinition(input);
+        const definition = await this.repository.findFragmentDefinition({
+            backend: input.backend, agentName: input.agentName,
+            fragmentName: input.fragmentName, language: input.language,
+        });
         if (definition === null) throw new Error("Prompt fragment definition not found");
         const versions = await this.repository.listFragmentVersions(definition.id);
         const baseline = versions.find((item) => item.origin === "code-default");
