@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "yaml";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -15,6 +16,35 @@ export function readContractVersion(): string {
 /** 계약 뿌리를 기준으로 한 상대 경로의 JSON 파일 하나를 읽는다. */
 export function readContractJson<T>(relative: string): T {
     return JSON.parse(readFileSync(path.join(CONTRACT_ROOT, relative), "utf8")) as T;
+}
+
+/** 계약이 선언한 창구 하나의 칸이며 required 는 그 가운데 반드시 실리는 것이다. */
+export interface ContractFields {
+    readonly declared: readonly string[];
+    readonly required: readonly string[];
+}
+
+interface OpenApiSchema {
+    readonly required?: readonly string[];
+    readonly properties?: Readonly<Record<string, unknown>>;
+}
+
+let httpSurface: { readonly components: { readonly schemas: Readonly<Record<string, OpenApiSchema>> } } | null = null;
+
+/** 브라우저에 여는 표면을 선언한 계약 문서를 읽는다. */
+function readHttpSurface() {
+    httpSurface ??= parse(readFileSync(path.join(CONTRACT_ROOT, "http", "agent-api.openapi.yaml"), "utf8")) as typeof httpSurface;
+    if (httpSurface === null) throw new Error("계약이 HTTP 표면을 선언하지 않는다");
+    return httpSurface;
+}
+
+/** 계약이 이름으로 선언한 응답 스키마 하나의 칸과 그 가운데 필수인 것을 낸다. */
+export function readContractFields(schemaName: string): ContractFields {
+    const schema = readHttpSurface().components.schemas[schemaName];
+    if (schema?.properties === undefined) {
+        throw new Error(`계약이 ${schemaName} 스키마를 선언하지 않는다`);
+    }
+    return { declared: Object.keys(schema.properties), required: schema.required ?? [] };
 }
 
 /** 계약이 선언한 스키마 파일을 이름 순서대로 낸다. */

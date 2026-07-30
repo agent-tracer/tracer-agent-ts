@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { toExperimentView } from "~agent-api/domain/evaluation/model/experiment.view.model.js";
 import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import {
     EXPERIMENT_CLOCK, EXPERIMENT_DISPATCHER, type ExperimentClockPort, type ExperimentDispatcherPort,
@@ -19,6 +20,6 @@ export class CancelExperimentUseCase {
         experiment.status = "cancelled";
         experiment.completedAt = this.clock.now();
         await this.repository.saveExperiment(experiment, await this.repository.listVariants(userId, id));
-        return { experiment, workflowCancellation: outcome };
+        return { experiment: toExperimentView(experiment), workflowCancellation: outcome };
     }
 }

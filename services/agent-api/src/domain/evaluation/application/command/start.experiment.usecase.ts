@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { buildExperimentPreview, confirmsPreview, type ExperimentStartConfirmation } from "~agent-api/domain/evaluation/model/experiment.preview.model.js";
+import { toExperimentView } from "~agent-api/domain/evaluation/model/experiment.view.model.js";
 import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import { EXPERIMENT_DISPATCHER, type ExperimentDispatcherPort } from "~agent-api/domain/evaluation/port/experiment.support.port.js";
 
@@ -21,7 +22,7 @@ export class StartExperimentUseCase {
         const claimed = await this.repository.claimDraft(userId, id);
         if (claimed === null) throw new Error("Experiment was already started");
         try {
-            return { experiment: claimed, ...(await this.dispatcher.dispatch({ experimentId: id, userId })) };
+            return { experiment: toExperimentView(claimed), ...(await this.dispatcher.dispatch({ experimentId: id, userId })) };
         } catch (error) {
             await this.repository.restoreDraft(userId, id);
             throw error;

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { Experiment, ExperimentVariant } from "~agent-api/domain/evaluation/model/experiment.model.js";
+import { toExperimentView, type ExperimentView } from "~agent-api/domain/evaluation/model/experiment.view.model.js";
 import type { PromptBackend } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import { EXPERIMENT_REPOSITORY, type ExperimentRepositoryPort } from "~agent-api/domain/evaluation/port/experiment.repository.port.js";
 import {
@@ -32,7 +33,7 @@ export class CreateExperimentUseCase {
         @Inject(EXPERIMENT_CLOCK) private readonly clock: ExperimentClockPort,
     ) {}
 
-    async execute(input: CreateExperimentInput): Promise<{ experiment: Experiment; variants: readonly ExperimentVariant[] }> {
+    async execute(input: CreateExperimentInput): Promise<{ experiment: ExperimentView; variants: readonly ExperimentVariant[] }> {
         if (!Number.isFinite(input.maxBudgetUsd) || input.maxBudgetUsd <= 0 || input.repetitions < 1) {
             throw new Error("Experiment budget and repetitions are invalid");
         }
@@ -55,6 +56,6 @@ export class CreateExperimentUseCase {
             fragmentSelections: row.fragmentSelections ?? {},
         }));
         await this.repository.saveExperiment(experiment, variants);
-        return { experiment, variants };
+        return { experiment: toExperimentView(experiment), variants };
     }
 }
