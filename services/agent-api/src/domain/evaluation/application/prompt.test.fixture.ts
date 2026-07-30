@@ -1,4 +1,4 @@
-import { promptContentHash } from "~agent-api/domain/evaluation/model/prompt.hash.js";
+import { computePromptFragmentHash } from "@tracer-agent/llm";
 import { PromptDefinition, PromptVersion } from "~agent-api/domain/evaluation/model/prompt.model.js";
 import { FixedPromptClock, FixedPromptPromotionGate, InMemoryPromptRepository, SequentialPromptIdGenerator } from "~agent-api/domain/evaluation/port/__fakes__/prompt.fakes.js";
 
@@ -16,7 +16,7 @@ export function promptFixture() {
     });
     const version = Object.assign(new PromptVersion(), {
         id: "version-1", definitionId: definition.id, semanticVersion: "1.0.0", content: "본문",
-        contentHash: promptContentHash("본문"), toolContractVersion: "1", outputSchemaVersion: "1",
+        contentHash: computePromptFragmentHash("본문"), toolContractVersion: "1", outputSchemaVersion: "1",
         contentOrigin: "user-authored", createdBy: "user-1", createdAt: NOW,
     });
     repository.definitions.push(definition); repository.versions.push(version);

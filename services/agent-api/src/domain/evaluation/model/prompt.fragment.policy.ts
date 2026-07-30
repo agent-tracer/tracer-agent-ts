@@ -14,13 +14,6 @@ export function promptFragmentChannel(_profile: string): PromptChannel {
     return "production";
 }
 
-/** 조각 무결성 규칙으로 만든 해시이며 요청이 다른 값을 실었으면 거절한다. */
-export function resolveFragmentIntegrityHash(content: string, claimed?: string): string {
-    const computed = computePromptFragmentHash(content);
-    if (claimed !== undefined && claimed !== computed) throw new Error("Prompt content hash mismatch");
-    return computed;
-}
-
 const CANDIDATE_VERSION = /^candidate-(\d+)$/u;
 
 /** candidate 채널에 쌓인 판 다음의 이름과 그 앞 판이며 한 정의 안에서 판 이름이 겹치지 않게 한다. */
