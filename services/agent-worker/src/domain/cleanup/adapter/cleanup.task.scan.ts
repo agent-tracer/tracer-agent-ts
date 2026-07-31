@@ -6,8 +6,8 @@ import type { CleanupScanBatch } from "~agent-worker/domain/cleanup/port/cleanup
 /** 서버 자신의 에이전트가 만든 태스크를 나타내는 출처 값이며 정리 대상에서 뺀다. */
 const SERVER_SDK_TASK_ORIGIN = "server-sdk";
 
-/** 한 번의 스캔이 훑는 태스크의 상한이다. */
-const TASK_SCAN_LIMIT = 500;
+/** 한 번의 스캔이 훑는 태스크의 상한이며 걸러내기 전의 원본을 센다. */
+export const TASK_SCAN_LIMIT = 500;
 
 /** 목록 창구가 한 장에 담는 최대 개수이며 값은 추적 API가 소유한다. */
 const TASK_PAGE_LIMIT = 100;
