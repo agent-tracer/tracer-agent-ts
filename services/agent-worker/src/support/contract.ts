@@ -29,6 +29,20 @@ export function readAgentOutput(agentName: string): { readonly schema: Record<st
     return readContractJson<{ readonly schema: Record<string, unknown> }>(`agent/${agentName}/output.json`);
 }
 
+/** 조립된 프롬프트가 출력 언어마다 실어야 하는 조각과 그 언어별 변형을 계약이 적은 것이다. */
+export interface AgentLanguageCases {
+    readonly fragment: string;
+    readonly cases: readonly {
+        readonly input: { readonly language?: string };
+        readonly expect: { readonly variant: string };
+    }[];
+}
+
+/** 에이전트 하나의 판정 케이스이며 어느 절을 갖는지는 에이전트마다 다르다. */
+export function readAgentCases<T>(agentName: string): T {
+    return readContractJson<T>(`agent/${agentName}/cases.json`);
+}
+
 /** 산출물 창구 하나의 요청 본문에 실릴 수 있는 칸이다. */
 export interface TracerOutputWindow {
     readonly method: string;

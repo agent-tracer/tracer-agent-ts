@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { AgentPrompt, buildAgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
-import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
-import { OUTPUT_LANGUAGES } from "~agent-worker/support/output.language.js";
+import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
+import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { normalizeOutputLanguage, OUTPUT_LANGUAGES } from "~agent-worker/support/output.language.js";
 import { buildChatSystemPrompt, CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY } from "./chat.prompt.js";
 
 const DECLARED = readAgentPrompt(AGENT.chat.id);
 const PROMPT = buildAgentPrompt(DECLARED);
+const LANGUAGE = readAgentCases<{ language: AgentLanguageCases }>(AGENT.chat.id).language;
+
+/** 계약이 그 언어 변형에 적은 조각 본문이며 조립 결과가 이 본문을 그대로 실어야 한다. */
+function variant(name: string): string {
+    return (DECLARED.fragments[LANGUAGE.fragment]?.byLanguage?.[name] ?? []).join("\n");
+}
 
 /** 슬롯마다 그 이름만 담은 프롬프트라 조립 결과에서 어느 슬롯을 썼는지 그대로 읽힌다. */
 function labelled(): AgentPrompt {
@@ -46,6 +53,18 @@ describe("대화 시스템 프롬프트", () => {
 
     it("모르는 언어는 auto 의 지시문으로 되돌린다", () => {
         expect(PROMPT.languageDirective("kl")).toBe(PROMPT.languageDirective("auto"));
+    });
+});
+
+describe("대화 프롬프트의 출력 언어", () => {
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+        for (const declared of LANGUAGE.cases) {
+            const expected = variant(declared.expect.variant);
+            const rendered = buildChatSystemPrompt(PROMPT, normalizeOutputLanguage(declared.input.language));
+
+            expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
+            expect(rendered, declared.expect.variant).toContain(expected);
+        }
     });
 });
 
