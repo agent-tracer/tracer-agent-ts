@@ -4,6 +4,7 @@ import {
     AgentExecutionFailure,
     PROVIDER_ERROR_SUBTYPE,
     isBudgetExhaustedFailure,
+    flattenErrorSubtypeClasses,
     isNonRetryableSubtype,
     loadErrorSubtypeContract,
 } from "./agent.error.js";
@@ -43,8 +44,8 @@ describe("isBudgetExhaustedFailure", () => {
 
 describe("오류 서브타입 계약", () => {
     it("이 백엔드가 내는 서브타입은 계약의 typescript 어휘와 같다", () => {
-        const declared = Object.entries(CONTRACT.emitted)
-            .filter(([, verdict]) => verdict.emittedBy.includes("typescript"))
+        const declared = Object.entries(CONTRACT.emittedBy)
+            .filter(([, emitters]) => emitters.includes("typescript"))
             .map(([subtype]) => subtype);
 
         expect([...Object.values(AGENT_ERROR_SUBTYPE)].sort()).toEqual(declared.sort());
@@ -55,9 +56,18 @@ describe("오류 서브타입 계약", () => {
     });
 
     it("이 구현이 이름 짓는 어휘와 공급자 통과 값이 겹치지 않는다", () => {
-        const overlap = Object.keys(CONTRACT.provider).filter((subtype) => subtype in CONTRACT.emitted);
+        const classified = new Set(
+            flattenErrorSubtypeClasses(CONTRACT).map((verdict) => verdict.subtype),
+        );
+        const overlap = Object.keys(CONTRACT.provider).filter((subtype) => classified.has(subtype));
 
         expect(overlap).toEqual([]);
+    });
+
+    it("상위 분류가 거느린 하위 종류와 낸 축의 기록이 같은 목록을 가리킨다", () => {
+        const classified = flattenErrorSubtypeClasses(CONTRACT).map((verdict) => verdict.subtype);
+
+        expect(classified.sort()).toEqual(Object.keys(CONTRACT.emittedBy).sort());
     });
 
     it("봉투를 다 쓴 실패와 분류되지 않은 실패를 재시도하지 않는다", () => {

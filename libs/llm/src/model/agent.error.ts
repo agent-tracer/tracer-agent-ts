@@ -7,10 +7,10 @@ import type { JobStepPayload } from "./job.step.js";
 export type ErrorSubtypeEmitter = "typescript" | "python";
 
 /** 재시도해도 같은 자리에서 끝나는 실패인지와, 예약 몫까지 다 써 실패 대신 빈 결과로 착지시킬 실패인지다. */
-export interface EmittedErrorSubtype {
+export interface ErrorSubtypeClass {
     readonly retryable: boolean;
     readonly landsEmpty: boolean;
-    readonly emittedBy: readonly ErrorSubtypeEmitter[];
+    readonly subtypes: readonly string[];
 }
 
 /** 공급자 오류 본문이나 정지 이유를 그대로 통과시킨 값이라 이 구현이 이름 짓지 않으며 재시도 판정만 갖는다. */
@@ -18,10 +18,20 @@ export interface ProviderErrorSubtypeVerdict {
     readonly retryable: boolean;
 }
 
-/** emitted는 구현체가 직접 이름 짓는 닫힌 어휘이고 provider는 공급자가 새 값을 낼 수 있는 열린 목록이다. */
+/** classes는 실행 실패의 상위 분류 셋이고 emittedBy는 어느 구현체가 그 하위를 내는지의 기록이다. */
 export interface ErrorSubtypeContract {
-    readonly emitted: Readonly<Record<string, EmittedErrorSubtype>>;
+    readonly classes: Readonly<Record<string, ErrorSubtypeClass>>;
+    readonly emittedBy: Readonly<Record<string, readonly ErrorSubtypeEmitter[]>>;
     readonly provider: Readonly<Record<string, ProviderErrorSubtypeVerdict>>;
+}
+
+/** 상위 분류가 거느린 하위 종류를 판정과 함께 편다. */
+export function flattenErrorSubtypeClasses(
+    contract: ErrorSubtypeContract,
+): readonly (ErrorSubtypeClass & { readonly subtype: string })[] {
+    return Object.values(contract.classes).flatMap((verdict) =>
+        verdict.subtypes.map((subtype) => ({ ...verdict, subtype })),
+    );
 }
 
 /** 두 구현체가 함께 읽는 오류 서브타입 판정표이며 값은 계약 저장소가 소유한다. */
@@ -104,11 +114,19 @@ export class AgentExecutionFailure extends Error {
 
 const ERROR_SUBTYPE_CONTRACT = loadErrorSubtypeContract();
 
+const CLASSIFIED_SUBTYPES = flattenErrorSubtypeClasses(ERROR_SUBTYPE_CONTRACT);
+
 // 표에 없는 공급자 값은 판정을 내린 적이 없다는 뜻이라 재시도로 떨어뜨린다.
 const NON_RETRYABLE_SUBTYPES: ReadonlySet<string> = new Set(
-    [...Object.entries(ERROR_SUBTYPE_CONTRACT.emitted), ...Object.entries(ERROR_SUBTYPE_CONTRACT.provider)]
-        .filter(([, verdict]) => !verdict.retryable)
-        .map(([subtype]) => subtype),
+    [
+        ...CLASSIFIED_SUBTYPES,
+        ...Object.entries(ERROR_SUBTYPE_CONTRACT.provider).map(([subtype, verdict]) => ({
+            subtype,
+            ...verdict,
+        })),
+    ]
+        .filter((verdict) => !verdict.retryable)
+        .map((verdict) => verdict.subtype),
 );
 
 export function isNonRetryableSubtype(subtype: string | null): boolean {
@@ -116,9 +134,7 @@ export function isNonRetryableSubtype(subtype: string | null): boolean {
 }
 
 const BUDGET_EXHAUSTED_SUBTYPES: ReadonlySet<string> = new Set(
-    Object.entries(ERROR_SUBTYPE_CONTRACT.emitted)
-        .filter(([, verdict]) => verdict.landsEmpty)
-        .map(([subtype]) => subtype),
+    CLASSIFIED_SUBTYPES.filter((verdict) => verdict.landsEmpty).map((verdict) => verdict.subtype),
 );
 
 /** 예약된 몫까지 다 써 실패가 아니라 그때까지의 산출로 착지시켜야 하는 중단인지 본다. */
