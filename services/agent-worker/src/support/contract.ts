@@ -26,12 +26,26 @@ export interface WorkerSdkMetricsDeclaration {
     readonly port: number;
     readonly path: string;
     readonly durationUnit: string;
+    readonly countersTotalSuffix: boolean;
+    readonly unitSuffix: boolean;
 }
 
 export function readWorkerSdkMetrics(): WorkerSdkMetricsDeclaration {
     return readContractYaml<{ readonly workerSdkMetrics: WorkerSdkMetricsDeclaration }>(
         "workflow/metrics.yaml",
     ).workerSdkMetrics;
+}
+
+/** 축을 싣는 두 이름이며 계측이 쓰는 속성과 지표 창구가 직접 싣는 라벨을 나눠 갖는다. */
+export interface AxisLabelDeclaration {
+    readonly attributeKey: string;
+    readonly labelName: string;
+}
+
+export function readAxisLabel(): AxisLabelDeclaration {
+    return readContractYaml<{ readonly labels: { readonly axis: AxisLabelDeclaration } }>(
+        "workflow/metrics.yaml",
+    ).labels.axis;
 }
 
 /** 에이전트 하나의 조각과 템플릿 선언을 읽는다. */
