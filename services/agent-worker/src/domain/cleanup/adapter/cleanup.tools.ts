@@ -22,7 +22,7 @@ import type { CleanupEvent, CleanupEventReaderPort, CleanupTaskReaderPort } from
 
 const AGENT_NAME = AGENT.taskCleanup.id;
 
-/** cleanup 도구가 쓰는 저장소 읽기 표면을 묶으며, 이 부분집합이 실제 저장소와 평가용 스냅샷 구현을 갈아끼우는 자리다. */
+/** cleanup 도구가 쓰는 저장소 읽기 표면을 묶는다. */
 export interface CleanupToolDeps {
     readonly tasks: CleanupTaskReaderPort;
     readonly events: CleanupEventReaderPort;

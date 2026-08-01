@@ -40,7 +40,7 @@ import type { RecipeSearchPort } from "~agent-worker/domain/recipe/port/recipe.s
 
 const AGENT_NAME = AGENT.recipeScan.id;
 
-/** recipe 도구가 쓰는 저장소 읽기 표면과 검색 클라이언트를 묶으며, 이 부분집합이 실제 저장소와 평가용 스냅샷 구현을 갈아끼우는 자리다. */
+/** recipe 도구가 쓰는 저장소 읽기 표면과 검색 클라이언트를 묶는다. */
 export interface RecipeToolDeps {
     readonly tasks: RecipeTaskReaderPort;
     readonly events: RecipeEventReaderPort;

@@ -75,7 +75,7 @@ export interface ChatTurnInput {
     readonly draftToken?: string;
     /** 도구가 프로세스 밖에서 API를 부를 때 쓰는, 이 사용자와 이 실행에 매인 자격이다. */
     readonly scopeToken?: string;
-    /** 평가 실행이 접수 때 고정한 조각이며 없으면 기동 시점의 스냅샷을 쓴다. */
+    /** 접수가 이 실행에 고정한 조각이며 없으면 기동 시점의 스냅샷을 쓴다. */
     readonly promptIntegrity?: PromptIntegrityContract;
 }
 
