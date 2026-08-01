@@ -64,7 +64,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
                 jobId: input.jobId,
                 jobKind: TITLE_JOB_KIND,
                 agentName: TITLE_SUGGESTION_SPEC.name,
-                backend: AGENT_BACKEND.claudeSdk,
+                backend: AGENT_BACKEND,
                 ...(input.model !== undefined ? { model: input.model } : {}),
             },
             () => this.runAgent(input),

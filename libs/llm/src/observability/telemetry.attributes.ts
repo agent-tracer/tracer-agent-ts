@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Attributes } from "@opentelemetry/api";
-import type { AgentBackend } from "~llm/model/agent.backend.js";
+import type { AgentAxis } from "~llm/model/agent.axis.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import {
     AGENT_TRACER_ATTR,
@@ -20,7 +20,7 @@ export interface InvokeAgentTelemetryInput {
     readonly jobKind: string;
     readonly agentName: string;
     readonly model?: string;
-    readonly backend: AgentBackend;
+    readonly backend: AgentAxis;
     readonly conversationId?: string | undefined;
     readonly observation?: AgentTelemetryIdentity;
 }

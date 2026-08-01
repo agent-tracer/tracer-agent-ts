@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
 import { AGENT_TRACER_ATTR } from "./semconv.const.js";
 import {
     buildGenAiClientSpanAttributes,
@@ -15,7 +16,7 @@ const observation = {
 describe("공통 관측 span 속성", () => {
     it.each([
         buildInvokeAgentSpanAttributes({
-            jobId: "job-1", jobKind: "title", agentName: "agent", backend: "claude-sdk", observation,
+            jobId: "job-1", jobKind: "title", agentName: "agent", backend: AGENT_BACKEND, observation,
         }),
         buildGenAiClientSpanAttributes({
             operationName: "chat", provider: "anthropic", model: "claude", observation,

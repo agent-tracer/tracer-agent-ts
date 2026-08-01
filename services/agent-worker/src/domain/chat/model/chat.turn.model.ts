@@ -1,5 +1,5 @@
 import type {
-    AgentBackend,
+    AgentAxis,
     AgentQueryUsage,
     AgentRunObservation,
     JobStepPayload,
@@ -80,7 +80,7 @@ export interface ChatTurnInput {
 export interface ChatTurnResult {
     readonly observation: AgentRunObservation;
     readonly text: string;
-    readonly backend: AgentBackend;
+    readonly backend: AgentAxis;
     readonly toolCalls: readonly ChatTurnToolCall[];
     readonly modelUsed: string;
     readonly costUsd: number | null;

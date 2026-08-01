@@ -1,4 +1,4 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import { CLEANUP_CANDIDATE_REASON, type CleanupCandidate } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
 import type {
@@ -213,7 +213,7 @@ export function cleanupObservation(overrides: Partial<AgentRunObservation> = {})
         attemptId: "1",
         jobId: "job-1",
         agentName: "task-cleanup",
-        backend: "claude-sdk",
+        backend: AGENT_BACKEND,
         modelRequested: "claude-haiku-4-5",
         modelActual: "claude-haiku-4-5",
         promptVersion: "v0.0.1",

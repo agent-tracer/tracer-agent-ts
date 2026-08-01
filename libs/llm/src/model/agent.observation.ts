@@ -1,4 +1,4 @@
-import type { AgentBackend } from "./agent.backend.js";
+import type { AgentAxis } from "./agent.axis.js";
 
 /** 실행 결과를 저장하고 비교할 때 쓰는, 원문 payload와 비밀은 담지 않는 프레임워크 무관 관측 어휘다. */
 export const AGENT_RUN_OBSERVATION_STATUS = {
@@ -67,7 +67,7 @@ export interface ValidationObservation {
 export interface AgentRunObservation extends AgentAttemptIdentity {
     readonly jobId: string | null;
     readonly agentName: string;
-    readonly backend: AgentBackend;
+    readonly backend: AgentAxis;
     readonly modelRequested: string;
     readonly modelActual: string | null;
     readonly promptVersion: string;

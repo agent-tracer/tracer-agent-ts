@@ -1,4 +1,4 @@
-import { AGENT_BACKEND } from "~llm/model/agent.backend.js";
+import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
 import {
     AGENT_CALL_STATUS,
     AGENT_RUN_OBSERVATION_STATUS,
@@ -33,7 +33,7 @@ export function buildClaudeRunObservation(
         ...identity,
         jobId: input.jobId ?? null,
         agentName: input.agentName,
-        backend: AGENT_BACKEND.claudeSdk,
+        backend: AGENT_BACKEND,
         modelRequested: input.modelRequested,
         modelActual: result.actualModel,
         promptVersion: input.promptVersion,

@@ -1,4 +1,4 @@
-export * from "./model/agent.backend.js";
+export * from "./model/agent.axis.js";
 export * from "./model/agent.error.js";
 export * from "./model/agent.observation.js";
 export * from "./model/agent.usage.js";

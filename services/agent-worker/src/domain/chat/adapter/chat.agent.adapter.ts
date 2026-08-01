@@ -141,7 +141,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
         return {
             observation,
             text: selectFinalChatText(result.steps, result.rawOutput),
-            backend: AGENT_BACKEND.claudeSdk,
+            backend: AGENT_BACKEND,
             toolCalls: writes.proposals,
             modelUsed: result.actualModel ?? model,
             costUsd: result.costUsd,

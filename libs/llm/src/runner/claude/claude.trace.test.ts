@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
 import type { AgentQueryRequest } from "~llm/runner/llm.runner.js";
 import { createClaudeRunTree } from "./claude.trace.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
@@ -37,7 +38,7 @@ describe("추적 루트의 메타데이터", () => {
         expect(runTree?.name).toBe("test-agent");
         expect(runTree?.extra.metadata).toEqual({
             "agent_tracer.agent.name": "test-agent",
-            "agent_tracer.backend": "typescript",
+            "agent_tracer.backend": AGENT_BACKEND,
             "agent_tracer.model.requested": "claude-3-5-sonnet",
             "agent_tracer.prompt.version": "v1.0",
             "agent_tracer.tool.contract.version": "v2",

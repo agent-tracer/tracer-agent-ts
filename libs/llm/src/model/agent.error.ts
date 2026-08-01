@@ -1,10 +1,8 @@
 import { readContractJson } from "~llm/support/contract.js";
+import type { AgentAxis } from "./agent.axis.js";
 import type { AgentRunObservation } from "./agent.observation.js";
 import type { AgentQueryUsage } from "./agent.usage.js";
 import type { JobStepPayload } from "./job.step.js";
-
-/** 실행 백엔드를 구현한 언어이며 같은 서브타입을 두 언어가 함께 낼 수도 있다. */
-export type ErrorSubtypeEmitter = "typescript" | "python";
 
 /** 재시도해도 같은 자리에서 끝나는 실패인지와, 예약 몫까지 다 써 실패 대신 빈 결과로 착지시킬 실패인지다. */
 export interface ErrorSubtypeClass {
@@ -21,7 +19,7 @@ export interface ProviderErrorSubtypeVerdict {
 /** classes는 실행 실패의 상위 분류 셋이고 emittedBy는 어느 구현체가 그 하위를 내는지의 기록이다. */
 export interface ErrorSubtypeContract {
     readonly classes: Readonly<Record<string, ErrorSubtypeClass>>;
-    readonly emittedBy: Readonly<Record<string, readonly ErrorSubtypeEmitter[]>>;
+    readonly emittedBy: Readonly<Record<string, readonly AgentAxis[]>>;
     readonly provider: Readonly<Record<string, ProviderErrorSubtypeVerdict>>;
 }
 

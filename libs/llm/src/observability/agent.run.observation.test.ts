@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
 import { AGENT_CALL_STATUS, AGENT_RUN_OBSERVATION_STATUS } from "~llm/model/agent.observation.js";
 import type { JobStepPayload } from "~llm/model/job.step.js";
 import type { AgentQueryResult } from "~llm/runner/llm.runner.js";
@@ -43,7 +44,7 @@ describe("buildClaudeRunObservation", () => {
         const observation = buildClaudeRunObservation(input, result());
 
         expect(observation).toMatchObject({
-            executionId: "exec-1", attemptId: "attempt-1", backend: "claude-sdk",
+            executionId: "exec-1", attemptId: "attempt-1", backend: AGENT_BACKEND,
             status: AGENT_RUN_OBSERVATION_STATUS.succeeded,
             usage: { inputTokens: 10, outputTokens: 4, cacheReadTokens: 3, cacheWriteTokens: 2 },
         });

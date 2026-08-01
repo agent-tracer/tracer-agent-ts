@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import { getMetadataArgsStorage } from "typeorm";
 import { describe, expect, it } from "vitest";
 import { AgentRunObservationEntity, toAgentRunObservationRow } from "./agent.run.observation.entity.js";
@@ -9,7 +9,7 @@ const observation: AgentRunObservation = {
     attemptId: "1",
     jobId: "job-1",
     agentName: "title-suggestion",
-    backend: "claude-sdk",
+    backend: AGENT_BACKEND,
     modelRequested: "claude-requested",
     modelActual: "claude-actual",
     promptVersion: "v3",

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AGENT_BACKEND } from "./agent.axis.js";
 import {
     AGENT_ERROR_SUBTYPE,
     AgentExecutionFailure,
@@ -43,9 +44,9 @@ describe("isBudgetExhaustedFailure", () => {
 });
 
 describe("오류 서브타입 계약", () => {
-    it("이 백엔드가 내는 서브타입은 계약의 typescript 어휘와 같다", () => {
+    it("이 축이 내는 서브타입은 계약이 이 축에 적은 목록과 같다", () => {
         const declared = Object.entries(CONTRACT.emittedBy)
-            .filter(([, emitters]) => emitters.includes("typescript"))
+            .filter(([, emitters]) => emitters.includes(AGENT_BACKEND))
             .map(([subtype]) => subtype);
 
         expect([...Object.values(AGENT_ERROR_SUBTYPE)].sort()).toEqual(declared.sort());

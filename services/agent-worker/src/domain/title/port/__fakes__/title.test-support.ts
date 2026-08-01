@@ -1,4 +1,4 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import type { TitleContext } from "~agent-worker/domain/title/model/title.context.model.js";
 import type { GenerateTitleSuggestionsOutput } from "~agent-worker/domain/title/port/title.agent.port.js";
@@ -82,7 +82,7 @@ export function titleObservation(overrides: Partial<AgentRunObservation> = {}): 
         attemptId: "1",
         jobId: "job-1",
         agentName: "title-suggestion",
-        backend: "claude-sdk",
+        backend: AGENT_BACKEND,
         modelRequested: "claude-haiku-4-5",
         modelActual: "claude-haiku-4-5",
         promptVersion: "v0.0.1",

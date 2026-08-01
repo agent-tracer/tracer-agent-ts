@@ -1,6 +1,7 @@
 import { Client, RunTree } from "langsmith";
 import type { KVMap } from "langsmith/schemas";
 import { v5 as uuidv5 } from "uuid";
+import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
 import type { AgentQueryRequest } from "~llm/runner/llm.runner.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
 
@@ -59,11 +60,11 @@ export async function createClaudeRunTree(
             client,
             ...(runId ? { id: runId } : {}),
             inputs: { prompt: request.prompt },
-            tags: [request.label, "typescript", request.observation?.promptVersion ?? "unknown"],
+            tags: [request.label, AGENT_BACKEND, request.observation?.promptVersion ?? "unknown"],
             extra: {
                 metadata: {
                     "agent_tracer.agent.name": request.label,
-                    "agent_tracer.backend": "typescript",
+                    "agent_tracer.backend": AGENT_BACKEND,
                     "agent_tracer.model.requested": request.model,
                     "agent_tracer.prompt.version": request.observation?.promptVersion,
                     "agent_tracer.tool.contract.version": request.observation?.toolContractVersion,

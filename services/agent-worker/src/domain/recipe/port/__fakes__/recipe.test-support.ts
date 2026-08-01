@@ -1,4 +1,4 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import { RECIPE_SETTING_KEY } from "~agent-worker/domain/recipe/model/recipe.const.js";
 import type {
@@ -207,7 +207,7 @@ export function recipeObservation(overrides: Partial<AgentRunObservation> = {}):
         attemptId: "1",
         jobId: "job-1",
         agentName: "recipe-scan",
-        backend: "claude-sdk",
+        backend: AGENT_BACKEND,
         modelRequested: "claude-haiku-4-5",
         modelActual: "claude-haiku-4-5",
         promptVersion: "v0.0.1",

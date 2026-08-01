@@ -79,7 +79,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         jobId: input.jobId,
         jobKind: JOB_KIND.recipeScan,
         agentName: AGENT.recipeScan.id,
-        backend: AGENT_BACKEND.claudeSdk,
+        backend: AGENT_BACKEND,
         ...(input.model !== undefined ? { model: input.model } : {}),
       },
       () => this.runAgent(input),

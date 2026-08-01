@@ -1,4 +1,4 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import {
     CHAT_EXECUTION_STATUS,
@@ -110,7 +110,7 @@ export function chatObservation(
         attemptId: "1",
         jobId: null,
         agentName: "chat",
-        backend: "claude-sdk",
+        backend: AGENT_BACKEND,
         modelRequested: "claude-sonnet-4-6",
         modelActual: "claude-sonnet-4-6",
         promptVersion: "v0.0.1",
@@ -132,7 +132,7 @@ export function chatTurnResult(overrides: Partial<ChatTurnResult> = {}): ChatTur
     return {
         observation: chatObservation(),
         text: "답변",
-        backend: "claude-sdk",
+        backend: AGENT_BACKEND,
         toolCalls: [],
         modelUsed: "claude-sonnet-4-6",
         costUsd: 0.01,
