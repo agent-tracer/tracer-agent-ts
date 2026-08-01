@@ -27,7 +27,9 @@ export function anExecution(overrides: Partial<ExperimentExecution> = {}): Exper
     return {
         id: "execution-1", experimentId: "experiment-1", variantId: "variant-1", exampleId: "example-1",
         repetition: 1, status: "succeeded", output: { answer: "값" }, error: null, costUsd: 0.01,
-        startedAt: EXPERIMENT_NOW, completedAt: EXPERIMENT_NOW, ...overrides,
+        startedAt: EXPERIMENT_NOW, completedAt: EXPERIMENT_NOW,
+        attemptCount: 1, leaseOwner: null, leaseExpiresAt: null, jobId: null, traceId: null,
+        resolvedPromptHash: null, durationMs: null, failureReason: null, ...overrides,
     };
 }
 

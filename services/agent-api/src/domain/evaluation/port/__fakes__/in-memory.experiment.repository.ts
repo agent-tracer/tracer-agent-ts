@@ -45,6 +45,14 @@ export class InMemoryExperimentRepository implements ExperimentRepositoryPort {
         row.status = "running";
         return row;
     }
+    async saveExecutions(executions: readonly ExperimentExecution[]): Promise<void> {
+        for (const execution of executions) {
+            const at = this.executions.findIndex((row) => row.id === execution.id);
+            if (at >= 0) this.executions[at] = execution;
+            else this.executions.push(execution);
+        }
+    }
+
     async restoreDraft(userId: string, id: string): Promise<void> {
         const row = await this.findExperiment(userId, id);
         if (row !== null) row.status = "draft";

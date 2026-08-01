@@ -18,6 +18,7 @@ export interface ExperimentRepositoryPort {
     referencesExist(userId: string, datasetId: string, revision: number, evaluatorSetVersion: string): Promise<boolean>;
     claimDraft(userId: string, id: string): Promise<Experiment | null>;
     restoreDraft(userId: string, id: string): Promise<void>;
+    saveExecutions(executions: readonly ExperimentExecution[]): Promise<void>;
     listExecutions(userId: string, experimentId: string): Promise<readonly ExperimentExecution[]>;
     listScores(userId: string, experimentId: string): Promise<readonly EvaluationScore[]>;
     listReviews(userId: string, experimentId: string): Promise<readonly HumanReview[]>;

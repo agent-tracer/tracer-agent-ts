@@ -14,6 +14,26 @@ export class ExperimentExecutionRow {
     @Column({ name: "cost_usd", type: "double precision" }) costUsd!: number;
     @Column({ name: "started_at", type: "timestamptz", nullable: true }) startedAt!: Date | null;
     @Column({ name: "completed_at", type: "timestamptz", nullable: true }) completedAt!: Date | null;
+    @Column({ name: "attempt_count", type: "integer", default: 0 }) attemptCount!: number;
+    @Column({ name: "lease_owner", type: "text", nullable: true }) leaseOwner!: string | null;
+    @Column({ name: "lease_expires_at", type: "timestamptz", nullable: true }) leaseExpiresAt!: Date | null;
+    @Column({ name: "job_id", type: "text", nullable: true }) jobId!: string | null;
+    @Column({ name: "trace_id", type: "text", nullable: true }) traceId!: string | null;
+    @Column({ name: "resolved_prompt_hash", type: "text", nullable: true }) resolvedPromptHash!: string | null;
+    @Column({ name: "duration_ms", type: "integer", nullable: true }) durationMs!: number | null;
+    @Column({ name: "failure_reason", type: "text", nullable: true }) failureReason!: string | null;
+}
+
+@Entity({ name: "evaluation_execution_settlements" })
+export class EvaluationExecutionSettlementRow {
+    @PrimaryColumn({ name: "execution_id", type: "text" }) executionId!: string;
+    @PrimaryColumn("integer") attempt!: number;
+    @Column({ name: "job_id", type: "text", nullable: true }) jobId!: string | null;
+    @Column({ name: "trace_id", type: "text", nullable: true }) traceId!: string | null;
+    @Column({ name: "resolved_prompt_hash", type: "text", nullable: true }) resolvedPromptHash!: string | null;
+    @Column({ name: "duration_ms", type: "integer", nullable: true }) durationMs!: number | null;
+    @Column({ name: "cost_usd", type: "double precision" }) costUsd!: number;
+    @Column({ name: "settled_at", type: "timestamptz" }) settledAt!: Date;
 }
 
 @Entity({ name: "evaluation_scores" })

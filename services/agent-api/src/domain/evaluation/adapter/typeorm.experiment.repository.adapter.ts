@@ -1,11 +1,11 @@
 import type { DataSource } from "typeorm";
 import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
-import type { Experiment, ExperimentVariant } from "../model/experiment.model.js";
+import type { Experiment, ExperimentExecution, ExperimentVariant } from "../model/experiment.model.js";
 import type { HumanReview, HumanReviewRevision } from "../model/human.review.model.js";
 import type { ExperimentExampleSummary } from "../model/experiment.preview.model.js";
 import type { ExperimentRepositoryPort } from "../port/experiment.repository.port.js";
 import type { EvaluationScoreRow } from "./experiment.execution.entity.js";
-import { ExperimentExecutionRow, toEvaluationScore, toExperimentExecution } from "./experiment.execution.entity.js";
+import { ExperimentExecutionRow, toEvaluationScore, toExperimentExecution, toExperimentExecutionRow } from "./experiment.execution.entity.js";
 import { ExperimentRow, ExperimentVariantRow, toExperiment, toExperimentRow, toExperimentVariant, toExperimentVariantRow } from "./experiment.entity.js";
 import { HumanReviewRevisionRow, HumanReviewRow, toHumanReview, toHumanReviewRevisionRow, toHumanReviewRow } from "./human.review.entity.js";
 
@@ -18,6 +18,15 @@ export class TypeOrmExperimentRepository implements ExperimentRepositoryPort {
             await upsertByKeys(manager.getRepository(ExperimentRow), toExperimentRow(experiment), ["id"]);
             for (const variant of variants) {
                 await upsertByKeys(manager.getRepository(ExperimentVariantRow), toExperimentVariantRow(variant), ["id"]);
+            }
+        });
+    }
+
+    async saveExecutions(executions: readonly ExperimentExecution[]): Promise<void> {
+        if (executions.length === 0) return;
+        await this.source.transaction(async (manager) => {
+            for (const execution of executions) {
+                await upsertByKeys(manager.getRepository(ExperimentExecutionRow), toExperimentExecutionRow(execution), ["id"]);
             }
         });
     }

@@ -16,6 +16,7 @@ import { FirstChoiceRandom, FixedExperimentClock, RecordingExperimentDispatcher,
 import { EvaluationExperimentController } from "./evaluation.experiment.controller.js";
 import { EvaluationReviewController } from "./evaluation.review.controller.js";
 import { createExperimentSchema, startExperimentSchema, submitReviewSchema } from "./experiment.schema.js";
+import { SequentialEvaluationIdGenerator } from "~agent-api/domain/evaluation/port/__fakes__/sequential.evaluation.id.generator.js";
 
 const USER = "user-1";
 const EXPERIMENT = "experiment-1";
@@ -40,7 +41,7 @@ function surface() {
         new PreviewExperimentUseCase(repository),
         new ListExperimentExecutionsUseCase(repository),
         new GetExperimentComparisonUseCase(repository),
-        new StartExperimentUseCase(repository, dispatcher),
+        new StartExperimentUseCase(repository, dispatcher, new SequentialEvaluationIdGenerator()),
         new CancelExperimentUseCase(repository, dispatcher, clock),
     );
     const reviews = new EvaluationReviewController(
