@@ -28,5 +28,6 @@ export * from "./support/sha256.js";
 export * from "./tool/claude.output.schema.js";
 export * from "./tool/claude.subagent.catalog.js";
 export * from "./tool/claude.tool.schema.js";
+export * from "./tool/contract.tool.schema.js";
 export * from "./tool/mcp.tool.prefix.js";
 export * from "./tool/tool.failure.js";
