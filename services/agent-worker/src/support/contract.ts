@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "yaml";
 import type { ContractToolFile } from "@tracer-agent/llm";
 import type { PromptDeclarationFile } from "./agent.prompt.js";
 
@@ -12,6 +13,25 @@ export const CONTRACT_ROOT = path.join(REPO_ROOT, "contract");
 /** 계약 뿌리를 기준으로 한 상대 경로의 JSON 파일 하나를 읽는다. */
 export function readContractJson<T>(relative: string): T {
     return JSON.parse(readFileSync(path.join(CONTRACT_ROOT, relative), "utf8")) as T;
+}
+
+/** 계약 뿌리를 기준으로 한 상대 경로의 YAML 파일 하나를 읽는다. */
+export function readContractYaml<T>(relative: string): T {
+    return parse(readFileSync(path.join(CONTRACT_ROOT, relative), "utf8")) as T;
+}
+
+/** 워커가 여는 SDK 지표 창구이며 두 축이 같은 자리에 같은 단위로 내도록 계약이 값을 갖는다. */
+export interface WorkerSdkMetricsDeclaration {
+    readonly bindAddress: string;
+    readonly port: number;
+    readonly path: string;
+    readonly durationUnit: string;
+}
+
+export function readWorkerSdkMetrics(): WorkerSdkMetricsDeclaration {
+    return readContractYaml<{ readonly workerSdkMetrics: WorkerSdkMetricsDeclaration }>(
+        "workflow/metrics.yaml",
+    ).workerSdkMetrics;
 }
 
 /** 에이전트 하나의 조각과 템플릿 선언을 읽는다. */
