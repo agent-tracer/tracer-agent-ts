@@ -1,17 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
-import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
+import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { TITLE_PROMPT } from "~agent-worker/domain/title/port/__fakes__/title.test-support.js";
+import type { TitleContext } from "./title.context.model.js";
 import {
     buildTitleRepairPrompt,
     buildTitleSystemPrompt,
+    buildTitleUserPrompt,
     TITLE_REPAIR_TEMPLATE_KEY,
     TITLE_SYSTEM_TEMPLATE_KEY,
     resolveTitlePromptPin,
 } from "./title.prompt.js";
 
 const DECLARED = readAgentPrompt(AGENT.titleSuggestion.id);
+const CONTRACT = readAgentCases<{
+    contextExample: TitleContext;
+    language: AgentLanguageCases;
+}>(AGENT.titleSuggestion.id);
+
+/** 계약이 그 언어 변형에 적은 조각 본문이며 조립 결과가 이 본문을 그대로 실어야 한다. */
+function variant(name: string): string {
+    return (DECLARED.fragments[CONTRACT.language.fragment]?.byLanguage?.[name] ?? []).join("\n");
+}
+
+/** 계약이 예시로 적은 컨텍스트가 담은 문장 전부이며 프롬프트가 하나도 빠뜨리면 안 된다. */
+function texts(value: unknown): readonly string[] {
+    if (typeof value === "string") return [value];
+    if (Array.isArray(value)) return value.flatMap(texts);
+    if (value !== null && typeof value === "object") return Object.values(value).flatMap(texts);
+    return [];
+}
 
 /** 슬롯마다 그 이름만 담은 프롬프트라 조립 결과에서 어느 슬롯을 썼는지 그대로 읽힌다. */
 function labelled(): AgentPrompt {
@@ -48,6 +69,22 @@ describe("제목 제안 프롬프트", () => {
 
     it("계약에 없는 슬롯을 부르면 거절한다", () => {
         expect(() => TITLE_PROMPT.slot(TITLE_SYSTEM_TEMPLATE_KEY, "toneOfVoice")).toThrow();
+    });
+
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+        for (const declared of CONTRACT.language.cases) {
+            const expected = variant(declared.expect.variant);
+            const language = normalizeOutputLanguage(declared.input.language);
+
+            expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
+            expect(buildTitleSystemPrompt(TITLE_PROMPT, language), declared.expect.variant).toContain(expected);
+        }
+    });
+
+    it("계약이 예시로 적은 컨텍스트의 문장을 사용자 프롬프트가 빠짐없이 싣는다", () => {
+        const rendered = buildTitleUserPrompt("task-1", CONTRACT.contextExample);
+
+        for (const text of texts(CONTRACT.contextExample)) expect(rendered).toContain(text);
     });
 });
 
