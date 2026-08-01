@@ -1,7 +1,9 @@
 import { Client, RunTree } from "langsmith";
 import type { KVMap } from "langsmith/schemas";
 import { v5 as uuidv5 } from "uuid";
+import { errorMessage, logWarn } from "@tracer-agent/platform";
 import { AGENT_BACKEND } from "~llm/model/agent.axis.js";
+import { isTracingEnabled } from "~llm/observability/trace.environment.js";
 import type { AgentQueryRequest } from "~llm/runner/llm.runner.js";
 import {
     hasSuspect,
@@ -23,7 +25,7 @@ export async function createClaudeRunTree(
     request: AgentQueryRequest<ClaudeQueryOptions>,
     discloseTracePayloads: boolean,
 ): Promise<RunTree | null> {
-    if (process.env.LANGSMITH_TRACING !== "true") return null;
+    if (!isTracingEnabled()) return null;
     try {
         const logicalExecution = request.observation?.executionId || request.jobId;
         let runId: string | undefined = undefined;
@@ -59,7 +61,8 @@ export async function createClaudeRunTree(
         });
         await runTree.postRun();
         return runTree;
-    } catch {
+    } catch (error: unknown) {
+        logWarn({ msg: "agent_trace.start.failed", label: request.label, error: errorMessage(error) });
         return null;
     }
 }
@@ -77,7 +80,7 @@ export async function finishClaudeRunTree(
             await runTree.end({ outputs: { result: resultText, structuredOutput } });
         }
         await runTree.patchRun();
-    } catch {
-        return;
+    } catch (error: unknown) {
+        logWarn({ msg: "agent_trace.finish.failed", label: runTree.name, error: errorMessage(error) });
     }
 }

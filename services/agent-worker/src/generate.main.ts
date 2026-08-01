@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ClaudeQueryRunner } from "@tracer-agent/llm";
+import { assertTraceEnvironment, ClaudeQueryRunner } from "@tracer-agent/llm";
 import { TracerApiWindow } from "@tracer-agent/tracer-client";
 import {
     createDataSource,
@@ -63,6 +63,7 @@ const GENERATE_ENTITIES = [
 ] as const;
 
 async function bootstrap(): Promise<void> {
+    assertTraceEnvironment();
     const config = loadApplicationConfig();
     const dataSource = createDataSource({ db: config.agentDb, entities: [...GENERATE_ENTITIES] });
     await dataSource.initialize();

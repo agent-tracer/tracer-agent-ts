@@ -53,6 +53,20 @@ function request(
     };
 }
 
+async function captureStdout(run: () => Promise<void>): Promise<string> {
+    const written: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+        written.push(String(chunk));
+        return true;
+    });
+    try {
+        await run();
+    } finally {
+        spy.mockRestore();
+    }
+    return written.join("");
+}
+
 const SECRET_FIXTURE = {
     apiKey: "sk-ant-live-should-not-leak",
     authorization: "Bearer lsv2_should-not-leak",
@@ -105,17 +119,25 @@ describe("추적 원문 공개", () => {
         });
     });
 
-    it("추적 시작 실패를 모델 실행 경로로 전파하지 않는다", async () => {
+    it("추적 시작이 실패하면 경고를 남기고 모델 실행 경로로 전파하지 않는다", async () => {
         rejectPostRun = true;
 
-        await expect(createClaudeRunTree(request(), true)).resolves.toBeNull();
+        const written = await captureStdout(async () => {
+            await expect(createClaudeRunTree(request(), true)).resolves.toBeNull();
+        });
+
+        expect(written).toContain("agent_trace.start.failed");
     });
 
-    it("추적 종료 실패를 모델 결과 반환 경로로 전파하지 않는다", async () => {
+    it("추적 종료가 실패하면 경고를 남기고 모델 결과 반환 경로로 전파하지 않는다", async () => {
         const runTree = await createClaudeRunTree(request(), true);
         if (runTree === null) throw new Error("runTree must exist before finish");
         rejectEndRun = true;
 
-        await expect(finishClaudeRunTree(runTree, "result", null, null)).resolves.toBeUndefined();
+        const written = await captureStdout(async () => {
+            await expect(finishClaudeRunTree(runTree, "result", null, null)).resolves.toBeUndefined();
+        });
+
+        expect(written).toContain("agent_trace.finish.failed");
     });
 });

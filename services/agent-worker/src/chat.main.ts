@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ClaudeQueryRunner } from "@tracer-agent/llm";
+import { assertTraceEnvironment, ClaudeQueryRunner } from "@tracer-agent/llm";
 import {
     createDataSource,
     errorMessage,
@@ -61,6 +61,7 @@ const CHAT_ENTITIES = [
 const SHUTDOWN_TIMEOUT_MS = 370_000;
 
 async function bootstrap(): Promise<void> {
+    assertTraceEnvironment();
     const config = loadApplicationConfig();
     const dataSource = createDataSource({ db: config.agentDb, entities: [...CHAT_ENTITIES] });
     await dataSource.initialize();
