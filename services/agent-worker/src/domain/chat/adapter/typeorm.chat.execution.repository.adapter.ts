@@ -127,7 +127,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
             .update(ChatExecutionEntity)
             .set({ status: CHAT_EXECUTION_STATUS.failed, error, completedAt: now, updatedAt: now })
             .where("id = :id", { id })
-            .andWhere(observedTerminalCondition("failed"), {
+            .andWhere(terminalCondition("failed"), {
                 settled: CHAT_EXECUTION_STATUS.queued,
                 running: CHAT_EXECUTION_STATUS.running,
             })
@@ -136,14 +136,26 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
     }
 }
 
-/** running 행은 같은 종결을 관측이 이미 새긴 경우에만 종결로 접는다. */
+/** running 행은 관측이 같은 종결을 새겼을 때 접으며 이미 접힌 행에 산출물을 붙이는 길이 이것을 쓴다. */
 function observedTerminalCondition(observedStatus: string): string {
-    return `(status = :settled OR (status = :running AND EXISTS (
+    return `(status = :settled OR (status = :running AND ${observedBy(observedStatus)}))`;
+}
+
+/** 종결로 옮기는 길은 따를 관측이 하나도 없을 때에도 접는다. */
+function terminalCondition(observedStatus: string): string {
+    return `(status = :settled OR (status = :running AND (${observedBy(observedStatus)} OR NOT EXISTS (
+        SELECT 1 FROM agent_run_observations observation
+         WHERE observation.execution_id = chat_executions.id
+    ))))`;
+}
+
+function observedBy(observedStatus: string): string {
+    return `EXISTS (
         SELECT 1 FROM agent_run_observations observation
          WHERE observation.execution_id = chat_executions.id
            AND observation.user_id = chat_executions.user_id
            AND observation.status = '${observedStatus}'
-    )))`;
+    )`;
 }
 
 function spendPatch(
