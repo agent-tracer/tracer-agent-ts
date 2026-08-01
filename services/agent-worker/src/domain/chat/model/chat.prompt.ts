@@ -1,4 +1,5 @@
 import type { ResolvedPromptFragment } from "@tracer-agent/llm";
+import { SAFETY_POLICY } from "~agent-worker/support/safety.policy.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 import {
@@ -20,6 +21,8 @@ export function buildChatSystemPrompt(
             (item) => item.templateKey === CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY && item.fragmentSlot === slot,
         )?.content ?? codeDefault;
     return [
+        SAFETY_POLICY,
+        "",
         "You are the assistant of Agent Tracer, an observability tool that records coding-agent sessions",
         "(tasks), their timelines, verification rules, memos, recipes, tags, cleanup suggestions, and AI jobs.",
         "",
@@ -45,22 +48,22 @@ export function renderChatPrompt(
 ): string {
     const lines: string[] = [];
     if (facts !== undefined && facts.length > 0) {
-        lines.push("Durable facts you know about this user:");
+        lines.push('<memory source="untrusted">');
         for (const fact of facts) lines.push(`- ${fact.key}: ${fact.content}`);
-        lines.push("");
+        lines.push("</memory>", "");
     }
     if (summary !== undefined && summary !== null && summary.trim().length > 0) {
-        lines.push("Summary of earlier conversation:", summary.trim(), "");
+        lines.push('<summary source="untrusted">', summary.trim(), "</summary>", "");
     }
-    lines.push("Conversation so far:");
+    lines.push('<history source="untrusted">');
     for (const message of messages) lines.push(renderMessage(message));
-    lines.push("", "Answer the user's most recent message.");
+    lines.push("</history>", "", "Answer the user's most recent message.");
     return lines.join("\n");
 }
 
 function renderMessage(message: ChatTurnMessage): string {
     if (message.role === CHAT_MESSAGE_ROLE.user) return `User: ${message.content}`;
-    if (message.role === CHAT_MESSAGE_ROLE.tool) return `Tool result: ${message.content}`;
+    if (message.role === CHAT_MESSAGE_ROLE.tool) return `<tool_result>${message.content}</tool_result>`;
     const calls = message.toolCalls ?? [];
     const suffix = calls.length > 0 ? ` (called ${calls.map((call) => call.name).join(", ")})` : "";
     return `Assistant: ${message.content}${suffix}`;
