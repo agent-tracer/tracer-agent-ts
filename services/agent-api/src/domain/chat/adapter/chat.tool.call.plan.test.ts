@@ -23,12 +23,12 @@ describe("승인 뒤 부를 자리", () => {
         expect(() => chatToolCallPlan["archive_task"]!({})).toThrow("taskId is required");
     });
 
-    it("문자열로 온 기대를 객체로 풀어 보낸다", () => {
+    it("객체로 온 기대를 그대로 실어 보낸다", () => {
         const call = chatToolCallPlan["create_rule"]!({
             taskId: "t1",
             anchorEventId: "e1",
             name: "규칙",
-            expectation: `{"must":["빌드가 통과한다"]}`,
+            expectation: { must: ["빌드가 통과한다"] },
         });
 
         expect(call.args["expectation"]).toEqual({ must: ["빌드가 통과한다"] });
@@ -40,11 +40,14 @@ describe("승인 뒤 부를 자리", () => {
         })).toThrow("expectation must be a JSON object");
     });
 
-    it("쉼표로 나열한 태그와 JSON 배열을 같은 목록으로 읽는다", () => {
-        expect(chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: "a, b" }).args["tagIds"])
+    it("태그 목록을 배열로 받고 빈 이름을 걸러 낸다", () => {
+        expect(chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: ["a", "", "b"] }).args["tagIds"])
             .toEqual(["a", "b"]);
-        expect(chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: `["a","b"]` }).args["tagIds"])
-            .toEqual(["a", "b"]);
+    });
+
+    it("배열이 아닌 태그 목록을 거절한다", () => {
+        expect(() => chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: "a, b" }))
+            .toThrow("tagIds must be a JSON array");
     });
 
     it("응답에 실린 수를 문장에 옮긴다", () => {
@@ -53,9 +56,9 @@ describe("승인 뒤 부를 자리", () => {
     });
 
     it("접수한 잡의 식별자와 상태를 문장에 옮긴다", () => {
-        const call = chatToolCallPlan["enqueue_job"]!({ kind: "title.suggestion", input: "{}" });
+        const call = chatToolCallPlan["enqueue_job"]!({ kind: "title.suggestion", input: { taskId: "t1" } });
 
-        expect(call.args).toEqual({ kind: "title.suggestion", input: {} });
+        expect(call.args).toEqual({ kind: "title.suggestion", input: { taskId: "t1" } });
         expect(call.describe({ job: { id: "j1", status: "pending" } }))
             .toBe("Enqueued title.suggestion job j1 (status: pending).");
     });

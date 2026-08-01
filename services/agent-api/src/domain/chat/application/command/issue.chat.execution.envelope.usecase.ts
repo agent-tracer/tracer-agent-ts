@@ -17,7 +17,7 @@ import {
 } from "~agent-api/domain/chat/port/chat.tracer.api.port.js";
 import { CHAT_CLOCK, type ClockPort } from "~agent-api/domain/chat/port/clock.port.js";
 import { CHAT_SETTING_READER, type ChatSettingReaderPort } from "~agent-api/domain/chat/port/setting.reader.port.js";
-import { CHAT_TOOL_CONTRACT } from "~agent-api/domain/chat/model/chat.tool.schema.js";
+import { CHAT_TOOL_DESCRIPTIONS } from "~agent-api/domain/chat/model/chat.tool.schema.js";
 
 /** 사용자 설정에서 모델 자격을 찾는 키다. */
 export const CHAT_API_KEY_SETTING = "anthropic.api_key";
@@ -59,7 +59,7 @@ export class IssueChatExecutionEnvelopeUseCase {
                 { userId: execution.userId, executionId },
                 this.clock.now(),
             ) ?? "",
-            toolDescriptions: CHAT_TOOL_CONTRACT.descriptions,
+            toolDescriptions: CHAT_TOOL_DESCRIPTIONS,
             draft: {
                 url: new URL(
                     `/api/agent/chat/executions/${encodeURIComponent(executionId)}/drafts`,

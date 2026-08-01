@@ -33,4 +33,20 @@ describe("대화 도구 계약", () => {
         expect(parseChatToolArgs("update_task", { taskId: "t1", title: "제목" }))
             .toEqual({ taskId: "t1", title: "제목" });
     });
+
+    it("배열 인자를 배열로 받고 문자열을 거절한다", () => {
+        expect(parseChatToolArgs("set_task_tags", { taskId: "t1", tagIds: ["g1", "g2"] }))
+            .toEqual({ taskId: "t1", tagIds: ["g1", "g2"] });
+        expect(() => parseChatToolArgs("set_task_tags", { taskId: "t1", tagIds: '["g1"]' })).toThrow();
+    });
+
+    it("객체 인자를 객체로 받고 문자열을 거절한다", () => {
+        expect(parseChatToolArgs("enqueue_job", { kind: "title.suggestion", input: { taskId: "t1" } }))
+            .toEqual({ kind: "title.suggestion", input: { taskId: "t1" } });
+        expect(() => parseChatToolArgs("enqueue_job", { kind: "title.suggestion", input: "{}" })).toThrow();
+    });
+
+    it("계약에 없는 도구 이름을 거절한다", () => {
+        expect(() => parseChatToolArgs("summon_dragon", {})).toThrow();
+    });
 });

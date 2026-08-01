@@ -55,7 +55,7 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
             taskId,
             anchorEventId: req(args, "anchorEventId"),
             name,
-            expectation: parseJson(req(args, "expectation"), "expectation"),
+            expectation: reqObject(args, "expectation"),
             ...(severity !== undefined ? { severity } : {}),
             ...(rationale !== undefined ? { rationale } : {}),
         }, `Created rule "${name}" on task ${taskId}.`);
@@ -63,13 +63,13 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
     update_rule: (args) => {
         const ruleId = req(args, "ruleId");
         const name = opt(args, "name");
-        const expectation = opt(args, "expectation");
+        const expectation = optObject(args, "expectation");
         const severity = opt(args, "severity");
         const rationale = opt(args, "rationale");
         return plain({
             ruleId,
             ...(name !== undefined ? { name } : {}),
-            ...(expectation !== undefined ? { expectation: parseJson(expectation, "expectation") } : {}),
+            ...(expectation !== undefined ? { expectation } : {}),
             ...(severity !== undefined ? { severity } : {}),
             ...(rationale !== undefined ? { rationale } : {}),
         }, `Updated rule ${ruleId}.`);
@@ -120,7 +120,7 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
     },
     set_task_tags: (args) => {
         const taskId = req(args, "taskId");
-        const tagIds = parseIdList(req(args, "tagIds"));
+        const tagIds = reqIdList(args, "tagIds");
         return plain({ taskId, tagIds }, `Set ${tagIds.length} tag(s) on task ${taskId}.`);
     },
     accept_recipe: (args) => {
@@ -146,7 +146,7 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
     enqueue_job: (args) => {
         const kind = req(args, "kind");
         return {
-            args: { kind, input: parseJson(req(args, "input"), "input") },
+            args: { kind, input: reqObject(args, "input") },
             describe: (data) => `Enqueued ${kind} job ${jobField(data, "id")} (status: ${jobField(data, "status")}).`,
         };
     },
@@ -163,26 +163,25 @@ function opt(args: Record<string, unknown>, key: string): string | undefined {
     return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function parseJson(raw: string, label: string): unknown {
-    try {
-        return JSON.parse(raw);
-    } catch {
-        throw new BadRequestException(`${label} must be a JSON object`);
+function optObject(args: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+    const value = args[key];
+    if (value === undefined || value === null) return undefined;
+    if (typeof value !== "object" || Array.isArray(value)) {
+        throw new BadRequestException(`${key} must be a JSON object`);
     }
+    return value as Record<string, unknown>;
 }
 
-function parseIdList(raw: string): string[] {
-    const trimmed = raw.trim();
-    if (trimmed.startsWith("[")) {
-        const parsed = parseJson(trimmed, "tagIds");
-        if (!Array.isArray(parsed)) throw new BadRequestException("tagIds must be a JSON array");
-        return parsed.map(idText).filter((id) => id.length > 0);
-    }
-    return trimmed.length > 0 ? trimmed.split(/[\s,]+/).filter((id) => id.length > 0) : [];
+function reqObject(args: Record<string, unknown>, key: string): Record<string, unknown> {
+    const value = optObject(args, key);
+    if (value === undefined) throw new BadRequestException(`${key} is required`);
+    return value;
 }
 
-function idText(value: unknown): string {
-    return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
+function reqIdList(args: Record<string, unknown>, key: string): string[] {
+    const value = args[key];
+    if (!Array.isArray(value)) throw new BadRequestException(`${key} must be a JSON array`);
+    return value.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
 function reevaluated(data: unknown): number {
