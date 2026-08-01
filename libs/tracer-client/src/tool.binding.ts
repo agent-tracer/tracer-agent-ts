@@ -28,15 +28,15 @@ interface ChatBindingSection {
     readonly bindings: Readonly<Record<string, ToolBinding>>;
 }
 
-interface ChatSpec {
+interface ChatToolFile {
     readonly bindings: ChatBindingSection;
 }
 
 function readBindings(): Readonly<Record<string, ToolBinding>> {
-    const spec = JSON.parse(
-        readFileSync(path.join(CONTRACT_ROOT, "agent/chat/spec.json"), "utf8"),
-    ) as ChatSpec;
-    return spec.bindings.bindings;
+    const declared = JSON.parse(
+        readFileSync(path.join(CONTRACT_ROOT, "agent/chat/tool.json"), "utf8"),
+    ) as ChatToolFile;
+    return declared.bindings.bindings;
 }
 
 /** 도구 이름을 그 도구가 부르는 추적 API 한 자리에 잇는 표이며 값은 계약이 소유한다. */
