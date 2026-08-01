@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RECIPE_CANDIDATE_LIMIT } from "./recipe.const.js";
+import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 
 /** 스텝 하나의 이행을 원장 이벤트로 확인할 수 있게 하는 관측 가능한 신호다. */
 const verifyCommandSchema = z.object({

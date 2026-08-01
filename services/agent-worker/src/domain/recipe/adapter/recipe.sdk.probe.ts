@@ -48,7 +48,7 @@ export async function runRecipeProbe(
   const ledger = new ProvenanceLedger();
   const handlers = buildRecipeToolHandlers(ctx.input.userId, deps, ledger);
   const toolNames = probeToolNames(assignment.probe);
-  const systemPrompt = buildRecipeProbeSystemPrompt(ctx.fragmentResolver);
+  const systemPrompt = buildRecipeProbeSystemPrompt(ctx.prompt);
   ctx.renderedTemplates.set("recipe-scan.probe.system", systemPrompt);
 
   try {

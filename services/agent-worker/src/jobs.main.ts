@@ -24,6 +24,7 @@ import { RecipeReaderAdapter } from "~agent-worker/domain/recipe/adapter/recipe.
 import { RecipeSearchAdapter } from "~agent-worker/domain/recipe/adapter/recipe.search.adapter.js";
 import { RecipeRepositoryAdapter } from "~agent-worker/domain/recipe/adapter/recipe.repository.adapter.js";
 import { RecipeAgentAdapter } from "~agent-worker/domain/recipe/adapter/recipe.agent.adapter.js";
+import { ContractPromptSourceAdapter as RecipePromptSourceAdapter } from "~agent-worker/domain/recipe/adapter/contract.prompt.source.adapter.js";
 import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
 import { FailRecipeJobUsecase } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
 import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/application/finalize.recipe.scan.usecase.js";
@@ -53,7 +54,6 @@ import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/appli
 import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
 import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
 import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
-import { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
 
 /** 이 워커가 소유한 잡 원장을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
 const JOB_ENTITIES = [
@@ -75,22 +75,21 @@ async function bootstrap(): Promise<void> {
     const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
     const tracer = new TracerApiWindow(resolveTracerApiUrl());
 
-    const resolveJobFragments = (): PromptFragmentRunResolver => new PromptFragmentRunResolver();
-
     const recipeIds = new RecipeUlidGenerator();
     const recipeReader = new RecipeReaderAdapter(tracer);
     const recipeSearch = new RecipeSearchAdapter(tracer);
     const recipeRepository = new RecipeRepositoryAdapter(dataSource, tracer);
     const recipeOutput = new RecipeOutputAdapter(tracer);
     const recipeNotification = new RecipeNotificationAdapter(publish);
+    const recipePrompts = new RecipePromptSourceAdapter();
     const recipeAgent = new RecipeAgentAdapter(claudeRunner, {
         tasks: recipeReader,
         events: recipeReader,
         rules: recipeReader,
         search: recipeSearch,
-    }, resolveJobFragments);
+    }, recipePrompts);
     const recipe = new RecipeActivity(
-        new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock),
+        new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock, recipePrompts),
         new ScanRecipeUsecase(recipeRepository, recipeAgent, clock, recipeIds),
         new FinalizeRecipeScanUsecase(recipeRepository, recipeOutput, recipeNotification, clock),
         new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock),

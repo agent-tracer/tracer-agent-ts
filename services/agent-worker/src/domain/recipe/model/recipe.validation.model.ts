@@ -1,4 +1,4 @@
-import { RECIPE_CANDIDATE_LIMIT } from "./recipe.const.js";
+import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 import {
     isEventVerified,
     isEventVerifiedAnyTask,

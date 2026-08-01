@@ -17,7 +17,7 @@ import { AGENT } from "~agent-worker/support/agent.const.js";
 import { RECIPE_FEATURE } from "~agent-worker/domain/recipe/model/recipe.const.js";
 import { RECIPE_SCAN_FAILURES } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { GenerateRecipeCandidatesInput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 
 const RECIPE_MODELS = featureModels(RECIPE_FEATURE)!;
 const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
@@ -42,7 +42,7 @@ export const RECIPE_MCP_SERVER = `monitor-${RECIPE_SCAN_SPEC.name}`;
 export interface RecipeQueryContext {
   readonly runner: IQueryRunner<ClaudeQueryOptions>;
   readonly input: GenerateRecipeCandidatesInput;
-  readonly fragmentResolver?: PromptFragmentRunResolver;
+  readonly prompt: AgentPrompt;
   readonly renderedTemplates: Map<string, string>;
 }
 

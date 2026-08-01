@@ -12,6 +12,7 @@ import {
   buildRecipeRepairPrompt,
   buildRecipeRepairDirective,
   buildRecipeUserPrompt,
+  RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
 } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
 import {
   MAX_REDISPATCH_ROUNDS,
@@ -32,13 +33,13 @@ import type {
   GenerateRecipeCandidatesOutput,
   RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
 import { RECIPE_SCAN_SPEC, type RecipeQueryContext } from "./recipe.sdk.query.js";
 import {
   runRecipeSynthesis,
   type RecipeSynthesisRun,
 } from "./recipe.sdk.investigate.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
 import {
   dispatchRecipeProbes,
   runRecipeSurveyPhase,
@@ -65,7 +66,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
   constructor(
     private readonly runner: IQueryRunner<ClaudeQueryOptions>,
     private readonly deps: RecipeToolDeps,
-    private readonly fragmentResolver?: () => PromptFragmentRunResolver,
+    private readonly prompts: PromptSourcePort,
   ) {}
 
   requiresLocalApiKey(): boolean {
@@ -90,13 +91,11 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
   private async runAgent(
     input: GenerateRecipeCandidatesInput,
   ): Promise<GenerateRecipeCandidatesOutput> {
-    const fragmentResolver = this.fragmentResolver?.();
-
     const ctx: RecipeQueryContext = {
       runner: this.runner,
       input,
       renderedTemplates: new Map(),
-      ...(fragmentResolver === undefined ? {} : { fragmentResolver }),
+      prompt: await this.prompts.resolve(AGENT.recipeScan.id),
     };
     const { limits } = RECIPE_SCAN_SPEC;
     const budget = new ExecutionBudget({
@@ -205,6 +204,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       );
 
     const investigatePrompt = buildRecipeUserPrompt(
+      ctx.prompt,
       input.taskId,
       input.userPrompt,
       input.language,
@@ -214,14 +214,14 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     let repaired: RecipeSynthesisRun;
     try {
       const repairPrompt = buildRecipeRepairPrompt(
+        ctx.prompt,
         investigatePrompt,
         synthesis.data,
         errors,
-        fragmentResolver,
       );
       ctx.renderedTemplates.set(
-        "recipe-scan.investigator.repair",
-        buildRecipeRepairDirective(fragmentResolver),
+        RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
+        buildRecipeRepairDirective(ctx.prompt),
       );
       repaired = await runRecipeSynthesis(
         ctx,

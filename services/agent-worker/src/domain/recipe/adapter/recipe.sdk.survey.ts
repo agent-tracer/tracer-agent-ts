@@ -23,7 +23,7 @@ export function runRecipeSurvey(
   availableTurns: number,
   lease: AgentBudgetLease,
 ): Promise<StructuredQueryResult<DispatchPlan>> {
-  const systemPrompt = buildRecipeSurveySystemPrompt(ctx.fragmentResolver);
+  const systemPrompt = buildRecipeSurveySystemPrompt(ctx.prompt);
   ctx.renderedTemplates.set("recipe-scan.survey.system", systemPrompt);
   return runRecipeQuery(ctx, {
     label: `${RECIPE_SCAN_SPEC.name}:survey`,

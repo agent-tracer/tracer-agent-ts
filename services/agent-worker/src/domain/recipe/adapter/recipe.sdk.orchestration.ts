@@ -101,6 +101,7 @@ export async function synthesizeRecipe(
 ): Promise<RecipeSynthesisRun> {
   const lease = budget.combine([floorLease, budget.lease(1)]);
   const prompt = buildRecipeUserPrompt(
+    ctx.prompt,
     ctx.input.taskId,
     ctx.input.userPrompt,
     ctx.input.language,

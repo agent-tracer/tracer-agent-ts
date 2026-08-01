@@ -1,6 +1,7 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import { normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { RECIPE_SCAN_TRIGGER, RECIPE_SETTING_KEY, type RecipeScanTrigger } from "../model/recipe.const.js";
 import {
@@ -11,6 +12,7 @@ import {
     TaskNotScannableError,
 } from "../model/recipe.error.js";
 import { resolveRecipePromptPin } from "../model/recipe.prompt.js";
+import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
 import type { RecipeAgentPort } from "../port/recipe.agent.port.js";
 import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
@@ -40,6 +42,7 @@ export class PrepareRecipeScanUsecase {
         private readonly agent: RecipeAgentPort,
         private readonly notification: RecipeNotificationPort,
         private readonly clock: IClock,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     async execute(input: RecipeScanInput): Promise<RecipeScanPrep> {
@@ -54,7 +57,7 @@ export class PrepareRecipeScanUsecase {
         if (!eligible) throw new TaskNotScannableError(input.taskId);
 
         const language = normalizeOutputLanguage(input.language);
-        const prompt = resolveRecipePromptPin(language);
+        const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id), language);
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
         }

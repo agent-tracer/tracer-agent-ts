@@ -10,6 +10,7 @@ import {
     fixedClock,
     InMemoryRecipeRepository,
     seedRepository,
+    StubPromptSource,
 } from "../port/__fakes__/recipe.test-support.js";
 import { PrepareRecipeScanUsecase } from "./prepare.recipe.scan.usecase.js";
 
@@ -20,6 +21,7 @@ function usecase(repository: InMemoryRecipeRepository) {
         new FakeRecipeAgent(emptyOutput()),
         notification,
         fixedClock,
+        new StubPromptSource(),
     );
     return { target, notification };
 }

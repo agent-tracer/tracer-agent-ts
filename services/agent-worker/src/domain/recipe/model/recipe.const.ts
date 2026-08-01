@@ -4,8 +4,6 @@ export const RECIPE_FEATURE = "recipe-scan";
 /** 이 슬라이스가 실행하는 잡의 종류이며 값은 계약의 잡 어휘가 소유한다. */
 export const RECIPE_JOB_KIND = "recipe.scan";
 
-/** 한 태스크가 서로 다른 작업 턴을 담을 수 있어 스캔 한 번이 낼 수 있는 후보 수다. */
-export const RECIPE_CANDIDATE_LIMIT = 4;
 
 /** 스캔을 요청한 표면이며 앵커 자격 판정이 여기서 갈린다. */
 export const RECIPE_SCAN_TRIGGER = {

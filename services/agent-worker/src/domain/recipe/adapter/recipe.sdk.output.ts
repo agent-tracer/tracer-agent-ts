@@ -1,4 +1,4 @@
-import { mergeAgentTrajectory } from "@tracer-agent/llm";
+import { computeResolvedPromptBundleHash, mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
 import type { GenerateRecipeCandidatesOutput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
@@ -28,7 +28,7 @@ export function buildRecipeOutput(
       steps: segment.steps,
     })),
   );
-  const fragmentIntegrity = ctx.fragmentResolver?.finalizeBundle(
+  const promptHashes = computeResolvedPromptBundleHash(
     Object.fromEntries(ctx.renderedTemplates),
   );
 
@@ -63,7 +63,7 @@ export function buildRecipeOutput(
       landed: false,
       repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
       validationPassed: true,
-      ...(fragmentIntegrity ?? {}),
+      ...promptHashes,
     }),
   };
 }
