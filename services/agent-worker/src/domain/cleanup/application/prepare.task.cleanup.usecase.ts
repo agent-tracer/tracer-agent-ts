@@ -7,6 +7,8 @@ import { buildCleanupCandidates, type CleanupCandidate } from "../model/cleanup.
 import { CLEANUP_SETTING_KEY } from "../model/cleanup.const.js";
 import { JobAlreadySettledError, JobNotFoundError, MissingApiKeyError } from "../model/cleanup.error.js";
 import { resolveCleanupPromptPin } from "../model/cleanup.prompt.js";
+import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { CleanupAgentPort } from "../port/cleanup.agent.port.js";
 import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
@@ -38,6 +40,7 @@ export class PrepareTaskCleanupUsecase {
         private readonly agent: CleanupAgentPort,
         private readonly notification: CleanupNotificationPort,
         private readonly clock: IClock,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     async execute(input: TaskCleanupInput): Promise<TaskCleanupPrep> {
@@ -47,7 +50,7 @@ export class PrepareTaskCleanupUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.outputLanguage),
         );
-        const prompt = resolveCleanupPromptPin(language);
+        const prompt = resolveCleanupPromptPin(await this.prompts.resolve(AGENT.taskCleanup.id), language);
 
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);

@@ -1,15 +1,19 @@
 import { z } from "zod";
-import { CLEANUP_MAX_SUGGESTIONS, cleanupSuggestionsListSchema } from "./cleanup.suggestion.schema.js";
+import { cleanupSuggestionsListSchema } from "./cleanup.suggestion.schema.js";
+import {
+    CLEANUP_MAX_SUGGESTIONS,
+    MAX_INSPECT_WEIGHT,
+    MAX_REDISPATCH_ROUNDS,
+} from "./cleanup.tool.schema.js";
+
+export { MAX_INSPECT_WEIGHT, MAX_REDISPATCH_ROUNDS };
 
 // SDK 백엔드가 조사를 조율자와 후보별 조사로 나눌 때만 쓰는 내부 계획·보고 스키마이며, 계약이
 // 잠그는 도구·출력·예산 계약과는 분리된 오케스트레이션 지식이다.
 
-export const MAX_INSPECT_WEIGHT = 4;
 export const MAX_INSPECT_EXCERPTS = 6;
 export const MAX_INSPECT_REASON_CHARS = 400;
 
-// 조율자가 결정 대신 후보를 다시 열어보게 할 수 있는 라운드 수이며 무한 루프를 이 값으로 막는다.
-export const MAX_REDISPATCH_ROUNDS = 1;
 
 export const inspectAssignmentSchema = z.object({
     taskId: z.string().trim().min(1),

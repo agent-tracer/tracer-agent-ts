@@ -1,4 +1,4 @@
-import { mergeAgentTrajectory } from "@tracer-agent/llm";
+import { computeResolvedPromptBundleHash, mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
 import type { GenerateCleanupSuggestionsInput, GenerateCleanupSuggestionsOutput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
@@ -15,7 +15,7 @@ export function buildCleanupOutput(
     const input: GenerateCleanupSuggestionsInput = ctx.input;
     const accounting = mergeAgentCallAccounting(segments.map((segment) => segment.accounting));
     const steps = mergeAgentTrajectory(segments.map((segment) => ({ nodeName: segment.nodeName, steps: segment.steps })));
-    const fragmentIntegrity = ctx.fragmentResolver?.finalizeBundle(Object.fromEntries(ctx.resolvedTemplates));
+    const promptHashes = computeResolvedPromptBundleHash(Object.fromEntries(ctx.resolvedTemplates));
 
     return {
         suggestions,
@@ -47,7 +47,7 @@ export function buildCleanupOutput(
             landed: false,
             repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
             validationPassed: true,
-            ...(fragmentIntegrity ?? {}),
+            ...promptHashes,
         }),
     };
 }

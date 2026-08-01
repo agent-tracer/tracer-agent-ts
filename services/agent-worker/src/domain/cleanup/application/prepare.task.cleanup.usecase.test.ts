@@ -10,6 +10,7 @@ import {
     fixedClock,
     InMemoryCleanupRepository,
     seedRepository,
+    StubPromptSource,
 } from "../port/__fakes__/cleanup.test-support.js";
 import { PrepareTaskCleanupUsecase } from "./prepare.task.cleanup.usecase.js";
 
@@ -20,6 +21,7 @@ function usecase(repository: InMemoryCleanupRepository) {
         new FakeCleanupAgent(emptyOutput()),
         notification,
         fixedClock,
+        new StubPromptSource(),
     );
     return { target, notification };
 }

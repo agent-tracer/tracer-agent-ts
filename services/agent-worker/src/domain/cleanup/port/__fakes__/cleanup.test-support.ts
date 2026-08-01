@@ -7,6 +7,22 @@ import type {
     CleanupAgentPort,
 } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import type { CleanupIdGeneratorPort } from "~agent-worker/domain/cleanup/port/cleanup.id.generator.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
+import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
+import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+
+/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문으로 견주게 한다. */
+export const CLEANUP_PROMPT: AgentPrompt = buildAgentPrompt(
+    readAgentPrompt(AGENT.taskCleanup.id),
+    readAgentTools(AGENT.taskCleanup.id).limits ?? {},
+);
+
+export class StubPromptSource implements PromptSourcePort {
+    resolve(): Promise<AgentPrompt> {
+        return Promise.resolve(CLEANUP_PROMPT);
+    }
+}
 import type { CleanupNotificationPort } from "~agent-worker/domain/cleanup/port/cleanup.notification.port.js";
 import type {
     CleanupOutputPort,

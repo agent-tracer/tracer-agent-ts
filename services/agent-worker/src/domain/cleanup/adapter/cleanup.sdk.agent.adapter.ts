@@ -8,9 +8,11 @@ import {
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { JOB_KIND } from "~agent-worker/support/job.const.js";
 import { ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
-import { buildCleanupRepairPrompt, buildCleanupUserPrompt } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
-import { CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY } from "~agent-worker/domain/cleanup/model/cleanup.prompt.fragments.js";
+import {
+    buildCleanupRepairPrompt,
+    buildCleanupUserPrompt,
+    CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
+} from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { MAX_REDISPATCH_ROUNDS, type CleanupDecision, type TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import {
     MIN_DECISION_TURNS,
@@ -26,6 +28,7 @@ import type {
     GenerateCleanupSuggestionsInput,
     GenerateCleanupSuggestionsOutput,
 } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
 import { type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import { TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.investigate.js";
@@ -51,7 +54,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
     constructor(
         private readonly runner: IQueryRunner<ClaudeQueryOptions>,
         private readonly deps: CleanupToolDeps,
-        private readonly fragmentResolver?: () => PromptFragmentRunResolver,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     requiresLocalApiKey(): boolean {
@@ -72,12 +75,11 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
     }
 
     private async runAgent(input: GenerateCleanupSuggestionsInput): Promise<GenerateCleanupSuggestionsOutput> {
-        const resolver = this.fragmentResolver?.();
         const ctx: CleanupQueryContext = {
             runner: this.runner,
             input,
             resolvedTemplates: new Map(),
-            ...(resolver !== undefined ? { fragmentResolver: resolver } : {}),
+            prompt: await this.prompts.resolve(AGENT.taskCleanup.id),
         };
         const batch: CleanupToolBatch = { candidates: input.candidates, batchTruncated: input.truncated };
         const { limits } = TASK_CLEANUP_SPEC;
@@ -133,7 +135,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         if (repairLease.maxTurns <= 0) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
 
         const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
-        const repairPrompt = buildCleanupRepairPrompt(decisionPrompt, decision.data, checked.errors, ctx.fragmentResolver);
+        const repairPrompt = buildCleanupRepairPrompt(ctx.prompt, decisionPrompt, decision.data, checked.errors);
         ctx.resolvedTemplates.set(CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY, repairPrompt);
         let repaired: CleanupDecisionRun;
         try {

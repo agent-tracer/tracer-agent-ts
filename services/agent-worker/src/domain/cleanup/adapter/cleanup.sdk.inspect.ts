@@ -2,14 +2,17 @@ import type { JobStepPayload } from "@tracer-agent/llm";
 import { AgentExecutionFailure, zodToClaudeOutputSchema } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
-import { buildCleanupInspectPrompt, buildCleanupInspectSystemPrompt } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
+import {
+    buildCleanupInspectPrompt,
+    buildCleanupInspectSystemPrompt,
+    CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY,
+} from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { inspectReportSchema, type InspectAssignment, type InspectReport } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import { buildInspectFailureReport, CLEANUP_REVIEWER_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import { TASK_CLEANUP_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import { buildCleanupToolHandlers, type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import { runCleanupQuery, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
-import { CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY } from "~agent-worker/domain/cleanup/model/cleanup.prompt.fragments.js";
 
 const INSPECT_TOOL_NAMES = CLEANUP_REVIEWER_TOOLS;
 const INSPECT_TOOL_SPECS = TASK_CLEANUP_TOOLS.filter((spec) =>
@@ -35,7 +38,7 @@ export async function runCleanupInspect(
     const handlers = buildCleanupToolHandlers(ctx.input.userId, deps, batch, ledger);
 
     try {
-        const systemPrompt = buildCleanupInspectSystemPrompt(ctx.fragmentResolver);
+        const systemPrompt = buildCleanupInspectSystemPrompt(ctx.prompt);
         ctx.resolvedTemplates.set(CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY, systemPrompt);
         const run = await runCleanupQuery(ctx, {
             label: `${TASK_CLEANUP_SPEC.name}:inspect:${assignment.taskId}`,

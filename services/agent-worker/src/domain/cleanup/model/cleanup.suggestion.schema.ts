@@ -1,9 +1,8 @@
 import { z } from "zod";
-
-// 계약의 agent/task-cleanup/spec.json#output을 그대로 옮긴 출력 스키마다.
-
-export const CLEANUP_MAX_SUGGESTIONS = 50;
-export const CLEANUP_MAX_EVIDENCE_EVENT_IDS = 100;
+import {
+    CLEANUP_MAX_EVIDENCE_EVENT_IDS,
+    CLEANUP_MAX_SUGGESTIONS,
+} from "./cleanup.tool.schema.js";
 
 const cleanupSuggestionSchema = z.object({
     kind: z.literal("archive"),

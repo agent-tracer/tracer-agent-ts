@@ -14,7 +14,7 @@ import {
 } from "@tracer-agent/llm";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { CLEANUP_FEATURE } from "~agent-worker/domain/cleanup/model/cleanup.const.js";
 import { TASK_CLEANUP_FAILURES } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import type { GenerateCleanupSuggestionsInput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
@@ -42,7 +42,7 @@ export const CLEANUP_MCP_SERVER = `monitor-${TASK_CLEANUP_SPEC.name}`;
 export interface CleanupQueryContext {
     readonly runner: IQueryRunner<ClaudeQueryOptions>;
     readonly input: GenerateCleanupSuggestionsInput;
-    readonly fragmentResolver?: PromptFragmentRunResolver;
+    readonly prompt: AgentPrompt;
     readonly resolvedTemplates: Map<string, string>;
 }
 

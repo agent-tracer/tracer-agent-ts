@@ -39,6 +39,7 @@ import { CleanupUlidGenerator } from "~agent-worker/domain/cleanup/adapter/clean
 import { FailCleanupJobUsecase } from "~agent-worker/domain/cleanup/application/fail.cleanup.job.usecase.js";
 import { FinalizeTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/finalize.task.cleanup.usecase.js";
 import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/prepare.task.cleanup.usecase.js";
+import { ContractPromptSourceAdapter as CleanupPromptSourceAdapter } from "~agent-worker/domain/cleanup/adapter/contract.prompt.source.adapter.js";
 import { SuggestCleanupUsecase } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { CleanupActivity } from "~agent-worker/domain/cleanup/inbound/cleanup.activity.js";
 import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/title.notification.adapter.js";
@@ -113,12 +114,13 @@ async function bootstrap(): Promise<void> {
     const cleanupRepository = new CleanupRepositoryAdapter(dataSource, tracer);
     const cleanupOutput = new CleanupOutputAdapter(tracer);
     const cleanupNotification = new CleanupNotificationAdapter(publish);
+    const cleanupPrompts = new CleanupPromptSourceAdapter();
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
         tasks: cleanupReader,
         events: cleanupReader,
-    }, resolveJobFragments);
+    }, cleanupPrompts);
     const cleanup = new CleanupActivity(
-        new PrepareTaskCleanupUsecase(cleanupRepository, cleanupAgent, cleanupNotification, clock),
+        new PrepareTaskCleanupUsecase(cleanupRepository, cleanupAgent, cleanupNotification, clock, cleanupPrompts),
         new SuggestCleanupUsecase(cleanupRepository, cleanupAgent, clock, cleanupIds),
         new FinalizeTaskCleanupUsecase(cleanupRepository, cleanupOutput, cleanupNotification, clock),
         new FailCleanupJobUsecase(cleanupRepository, cleanupNotification, clock),
