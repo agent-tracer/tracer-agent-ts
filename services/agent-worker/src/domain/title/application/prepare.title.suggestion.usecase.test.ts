@@ -12,6 +12,7 @@ import {
     CapturingTitleNotification,
     FixedClock,
     InMemoryTitleRepository,
+    StubPromptSource,
     titleAgentOutput,
 } from "~agent-worker/domain/title/port/__fakes__/title.test-support.js";
 import { PrepareTitleSuggestionUsecase } from "./prepare.title.suggestion.usecase.js";
@@ -34,6 +35,7 @@ function setup(needsKey = false) {
             agent(needsKey),
             notification,
             new FixedClock(),
+            new StubPromptSource(),
         ),
     };
 }

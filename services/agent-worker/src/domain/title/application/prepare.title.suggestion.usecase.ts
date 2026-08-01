@@ -1,4 +1,5 @@
 import type { IClock } from "@tracer-agent/platform";
+import { AGENT } from "~agent-worker/support/agent.const.js";
 import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { TITLE_SETTING_KEY } from "~agent-worker/domain/title/model/title.const.js";
@@ -14,6 +15,7 @@ import type {
     TitleSuggestionPrep,
 } from "~agent-worker/domain/title/model/title.job.model.js";
 import { resolveTitlePromptPin } from "~agent-worker/domain/title/model/title.prompt.js";
+import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleNotificationPort } from "~agent-worker/domain/title/port/title.notification.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
@@ -25,6 +27,7 @@ export class PrepareTitleSuggestionUsecase {
         private readonly agent: TitleAgentPort,
         private readonly notification: TitleNotificationPort,
         private readonly clock: IClock,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     async execute(input: TitleSuggestionInput): Promise<TitleSuggestionPrep> {
@@ -40,7 +43,7 @@ export class PrepareTitleSuggestionUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.outputLanguage),
         );
-        const prompt = resolveTitlePromptPin(language);
+        const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id), language);
 
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);

@@ -1,5 +1,4 @@
-/** 컨텍스트가 싣는 최근 턴 창의 크기이며 최초 턴이 창 밖이면 하나가 더 붙는다. */
-export const RECENT_TURN_LIMIT = 20;
+import { RECENT_TURN_LIMIT } from "./title.tool.schema.js";
 
 /** 요약이 보는 태스크의 순수 표현이다. */
 export interface TitleTaskSnapshot {

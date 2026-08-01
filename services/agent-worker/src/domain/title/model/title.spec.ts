@@ -1,5 +1,6 @@
 import { featureLimits, featureModels } from "@tracer-agent/llm";
 import { AGENT } from "~agent-worker/support/agent.const.js";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import { TITLE_FEATURE } from "./title.const.js";
 import type { TitleContext } from "./title.context.model.js";
@@ -20,7 +21,8 @@ export interface TitlePromptInput {
 /** 두 구현체가 같은 명세를 읽고 서로 다른 방언으로 렌더링하는 제목 제안 정의다. */
 export const TITLE_SUGGESTION_SPEC = {
     name: AGENT.titleSuggestion.id,
-    systemPrompt: (language: OutputLanguage): string => buildTitleSystemPrompt(language),
+    systemPrompt: (prompt: AgentPrompt, language: OutputLanguage): string =>
+        buildTitleSystemPrompt(prompt, language),
     userPrompt: (input: TitlePromptInput): string => buildTitleUserPrompt(input.taskId, input.context),
     outputSchema: titleSuggestionsListSchema,
     tools: TITLE_SUGGESTION_TOOLS,

@@ -1,6 +1,7 @@
 import {
     AGENT_BACKEND,
     buildMcpToolServer,
+    computeResolvedPromptBundleHash,
     isBudgetExhaustedFailure,
     mcpToolNames,
     mergeAgentTrajectory,
@@ -15,13 +16,12 @@ import {
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { ExecutionBudget, type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
 import { TITLE_JOB_KIND } from "~agent-worker/domain/title/model/title.const.js";
 import {
     buildTitleRepairPrompt,
     buildTitleSystemPrompt,
+    TITLE_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/title/model/title.prompt.js";
-import { TITLE_SYSTEM_TEMPLATE_KEY } from "~agent-worker/domain/title/model/title.prompt.fragments.js";
 import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.spec.js";
 import type { TitleSuggestionsList } from "~agent-worker/domain/title/model/title.suggestion.schema.js";
 import { TITLE_SUGGESTION_TOOL_NAMES } from "~agent-worker/domain/title/model/title.tool.schema.js";
@@ -32,6 +32,7 @@ import type {
     TitleAgentPort,
 } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleEventReaderPort } from "~agent-worker/domain/title/port/title.event.reader.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
 import { buildTitleToolHandlers } from "./title.tools.js";
 
 const MCP_SERVER = `monitor-${TITLE_SUGGESTION_SPEC.name}`;
@@ -52,7 +53,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
     constructor(
         private readonly runner: IQueryRunner<ClaudeQueryOptions>,
         private readonly events: TitleEventReaderPort,
-        private readonly fragmentResolver?: () => PromptFragmentRunResolver,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     requiresLocalApiKey(): boolean {
@@ -75,9 +76,8 @@ export class TitleAgentAdapter implements TitleAgentPort {
     private async runAgent(
         input: GenerateTitleSuggestionsInput,
     ): Promise<GenerateTitleSuggestionsOutput> {
-        const resolver = this.fragmentResolver?.();
-        const systemPrompt = buildTitleSystemPrompt(input.language, resolver);
-        const fragmentRun = resolver === undefined ? undefined : { resolver, prompt: systemPrompt };
+        const prompt = await this.prompts.resolve(TITLE_SUGGESTION_SPEC.name);
+        const systemPrompt = buildTitleSystemPrompt(prompt, input.language);
 
         const handlers = buildTitleToolHandlers(input.userId, this.events);
         const basePrompt = TITLE_SUGGESTION_SPEC.userPrompt({
@@ -100,10 +100,10 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const runs: RunSegment[] = [{ run: first, nodeName: "investigate" }];
 
         const errors = validateTitleSuggestions(first.data.suggestions, input.context.title);
-        if (errors.length === 0) return toOutput(input, runs, first.data.suggestions, fragmentRun);
+        if (errors.length === 0) return toOutput(input, runs, first.data.suggestions, systemPrompt);
 
         // 예약된 몫마저 바닥나 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 착지한다.
-        if (repairLease.maxTurns <= 0) return toOutput(input, runs, [], fragmentRun);
+        if (repairLease.maxTurns <= 0) return toOutput(input, runs, [], systemPrompt);
 
         // 제목이 제약을 어기면 오류를 모델에게 돌려주고 예약해 둔 몫으로 한 번만 다시 받는다.
         let repaired: StructuredRun;
@@ -111,20 +111,20 @@ export class TitleAgentAdapter implements TitleAgentPort {
             repaired = await this.runOnce(
                 input,
                 handlers,
-                buildTitleRepairPrompt(basePrompt, first.data, errors, resolver),
+                buildTitleRepairPrompt(prompt, basePrompt, first.data, errors),
                 repairLease,
                 systemPrompt,
             );
         } catch (error) {
             // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 착지한다.
-            if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, [], fragmentRun);
+            if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, [], systemPrompt);
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         runs.push({ run: repaired, nodeName: "repair" });
 
         const remaining = validateTitleSuggestions(repaired.data.suggestions, input.context.title);
-        return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : [], fragmentRun);
+        return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : [], systemPrompt);
     }
 
     private runOnce(
@@ -182,15 +182,13 @@ function toOutput(
     input: GenerateTitleSuggestionsInput,
     runs: readonly RunSegment[],
     suggestions: GenerateTitleSuggestionsOutput["suggestions"],
-    fragmentRun?: { readonly resolver: PromptFragmentRunResolver; readonly prompt: string },
+    systemPrompt: string,
 ): GenerateTitleSuggestionsOutput {
     const last = runs[runs.length - 1]!.run;
     const accounting = mergeAgentCallAccounting(runs.map(({ run }) => run));
     const steps = mergeAgentTrajectory(runs.map(({ run, nodeName }) => ({ nodeName, steps: run.steps })));
     const modelRequested = input.model?.trim() || TITLE_SUGGESTION_SPEC.limits.defaultModel;
-    const fragmentIntegrity = fragmentRun?.resolver.finalizeBundle({
-        [TITLE_SYSTEM_TEMPLATE_KEY]: fragmentRun.prompt,
-    });
+    const promptHashes = computeResolvedPromptBundleHash({ [TITLE_SYSTEM_TEMPLATE_KEY]: systemPrompt });
     return {
         suggestions,
         modelUsed: last.modelUsed,
@@ -221,7 +219,7 @@ function toOutput(
             landed: runs.some(({ run }) => run.landed),
             repairAttempted: runs.some(({ nodeName }) => nodeName === "repair"),
             validationPassed: true,
-            ...(fragmentIntegrity ?? {}),
+            ...promptHashes,
         }),
     };
 }

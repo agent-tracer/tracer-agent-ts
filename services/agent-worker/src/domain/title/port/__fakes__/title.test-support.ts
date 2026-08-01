@@ -11,7 +11,23 @@ import type {
     TitleSuggestionCommit,
     TitleTaskContext,
 } from "~agent-worker/domain/title/port/title.repository.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
+import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
+import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
+
+/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문으로 견주게 한다. */
+export const TITLE_PROMPT: AgentPrompt = buildAgentPrompt(
+    readAgentPrompt(AGENT.titleSuggestion.id),
+    readAgentTools(AGENT.titleSuggestion.id).limits ?? {},
+);
+
+export class StubPromptSource implements PromptSourcePort {
+    resolve(): Promise<AgentPrompt> {
+        return Promise.resolve(TITLE_PROMPT);
+    }
+}
 
 export const NOW = new Date("2026-07-01T00:00:00.000Z");
 

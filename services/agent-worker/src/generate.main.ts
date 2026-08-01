@@ -45,6 +45,7 @@ import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/tit
 import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/title.event.reader.adapter.js";
 import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
 import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
+import { ContractPromptSourceAdapter as TitlePromptSourceAdapter } from "~agent-worker/domain/title/adapter/contract.prompt.source.adapter.js";
 import { TitleUlidGenerator } from "~agent-worker/domain/title/adapter/title.ulid.generator.js";
 import { FailTitleJobUsecase } from "~agent-worker/domain/title/application/fail.title.job.usecase.js";
 import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/application/finalize.title.suggestion.usecase.js";
@@ -98,9 +99,10 @@ async function bootstrap(): Promise<void> {
     const titleReader = new TitleEventReaderAdapter(tracer);
     const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
     const titleNotification = new TitleNotificationAdapter(publish);
-    const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader, resolveJobFragments);
+    const titlePrompts = new TitlePromptSourceAdapter();
+    const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader, titlePrompts);
     const title = new TitleActivity(
-        new PrepareTitleSuggestionUsecase(titleRepository, titleAgent, titleNotification, clock),
+        new PrepareTitleSuggestionUsecase(titleRepository, titleAgent, titleNotification, clock, titlePrompts),
         new SuggestTitleUsecase(titleRepository, titleAgent, clock, titleIds),
         new FinalizeTitleSuggestionUsecase(titleRepository, titleNotification, clock),
         new FailTitleJobUsecase(titleRepository, titleNotification, clock),

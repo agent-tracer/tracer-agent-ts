@@ -13,6 +13,7 @@ import {
     SequentialTitleIdGenerator,
     titleAgentOutput,
     titleContext,
+    TITLE_PROMPT,
 } from "~agent-worker/domain/title/port/__fakes__/title.test-support.js";
 import { SuggestTitleUsecase } from "./suggest.title.usecase.js";
 
@@ -23,7 +24,7 @@ const PREP: TitleSuggestionPrep = {
     language: "auto",
     currentTitle: "Task 1",
     context: titleContext(),
-    prompt: resolveTitlePromptPin("auto"),
+    prompt: resolveTitlePromptPin(TITLE_PROMPT, "auto"),
 };
 
 class FakeTitleAgent implements TitleAgentPort {

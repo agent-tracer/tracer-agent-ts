@@ -3,19 +3,13 @@ import {
     type AgentPromptBundle,
     type ResolvedAgentPrompt,
 } from "@tracer-agent/llm";
-import { AGENT } from "~agent-worker/support/agent.const.js";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
-import { renderPromptFragment } from "~agent-worker/support/prompt.fragment.js";
-import type { PromptFragmentRunResolver } from "~agent-worker/support/resolved.prompt.fragments.js";
 import type { TitleContext } from "./title.context.model.js";
-import { languageDirective } from "./title.language.js";
-import {
-    TITLE_ANSWER_SHAPE,
-    TITLE_CONTEXT_SHAPE,
-    TITLE_REPAIR_DIRECTIVE,
-    TITLE_SPEC_FRAGMENT,
-    TITLE_SYSTEM_TEMPLATE_KEY,
-} from "./title.prompt.fragments.js";
+
+export const TITLE_SYSTEM_TEMPLATE_KEY = "title-suggestion.investigator.system" as const;
+
+export const TITLE_REPAIR_TEMPLATE_KEY = "title-suggestion.investigator.repair" as const;
 
 export const TITLE_SUGGESTION_MAX_TURNS = 4;
 
@@ -34,32 +28,31 @@ const PULL_MORE_EVIDENCE = [
 ].join("\n");
 
 /** 도구 접두사가 붙지 않은 기준 시스템 프롬프트다. */
-export function buildTitleSystemPrompt(
-    language: OutputLanguage,
-    resolver?: PromptFragmentRunResolver,
-): string {
-    const fragment = (slot: string, local: Parameters<typeof renderPromptFragment>[0]): string =>
-        resolver?.resolve(TITLE_SYSTEM_TEMPLATE_KEY, slot, local) ?? renderPromptFragment(local, {});
+export function buildTitleSystemPrompt(prompt: AgentPrompt, language: OutputLanguage): string {
+    const slot = (name: string): string => prompt.slot(TITLE_SYSTEM_TEMPLATE_KEY, name);
     return [
         "You rename recorded coding-agent tasks so the title actually reflects what happened.",
         "",
-        fragment("contextShape", TITLE_CONTEXT_SHAPE),
+        slot("contextShape"),
         "",
         PULL_MORE_EVIDENCE,
         "",
-        fragment("titleSpec", TITLE_SPEC_FRAGMENT),
+        slot("titleSpec"),
         "",
-        fragment("answerShape", TITLE_ANSWER_SHAPE),
+        slot("answerShape"),
         "",
-        `Output language: ${languageDirective(AGENT.titleSuggestion.id, language)}`,
+        `Output language: ${prompt.languageDirective(language)}`,
         "",
         "Return the suggestions as structured output conforming to the provided schema.",
     ].join("\n");
 }
 
 /** 실행에 실을 이 번들의 코드 고정값이며 실행은 원장 없이 이 값을 그대로 쓴다. */
-export function resolveTitlePromptPin(language: OutputLanguage): ResolvedAgentPrompt {
-    const bundle: AgentPromptBundle = { investigatorSystemPrompt: buildTitleSystemPrompt(language) };
+export function resolveTitlePromptPin(
+    prompt: AgentPrompt,
+    language: OutputLanguage,
+): ResolvedAgentPrompt {
+    const bundle: AgentPromptBundle = { investigatorSystemPrompt: buildTitleSystemPrompt(prompt, language) };
     return {
         versionId: `title-suggestion:${language}:${TITLE_PROMPT_VERSION}`,
         semanticVersion: TITLE_PROMPT_VERSION,
@@ -71,10 +64,10 @@ export function resolveTitlePromptPin(language: OutputLanguage): ResolvedAgentPr
 
 /** 검증에 걸린 출력을 모델에게 돌려줘 한 번 고쳐 받는 지시문이며 직전 출력을 함께 싣는다. */
 export function buildTitleRepairPrompt(
+    prompt: AgentPrompt,
     basePrompt: string,
     previousOutput: unknown,
     errors: readonly string[],
-    resolver?: PromptFragmentRunResolver,
 ): string {
     return [
         basePrompt,
@@ -85,8 +78,7 @@ export function buildTitleRepairPrompt(
         "Deterministic validation rejected your output:",
         ...errors.map((error) => `  - ${error}`),
         "",
-        resolver?.resolve(TITLE_SYSTEM_TEMPLATE_KEY, "repairDirective", TITLE_REPAIR_DIRECTIVE)
-            ?? renderPromptFragment(TITLE_REPAIR_DIRECTIVE, {}),
+        prompt.slot(TITLE_REPAIR_TEMPLATE_KEY, "repairDirective"),
     ].join("\n");
 }
 
