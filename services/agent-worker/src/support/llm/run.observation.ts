@@ -6,7 +6,6 @@ import {
     type AgentQueryUsage,
     type AgentRunObservation,
     type JobStepPayload,
-    type PromptFragmentSnapshot,
 } from "@tracer-agent/llm";
 
 export interface SuccessfulRunObservationInput {
@@ -27,7 +26,6 @@ export interface SuccessfulRunObservationInput {
     readonly repairAttempted: boolean;
     readonly validationPassed: boolean;
     readonly validationErrorCodes?: readonly string[];
-    readonly fragmentSnapshots?: readonly PromptFragmentSnapshot[];
     readonly resolvedPromptHash?: string;
     readonly resolvedPromptHashes?: readonly {
         readonly templateKey: string;
@@ -75,16 +73,11 @@ export function buildSuccessfulRunObservation(
             providerRequestId: null,
         },
     );
-    if (
-        input.fragmentSnapshots === undefined
-        || input.resolvedPromptHash === undefined
-        || input.resolvedPromptHashes === undefined
-    ) {
+    if (input.resolvedPromptHash === undefined || input.resolvedPromptHashes === undefined) {
         return common;
     }
     return {
         ...common,
-        fragmentSnapshots: input.fragmentSnapshots,
         resolvedPromptHash: input.resolvedPromptHash,
         resolvedPromptHashes: input.resolvedPromptHashes,
     };

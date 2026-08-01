@@ -1,5 +1,4 @@
 import type { AgentBackend } from "./agent.backend.js";
-import type { PromptFragmentSnapshot } from "./prompt.resolution.js";
 
 /** 실행 결과를 저장하고 비교할 때 쓰는, 원문 payload와 비밀은 담지 않는 프레임워크 무관 관측 어휘다. */
 export const AGENT_RUN_OBSERVATION_STATUS = {
@@ -73,7 +72,6 @@ export interface AgentRunObservation extends AgentAttemptIdentity {
     readonly modelActual: string | null;
     readonly promptVersion: string;
     readonly promptContentHash: string;
-    readonly fragmentSnapshots?: readonly PromptFragmentSnapshot[];
     readonly resolvedPromptHash?: string;
     readonly resolvedPromptHashes?: readonly {
         readonly templateKey: string;
