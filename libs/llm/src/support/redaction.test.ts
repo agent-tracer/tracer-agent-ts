@@ -83,12 +83,10 @@ describe("값을 견주는 절차", () => {
         expect(redactText(`앞말 sk-ant-${BODY} 뒷말`)).toBe(`앞말 ${RULE.marker} 뒷말`);
     });
 
-    it("접으면 길이가 달라지는 글자가 앞에 있어도 온전히 가린다", () => {
-        const covered = redactText(`\u0130stanbul 에서 sk-ant-${BODY} 를 받았다`);
-
-        expect(covered).not.toContain(BODY);
-        expect(covered).not.toContain("sk-ant");
-        expect(covered).toBe(RULE.marker);
+    it("유니코드로 접으면 길이가 달라지는 글자가 앞에 있어도 자리가 밀리지 않는다", () => {
+        for (const word of ["\u0130stanbul", "Stra\u00dfe"]) {
+            expect(redactText(`${word} 에서 sk-ant-${BODY} 를 받았다`)).toBe(`${word} 에서 ${RULE.marker} 를 받았다`);
+        }
     });
 
     it("구분자를 지우지 않으므로 접두사의 모양이 뜻을 잃지 않는다", () => {

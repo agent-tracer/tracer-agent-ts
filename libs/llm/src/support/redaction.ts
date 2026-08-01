@@ -27,6 +27,8 @@ const DISCARD = "discard";
 
 const NORMALIZERS: Readonly<Record<string, (text: string) => string>> = {
     casefold: (text) => text.toLowerCase(),
+    // 걸린 구간의 자리를 원문에서 세므로 접는 절차가 길이를 바꾸면 안 된다.
+    lowerAscii: (text) => text.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()),
     keepAlphanumeric: (text) => text.replace(/[^\p{L}\p{N}]+/gu, ""),
 };
 
@@ -93,10 +95,6 @@ export function isSuspectText(text: string): boolean {
 
 /** 걸린 자리만 표시로 바꾸고 남은 본문은 그대로 낸다. */
 export function redactText(text: string): string {
-    // 접어서 길이가 달라지는 글자가 있으면 자리가 밀려 자격의 앞머리가 남으므로 본문을 통째로 가린다.
-    if (text.toLowerCase().length !== text.length) {
-        return isSuspectText(text) ? REDACTION_MARKER : text;
-    }
     let cursor = 0;
     let redacted = "";
     for (const span of suspectSpans(text)) {
