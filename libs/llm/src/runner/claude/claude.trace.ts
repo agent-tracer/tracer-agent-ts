@@ -71,9 +71,6 @@ export async function createClaudeRunTree(
                     "agent_tracer.job.id": request.jobId,
                     "agent_tracer.execution.id": request.observation?.executionId,
                     "agent_tracer.attempt.id": request.observation?.attemptId,
-                    "agent_tracer.experiment.id": request.observation?.experimentId,
-                    "agent_tracer.example.id": request.observation?.exampleId,
-                    "agent_tracer.variant.id": request.observation?.variantId,
                 },
             },
         });

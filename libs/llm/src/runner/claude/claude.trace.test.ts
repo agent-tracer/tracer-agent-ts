@@ -30,9 +30,6 @@ describe("추적 루트의 메타데이터", () => {
                 promptVersion: "v1.0",
                 promptContentHash: "hash-1234",
                 toolContractVersion: "v2",
-                experimentId: "exp-1",
-                exampleId: "ex-1",
-                variantId: "var-1",
             },
             jobId: "job-1",
         }), false);
@@ -49,9 +46,6 @@ describe("추적 루트의 메타데이터", () => {
             "agent_tracer.job.id": "job-1",
             "agent_tracer.execution.id": "exec-1",
             "agent_tracer.attempt.id": "exec-1:1",
-            "agent_tracer.experiment.id": "exp-1",
-            "agent_tracer.example.id": "ex-1",
-            "agent_tracer.variant.id": "var-1",
         });
     });
 

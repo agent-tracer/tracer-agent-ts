@@ -12,15 +12,11 @@ import type { AgentQueryResult } from "~llm/runner/llm.runner.js";
 
 export interface ClaudeObservationInput extends AgentAttemptIdentity {
     readonly jobId?: string;
-    readonly experimentId?: string;
-    readonly exampleId?: string;
-    readonly variantId?: string;
     readonly agentName: string;
     readonly modelRequested: string;
     readonly promptVersion: string;
     readonly promptContentHash: string;
     readonly toolContractVersion: string;
-    readonly evaluatorSetVersion?: string;
     readonly modelCallId?: string;
     readonly repairAttempted: boolean;
     readonly validation: ValidationObservation;
@@ -37,9 +33,6 @@ export function buildClaudeRunObservation(
     return {
         ...identity,
         jobId: input.jobId ?? null,
-        experimentId: input.experimentId ?? null,
-        exampleId: input.exampleId ?? null,
-        variantId: input.variantId ?? null,
         agentName: input.agentName,
         backend: AGENT_BACKEND.claudeSdk,
         modelRequested: input.modelRequested,
@@ -47,7 +40,6 @@ export function buildClaudeRunObservation(
         promptVersion: input.promptVersion,
         promptContentHash: input.promptContentHash,
         toolContractVersion: input.toolContractVersion,
-        evaluatorSetVersion: input.evaluatorSetVersion ?? null,
         status,
         durationMs: result.durationMs,
         usage,

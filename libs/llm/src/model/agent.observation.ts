@@ -67,9 +67,6 @@ export interface ValidationObservation {
 /** 운영 잡과 실험 실행을 동일한 기준으로 비교하는 정규화된 실행 관측 레코드다. */
 export interface AgentRunObservation extends AgentAttemptIdentity {
     readonly jobId: string | null;
-    readonly experimentId: string | null;
-    readonly exampleId: string | null;
-    readonly variantId: string | null;
     readonly agentName: string;
     readonly backend: AgentBackend;
     readonly modelRequested: string;
@@ -83,7 +80,6 @@ export interface AgentRunObservation extends AgentAttemptIdentity {
         readonly contentHash: string;
     }[];
     readonly toolContractVersion: string;
-    readonly evaluatorSetVersion: string | null;
     readonly status: AgentRunObservationStatus;
     readonly durationMs: number;
     readonly usage: AgentUsage;

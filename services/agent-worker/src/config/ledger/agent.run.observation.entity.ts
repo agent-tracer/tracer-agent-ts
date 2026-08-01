@@ -1,7 +1,7 @@
 import type { AgentRunObservation } from "@tracer-agent/llm";
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-/** 운영 잡과 실험 실행을 같은 기준으로 견주는 관측 원장의 저장 스키마다. */
+/** 실행 시도를 같은 기준으로 비교하는 관측 원장의 저장 스키마다. */
 @Entity({ name: "agent_run_observations" })
 @Index("agent_run_observations_user_created", ["userId", "createdAt"])
 @Index("agent_run_observations_job", ["jobId"])
@@ -17,15 +17,6 @@ export class AgentRunObservationEntity {
 
     @Column({ name: "job_id", type: "text", nullable: true })
     jobId!: string | null;
-
-    @Column({ name: "experiment_id", type: "text", nullable: true })
-    experimentId!: string | null;
-
-    @Column({ name: "example_id", type: "text", nullable: true })
-    exampleId!: string | null;
-
-    @Column({ name: "variant_id", type: "text", nullable: true })
-    variantId!: string | null;
 
     @Column({ name: "agent_name", type: "text" })
     agentName!: string;
@@ -47,9 +38,6 @@ export class AgentRunObservationEntity {
 
     @Column({ name: "tool_contract_version", type: "text" })
     toolContractVersion!: string;
-
-    @Column({ name: "evaluator_set_version", type: "text", nullable: true })
-    evaluatorSetVersion!: string | null;
 
     @Column({ type: "text" })
     status!: string;
@@ -92,9 +80,6 @@ export function toAgentRunObservationRow(
     row.attemptId = observation.attemptId;
     row.userId = userId;
     row.jobId = observation.jobId;
-    row.experimentId = observation.experimentId;
-    row.exampleId = observation.exampleId;
-    row.variantId = observation.variantId;
     row.agentName = observation.agentName;
     row.backend = observation.backend;
     row.modelRequested = observation.modelRequested;
@@ -102,7 +87,6 @@ export function toAgentRunObservationRow(
     row.promptVersion = observation.promptVersion;
     row.promptContentHash = observation.promptContentHash;
     row.toolContractVersion = observation.toolContractVersion;
-    row.evaluatorSetVersion = observation.evaluatorSetVersion;
     row.status = observation.status;
     row.durationMs = observation.durationMs;
     row.usage = { ...observation.usage };

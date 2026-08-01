@@ -7,8 +7,8 @@ import {
 } from "./telemetry.attributes.js";
 
 const observation = {
-    executionId: "exec-1", attemptId: "attempt-1", experimentId: "exp-1", exampleId: "example-1",
-    variantId: "variant-1", promptVersion: "prompt-v1", promptContentHash: "sha256:abc",
+    executionId: "exec-1", attemptId: "attempt-1",
+    promptVersion: "prompt-v1", promptContentHash: "sha256:abc",
     toolContractVersion: "tools-v1", modelCallId: "call-1",
 };
 
@@ -25,9 +25,6 @@ describe("공통 관측 span 속성", () => {
         expect(attributes).toMatchObject({
             [AGENT_TRACER_ATTR.executionId]: "exec-1",
             [AGENT_TRACER_ATTR.attemptId]: "attempt-1",
-            [AGENT_TRACER_ATTR.experimentId]: "exp-1",
-            [AGENT_TRACER_ATTR.exampleId]: "example-1",
-            [AGENT_TRACER_ATTR.variantId]: "variant-1",
             [AGENT_TRACER_ATTR.promptVersion]: "prompt-v1",
             [AGENT_TRACER_ATTR.promptHash]: "sha256:abc",
             [AGENT_TRACER_ATTR.toolContractVersion]: "tools-v1",

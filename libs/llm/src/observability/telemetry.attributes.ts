@@ -28,9 +28,6 @@ export interface InvokeAgentTelemetryInput {
 export interface AgentTelemetryIdentity {
     readonly executionId?: string;
     readonly attemptId?: string;
-    readonly experimentId?: string;
-    readonly exampleId?: string;
-    readonly variantId?: string;
     readonly promptVersion?: string;
     readonly promptContentHash?: string;
     readonly toolContractVersion?: string;
@@ -126,9 +123,6 @@ function buildObservationAttributes(input: AgentTelemetryIdentity | undefined): 
     return compactAttributes({
         [AGENT_TRACER_ATTR.executionId]: input.executionId,
         [AGENT_TRACER_ATTR.attemptId]: input.attemptId,
-        [AGENT_TRACER_ATTR.experimentId]: input.experimentId,
-        [AGENT_TRACER_ATTR.exampleId]: input.exampleId,
-        [AGENT_TRACER_ATTR.variantId]: input.variantId,
         [AGENT_TRACER_ATTR.promptVersion]: input.promptVersion,
         [AGENT_TRACER_ATTR.promptHash]: input.promptContentHash,
         [AGENT_TRACER_ATTR.toolContractVersion]: input.toolContractVersion,

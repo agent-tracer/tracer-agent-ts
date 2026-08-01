@@ -67,9 +67,6 @@ export interface AgentQueryRequest<ProviderOptions = undefined> {
 export interface AgentQueryObservationContext {
     readonly executionId?: string;
     readonly attemptId?: string;
-    readonly experimentId?: string;
-    readonly exampleId?: string;
-    readonly variantId?: string;
     readonly promptVersion?: string;
     readonly promptContentHash?: string;
     readonly toolContractVersion?: string;
