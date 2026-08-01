@@ -1,3 +1,4 @@
+import { redactText } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import type { ChatTurnToolCall } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import type {
@@ -81,7 +82,7 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
     }
 
     private enqueueFlush(): void {
-        const text = this.text;
+        const text = redactText(this.text);
         const seq = this.seq;
         if (seq === 0) return;
         this.tail = this.tail.catch(() => undefined).then(async () => {

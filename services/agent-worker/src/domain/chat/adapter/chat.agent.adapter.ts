@@ -3,6 +3,7 @@ import {
     buildClaudeRunObservation,
     buildMcpToolServer,
     mcpToolNames,
+    redactText,
     stripMcpToolPrefix,
     withMcpToolPrefix,
     type AgentStreamSink,
@@ -140,7 +141,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
 
         return {
             observation,
-            text: selectFinalChatText(result.steps, result.rawOutput),
+            text: redactText(selectFinalChatText(result.steps, result.rawOutput)),
             backend: AGENT_BACKEND,
             toolCalls: writes.proposals,
             modelUsed: result.actualModel ?? model,
