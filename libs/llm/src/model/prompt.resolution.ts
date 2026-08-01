@@ -63,18 +63,3 @@ export function computeResolvedPromptBundleHash(
         .join("");
     return { resolvedPromptHashes, resolvedPromptHash: sha256(canonical) };
 }
-
-export function verifyResolvedPromptBundleHash(
-    templates:
-        | Readonly<Record<string, string>>
-        | readonly { readonly templateKey: string; readonly content: string }[],
-    expected: ResolvedPromptBundleHash,
-): void {
-    const actual = computeResolvedPromptBundleHash(templates);
-    if (
-        actual.resolvedPromptHash !== expected.resolvedPromptHash
-        || JSON.stringify(actual.resolvedPromptHashes) !== JSON.stringify(expected.resolvedPromptHashes)
-    ) {
-        throw new Error("resolved-prompt-bundle.hash-mismatch");
-    }
-}
