@@ -1,4 +1,5 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
+import { installWorkerTelemetry } from "./worker.telemetry.js";
 
 export type ChatActivityTable = Record<string, (...args: never[]) => Promise<unknown>>;
 
@@ -15,6 +16,8 @@ export async function createChatTemporalWorker(options: {
     readonly taskQueue: string;
     readonly activities: ChatActivityTable;
 }): Promise<ChatTemporalWorkerHandle> {
+    installWorkerTelemetry();
+
     const connection = await NativeConnection.connect({ address: options.address });
     const workflowsPath = new URL(
         `../chat.workflows.${import.meta.url.endsWith(".ts") ? "ts" : "js"}`,

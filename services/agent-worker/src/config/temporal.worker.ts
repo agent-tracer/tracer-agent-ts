@@ -1,6 +1,7 @@
-import { NativeConnection, Runtime, Worker } from "@temporalio/worker";
+import { NativeConnection, Worker } from "@temporalio/worker";
 import { logInfo } from "@tracer-agent/platform";
-import { JOB_TASK_QUEUE, TEMPORAL_SDK_METRICS_PORT } from "./queue.const.js";
+import { JOB_TASK_QUEUE } from "./queue.const.js";
+import { installWorkerTelemetry } from "./worker.telemetry.js";
 
 /** 활동 이름을 활동 구현에 잇는 등록표다. */
 export type ActivityTable = Record<string, (...args: never[]) => Promise<unknown>>;
@@ -23,12 +24,7 @@ export interface TemporalWorkerHandle {
 
 /** 기동 인자로 받은 큐 하나만 폴링하는 워커를 만들며 한 프로세스가 두 큐를 겸하지 않는다. */
 export async function createTemporalWorker(options: TemporalWorkerOptions): Promise<TemporalWorkerHandle> {
-    // Worker.create보다 먼저 설치해야 워커 SDK 지표가 수집된다.
-    Runtime.install({
-        telemetryOptions: {
-            metrics: { prometheus: { bindAddress: `0.0.0.0:${TEMPORAL_SDK_METRICS_PORT}` } },
-        },
-    });
+    installWorkerTelemetry();
 
     const connection = await NativeConnection.connect({ address: options.address });
     const isJobsQueue = options.taskQueue === JOB_TASK_QUEUE;
