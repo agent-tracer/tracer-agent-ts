@@ -1,6 +1,7 @@
 import { createSdkMcpServer, tool, type McpSdkServerConfigWithInstance } from "@anthropic-ai/claude-agent-sdk";
 import type { ZodRawShape } from "zod";
 import type { ToolHandlers } from "~llm/runner/llm.runner.js";
+import { redactSerialized } from "~llm/support/redaction.js";
 import { withMcpToolPrefix } from "./mcp.tool.prefix.js";
 import { toolFailureText, unknownToolText, type ToolFailureTexts } from "./tool.failure.js";
 
@@ -27,14 +28,17 @@ export function buildMcpToolServer(
                 withMcpToolPrefix(spec.description, names, serverName),
                 spec.shape,
                 async (args: Record<string, unknown>) => ({
-                    content: [{ type: "text" as const, text: await invoke(handlers, spec.name, args, failures) }],
+                    content: [
+                        { type: "text" as const, text: await callToolForModel(handlers, spec.name, args, failures) },
+                    ],
                 }),
             ),
         ),
     });
 }
 
-async function invoke(
+/** 도구 하나를 실행하고 그 결과가 모델의 다음 입력이 되기 전에 계약의 query 자리를 지난다. */
+export async function callToolForModel(
     handlers: ToolHandlers,
     name: string,
     args: Record<string, unknown>,
@@ -43,8 +47,8 @@ async function invoke(
     const handler = handlers[name];
     if (handler === undefined) return unknownToolText(name, Object.keys(handlers));
     try {
-        return await handler(args);
+        return redactSerialized(await handler(args));
     } catch (err) {
-        return toolFailureText(failures, name, err);
+        return redactSerialized(toolFailureText(failures, name, err));
     }
 }
