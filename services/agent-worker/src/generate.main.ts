@@ -53,7 +53,7 @@ import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/appli
 import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
 import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
 import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
-import { HttpEvaluationExecutionClient } from "~agent-worker/domain/evaluation/adapter/tracer-api.evaluation.execution.client.js";
+import { HttpEvaluationExecutionClient } from "~agent-worker/domain/evaluation/adapter/agent-api.evaluation.execution.client.js";
 import { buildEvaluationAgentRegistry } from "~agent-worker/domain/evaluation/adapter/evaluation.agent.registry.js";
 import { RunEvaluationUsecase } from "~agent-worker/domain/evaluation/application/run.evaluation.usecase.js";
 import { RunExperimentStepUsecase } from "~agent-worker/domain/evaluation/application/run.experiment.step.usecase.js";
@@ -185,7 +185,7 @@ async function bootstrap(): Promise<void> {
     const runEvaluation = new RunEvaluationUsecase(evaluationAgents, new EvaluatorRegistry(deterministicEvaluators));
     const evaluation = new EvaluationActivity(runEvaluation);
     const experiment = new EvaluationExperimentActivity(
-        new RunExperimentStepUsecase(new HttpEvaluationExecutionClient(resolveTracerApiUrl()), runEvaluation),
+        new RunExperimentStepUsecase(new HttpEvaluationExecutionClient(resolveAgentApiUrl(config.agentApi.port)), runEvaluation),
     );
 
     // replica 수와 이 값의 곱이 동시 모델 호출 총량이므로, 총량을 늘리려면 이 값을 replica 수로 나눠 정한다.
