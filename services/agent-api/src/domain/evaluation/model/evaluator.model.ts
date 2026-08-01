@@ -62,3 +62,10 @@ export interface EvaluatorSetComposition {
         readonly evaluator: EvaluatorDefinition;
     }[];
 }
+
+/** 실험이 고를 수 있는 평가자 묶음 하나이며 화면이 판을 손으로 적지 않게 한다. */
+export interface EvaluatorSetSummary {
+    readonly version: string;
+    readonly createdAt: Date;
+    readonly evaluatorCount: number;
+}

@@ -61,6 +61,7 @@ import { GenerateQualityReportUseCase } from "~agent-api/domain/evaluation/appli
 import { GetDatasetUseCase } from "~agent-api/domain/evaluation/application/query/get.dataset.usecase.js";
 import { GetEvaluatorSetUseCase } from "~agent-api/domain/evaluation/application/query/get.evaluator.set.usecase.js";
 import { ListDatasetsUseCase } from "~agent-api/domain/evaluation/application/query/list.datasets.usecase.js";
+import { ListEvaluatorSetsUseCase } from "~agent-api/domain/evaluation/application/query/list.evaluator.sets.usecase.js";
 import { ListEvaluatorsUseCase } from "~agent-api/domain/evaluation/application/query/list.evaluators.usecase.js";
 import { SuggestDatasetCandidatesUseCase } from "~agent-api/domain/evaluation/application/query/suggest.dataset.candidates.usecase.js";
 import { EvaluationCandidateController } from "~agent-api/domain/evaluation/inbound/evaluation.candidate.controller.js";
@@ -110,6 +111,7 @@ const useCases = [
     ListPromptFragmentCatalogUseCase,
     ListPromptVersionsUseCase,
     ListPromptsUseCase,
+    ListEvaluatorSetsUseCase,
     LeaseEvaluationExecutionUseCase,
     SettleEvaluationExecutionUseCase,
     ReleaseEvaluationExecutionUseCase,

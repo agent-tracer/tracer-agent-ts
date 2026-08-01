@@ -2,6 +2,7 @@ import { EvaluationDataset, EvaluationExample } from "~agent-api/domain/evaluati
 import {
     EvaluatorDefinition,
     type EvaluatorSetComposition,
+    type EvaluatorSetSummary,
 } from "~agent-api/domain/evaluation/model/evaluator.model.js";
 import type {
     EvaluationExecutionView,
@@ -86,6 +87,15 @@ export class InMemoryEvaluationRepository implements EvaluationRepositoryPort {
 
     async findEvaluatorSet(version: string): Promise<EvaluatorSetComposition | null> {
         return this.evaluatorSet?.set.version === version ? this.evaluatorSet : null;
+    }
+
+    async listEvaluatorSets(): Promise<readonly EvaluatorSetSummary[]> {
+        if (this.evaluatorSet === null) return [];
+        return [{
+            version: this.evaluatorSet.set.version,
+            createdAt: this.evaluatorSet.set.createdAt,
+            evaluatorCount: this.evaluatorSet.members.length,
+        }];
     }
 
     async findExperiment(userId: string, id: string): Promise<EvaluationExperimentView | null> {

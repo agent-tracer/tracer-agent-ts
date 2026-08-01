@@ -4,6 +4,7 @@ import type { EvaluationDataset, EvaluationExample } from "../model/dataset.mode
 import type {
     EvaluatorDefinition,
     EvaluatorSetComposition,
+    EvaluatorSetSummary,
 } from "../model/evaluator.model.js";
 import type { EvaluationExecutionView, EvaluationExperimentView, EvaluationScoreView } from "../model/evaluation.persistence.view.model.js";
 import type { EvaluationRepositoryPort } from "../port/evaluation.repository.port.js";
@@ -97,6 +98,15 @@ export class TypeOrmEvaluationRepository implements EvaluationRepositoryPort {
             order: { name: "ASC", version: "DESC" },
         });
         return rows.map(toEvaluatorDefinition);
+    }
+
+    async listEvaluatorSets(): Promise<readonly EvaluatorSetSummary[]> {
+        const sets = await this.repos.evaluatorSets.find({ order: { createdAt: "DESC" } });
+        return Promise.all(sets.map(async (set) => ({
+            version: set.version,
+            createdAt: set.createdAt,
+            evaluatorCount: await this.repos.evaluatorMembers.countBy({ setId: set.id }),
+        })));
     }
 
     async findEvaluatorSet(version: string): Promise<EvaluatorSetComposition | null> {

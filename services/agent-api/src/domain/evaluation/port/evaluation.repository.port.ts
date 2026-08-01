@@ -2,6 +2,7 @@ import type { EvaluationDataset, EvaluationExample } from "../model/dataset.mode
 import type {
     EvaluatorDefinition,
     EvaluatorSetComposition,
+    EvaluatorSetSummary,
 } from "../model/evaluator.model.js";
 import type {
     EvaluationExecutionView,
@@ -27,6 +28,7 @@ export interface EvaluationRepositoryPort {
     saveEvaluatorDefinition(definition: EvaluatorDefinition): Promise<void>;
     listEvaluatorDefinitions(): Promise<EvaluatorDefinition[]>;
     findEvaluatorSet(version: string): Promise<EvaluatorSetComposition | null>;
+    listEvaluatorSets(): Promise<readonly EvaluatorSetSummary[]>;
     findExperiment(userId: string, id: string): Promise<EvaluationExperimentView | null>;
     listExecutions(userId: string, experimentId: string): Promise<EvaluationExecutionView[]>;
     listScores(userId: string, executionId: string): Promise<EvaluationScoreView[]>;
