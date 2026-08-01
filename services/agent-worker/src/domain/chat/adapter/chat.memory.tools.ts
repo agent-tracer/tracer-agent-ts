@@ -6,6 +6,7 @@ import type { ChatTurnSink } from "~agent-worker/domain/chat/model/chat.turn.mod
 import { CHAT_MEMORY_TOOLS } from "./chat.tool.gate.js";
 import type { ChatToolCallContext } from "./chat.read.tools.js";
 import { telemetered } from "./chat.tool.support.js";
+import { memoryRejection } from "~agent-worker/domain/chat/model/chat.memory.policy.js";
 
 const [RECALL_FACTS, REMEMBER_FACT] = CHAT_MEMORY_TOOLS;
 
@@ -32,6 +33,8 @@ export function buildChatMemoryToolHandlers(
             const args = parseChatToolArgs(REMEMBER_FACT, raw);
             const key = strArg(args["key"])!;
             const content = strArg(args["content"])!;
+            const rejection = memoryRejection(content);
+            if (rejection !== null) return JSON.stringify({ ok: false, error: rejection });
             return telemetered(REMEMBER_FACT, { key }, async () => {
                 const data = await client.call({
                     toolName: REMEMBER_FACT,
