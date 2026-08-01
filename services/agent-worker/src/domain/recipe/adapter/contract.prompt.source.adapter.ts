@@ -1,15 +1,28 @@
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { RecipeToolContract } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
 
-/** 계약이 선언한 조각을 읽고 상한 절과 조율자 도구 이름으로 자리표시자를 끝낸 프롬프트를 낸다. */
+const AGENT_NAME = AGENT.recipeScan.id;
+
+/** 자리표시자 하나는 값이 아니라 조율자가 단독으로 쥐는 도구의 이름이다. */
+function placeholderValues(): Readonly<Record<string, string | number>> {
+    const tools = readAgentTools<RecipeToolContract>(AGENT_NAME);
+    const coordinatorTool = tools.orchestration.coordinatorTools[0];
+    if (coordinatorTool === undefined) throw new Error(`prompt.coordinator-tool-missing:${AGENT_NAME}`);
+    return { ...(tools.limits ?? {}), checkCitationsTool: coordinatorTool };
+}
+
+// 계약을 읽지 못하면 실행이 아니라 기동에서 멈추도록 조립을 만드는 자리에서 끝낸다.
 export class ContractPromptSourceAdapter implements PromptSourcePort {
+    private readonly prompt: AgentPrompt = buildAgentPrompt(
+        readAgentPrompt(AGENT_NAME),
+        placeholderValues(),
+    );
+
     resolve(agentName: string): Promise<AgentPrompt> {
-        const tools = readAgentTools<RecipeToolContract>(agentName);
-        const coordinatorTool = tools.orchestration.coordinatorTools[0];
-        if (coordinatorTool === undefined) throw new Error(`prompt.coordinator-tool-missing:${agentName}`);
-        const values = { ...(tools.limits ?? {}), checkCitationsTool: coordinatorTool };
-        return Promise.resolve(buildAgentPrompt(readAgentPrompt(agentName), values));
+        if (agentName !== AGENT_NAME) throw new Error(`prompt.agent-mismatch:${agentName}`);
+        return Promise.resolve(this.prompt);
     }
 }
