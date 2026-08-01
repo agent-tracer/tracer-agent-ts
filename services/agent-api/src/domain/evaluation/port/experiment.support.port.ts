@@ -8,7 +8,7 @@ export const EXPERIMENT_DISPATCHER = Symbol("ExperimentDispatcher");
 export type ExperimentClockPort = IClock;
 
 export interface ExperimentIdGeneratorPort {
-    next(scope: "experiment" | "variant" | "review" | "review_revision"): string;
+    next(scope: "experiment" | "variant" | "review" | "review_revision" | "score"): string;
 }
 
 export interface ExperimentRandomPort {

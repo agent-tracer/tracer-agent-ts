@@ -26,7 +26,7 @@ export class StartExperimentUseCase {
         const claimed = await this.repository.claimDraft(userId, id);
         if (claimed === null) throw new ExperimentStartConflictError(id);
         try {
-            // 워커가 가져갈 자리를 먼저 세운다. 워크플로가 먼저 돌면 lease 가 빈 실험을 본다.
+            // 워크플로보다 먼저 자리를 세우지 않으면 lease 가 빈 실험을 본다.
             const coordinates = planExecutionCoordinates(
                 variants.map((variant) => variant.id),
                 examples.map((example) => example.id),
