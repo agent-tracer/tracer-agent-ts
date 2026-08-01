@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
-import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
+import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { RECIPE_PROMPT } from "~agent-worker/domain/recipe/port/__fakes__/recipe.test-support.js";
 import {
     buildRecipeProbeSystemPrompt,
@@ -25,6 +27,12 @@ import { RECIPE_CANDIDATE_LIMIT, RECIPE_SCAN_TOOL } from "./recipe.tool.schema.j
 const DECLARED = readAgentPrompt(AGENT.recipeScan.id);
 const TOOLS = readAgentTools(AGENT.recipeScan.id);
 const LIMITS = TOOLS.limits ?? {};
+const LANGUAGE = readAgentCases<{ language: AgentLanguageCases }>(AGENT.recipeScan.id).language;
+
+/** 계약이 그 언어 변형에 적은 조각 본문이며 조립 결과가 이 본문을 그대로 실어야 한다. */
+function variant(name: string): string {
+    return (DECLARED.fragments[LANGUAGE.fragment]?.byLanguage?.[name] ?? []).join("\n");
+}
 
 /** 슬롯마다 그 이름만 담은 프롬프트라 조립 결과에서 어느 슬롯을 썼는지 그대로 읽힌다. */
 function labelled(): AgentPrompt {
@@ -79,6 +87,17 @@ describe("레시피 조사 프롬프트", () => {
         expect(used(buildRecipeUserPrompt(labelled(), "t1", undefined, "ko"))).toEqual([
             "languageDirective",
         ]);
+    });
+
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+        for (const declared of LANGUAGE.cases) {
+            const expected = variant(declared.expect.variant);
+            const language = normalizeOutputLanguage(declared.input.language);
+            const rendered = buildRecipeUserPrompt(RECIPE_PROMPT, "t1", undefined, language);
+
+            expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
+            expect(rendered, declared.expect.variant).toContain(expected);
+        }
     });
 
     it("자리표시자를 계약의 상한과 조율자 도구 이름으로 치환한다", () => {
