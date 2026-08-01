@@ -20,7 +20,6 @@ import { READINESS_PROBE } from "~agent-api/domain/health/port/readiness.probe.p
 import { SERVED_SURFACE } from "~agent-api/domain/health/port/served.surface.port.js";
 import { chatFeature } from "./chat.feature.js";
 import { jobFeature } from "./job.feature.js";
-import { evaluationFeature } from "./evaluation.feature.js";
 import { settingsFeature } from "./settings.feature.js";
 
 @Module({})
@@ -32,7 +31,6 @@ export class AgentApiModule {
             controllers: [
                 ...chatFeature.controllers,
                 ...jobFeature.controllers,
-                ...evaluationFeature.controllers,
                 ...settingsFeature.controllers,
                 HealthController,
                 SurfaceController,
@@ -42,7 +40,6 @@ export class AgentApiModule {
                 { provide: AGENT_KAFKA, useValue: kafka },
                 ...chatFeature.providers,
                 ...jobFeature.providers,
-                ...evaluationFeature.providers,
                 ...settingsFeature.providers,
                 DataSourceReadinessProbeAdapter,
                 { provide: READINESS_PROBE, useExisting: DataSourceReadinessProbeAdapter },
