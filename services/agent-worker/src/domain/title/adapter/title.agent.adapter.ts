@@ -1,7 +1,6 @@
 import {
     AGENT_BACKEND,
     buildMcpToolServer,
-    computeResolvedPromptBundleHash,
     isBudgetExhaustedFailure,
     mcpToolNames,
     mergeAgentTrajectory,
@@ -15,12 +14,11 @@ import {
 } from "@tracer-agent/llm";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { ExecutionBudget, type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
-import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { TITLE_JOB_KIND } from "~agent-worker/domain/title/model/title.const.js";
 import {
     buildTitleRepairPrompt,
     buildTitleSystemPrompt,
-    TITLE_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/title/model/title.prompt.js";
 import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.spec.js";
 import type { TitleSuggestionsList } from "~agent-worker/domain/title/model/title.suggestion.schema.js";
@@ -100,10 +98,10 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const runs: RunSegment[] = [{ run: first, nodeName: "investigate" }];
 
         const errors = validateTitleSuggestions(first.data.suggestions, input.context.title);
-        if (errors.length === 0) return toOutput(input, runs, first.data.suggestions, systemPrompt);
+        if (errors.length === 0) return toOutput(input, runs, first.data.suggestions);
 
         // 예약된 몫마저 바닥나 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 착지한다.
-        if (repairLease.maxTurns <= 0) return toOutput(input, runs, [], systemPrompt);
+        if (repairLease.maxTurns <= 0) return toOutput(input, runs, []);
 
         // 제목이 제약을 어기면 오류를 모델에게 돌려주고 예약해 둔 몫으로 한 번만 다시 받는다.
         let repaired: StructuredRun;
@@ -117,14 +115,14 @@ export class TitleAgentAdapter implements TitleAgentPort {
             );
         } catch (error) {
             // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 착지한다.
-            if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, [], systemPrompt);
+            if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, []);
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         runs.push({ run: repaired, nodeName: "repair" });
 
         const remaining = validateTitleSuggestions(repaired.data.suggestions, input.context.title);
-        return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : [], systemPrompt);
+        return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : []);
     }
 
     private runOnce(
@@ -182,13 +180,11 @@ function toOutput(
     input: GenerateTitleSuggestionsInput,
     runs: readonly RunSegment[],
     suggestions: GenerateTitleSuggestionsOutput["suggestions"],
-    systemPrompt: string,
 ): GenerateTitleSuggestionsOutput {
     const last = runs[runs.length - 1]!.run;
     const accounting = mergeAgentCallAccounting(runs.map(({ run }) => run));
     const steps = mergeAgentTrajectory(runs.map(({ run, nodeName }) => ({ nodeName, steps: run.steps })));
     const modelRequested = input.model?.trim() || TITLE_SUGGESTION_SPEC.limits.defaultModel;
-    const promptHashes = computeResolvedPromptBundleHash({ [TITLE_SYSTEM_TEMPLATE_KEY]: systemPrompt });
     return {
         suggestions,
         modelUsed: last.modelUsed,
@@ -204,13 +200,8 @@ function toOutput(
             agentName: TITLE_SUGGESTION_SPEC.name,
             modelRequested,
             modelActual: last.modelUsed,
-            promptVersion: input.prompt.versionId,
-            promptFingerprint: {
-                agent: TITLE_SUGGESTION_SPEC.name,
-                version: input.prompt.semanticVersion,
-                language: input.language,
-                contentHash: input.prompt.contentHash,
-            },
+            promptVersion: input.prompt.promptVersion,
+            promptContentHash: promptFingerprint(TITLE_SUGGESTION_SPEC.name, input.prompt.promptVersion, input.language),
             toolContractVersion: input.prompt.toolContractVersion,
             durationMs: accounting.durationMs,
             costUsd: accounting.costUsd,
@@ -219,7 +210,6 @@ function toOutput(
             landed: runs.some(({ run }) => run.landed),
             repairAttempted: runs.some(({ nodeName }) => nodeName === "repair"),
             validationPassed: true,
-            ...promptHashes,
         }),
     };
 }

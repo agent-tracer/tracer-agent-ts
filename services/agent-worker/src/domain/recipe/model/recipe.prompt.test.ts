@@ -13,6 +13,7 @@ import {
     RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY,
     RECIPE_PROBE_SYSTEM_TEMPLATE_KEY,
     RECIPE_SURVEY_SYSTEM_TEMPLATE_KEY,
+    resolveRecipePromptPin,
 } from "./recipe.prompt.js";
 import {
     MAX_PROBE_WEIGHT,
@@ -93,5 +94,17 @@ describe("레시피 조사 프롬프트", () => {
         expect(MAX_REDISPATCH_PROBES).toBe(LIMITS["maxRedispatchProbes"]);
         expect(MAX_REDISPATCH_ROUNDS).toBe(LIMITS["maxRedispatchRounds"]);
         expect(MAX_PROBE_WEIGHT).toBe(LIMITS["maxProbeWeight"]);
+    });
+});
+
+describe("레시피 조사 실행에 실리는 판", () => {
+    it("계약이 템플릿에 매긴 판을 그대로 싣는다", () => {
+        const versions = new Set(Object.values(DECLARED.templates).map((template) => template.version));
+
+        expect([...versions]).toEqual([resolveRecipePromptPin(RECIPE_PROMPT).promptVersion]);
+    });
+
+    it("계약이 도구 선언에 매긴 판을 그대로 싣는다", () => {
+        expect(resolveRecipePromptPin(RECIPE_PROMPT).toolContractVersion).toBe(readAgentTools("recipe-scan").version);
     });
 });

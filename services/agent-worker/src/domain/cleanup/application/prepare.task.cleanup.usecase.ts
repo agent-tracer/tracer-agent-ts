@@ -50,7 +50,7 @@ export class PrepareTaskCleanupUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.outputLanguage),
         );
-        const prompt = resolveCleanupPromptPin(await this.prompts.resolve(AGENT.taskCleanup.id), language);
+        const prompt = resolveCleanupPromptPin(await this.prompts.resolve(AGENT.taskCleanup.id));
 
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);

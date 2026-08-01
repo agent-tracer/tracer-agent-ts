@@ -5,7 +5,6 @@ import {
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import {
   buildRecipeSystemPrompt,
-  RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
 import { RECIPE_COORDINATOR_TOOLS } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import {
@@ -36,7 +35,6 @@ export function runRecipeSynthesis(
   label: string,
 ): Promise<RecipeSynthesisRun> {
   const systemPrompt = buildRecipeSystemPrompt(ctx.prompt);
-  ctx.renderedTemplates.set(RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY, systemPrompt);
   return runRecipeQuery(ctx, {
     label: `${RECIPE_SCAN_SPEC.name}:${label}`,
     prompt,

@@ -14,7 +14,7 @@ import {
     attemptRecordFromSuccess,
     type AgentUsageSummary,
 } from "~agent-worker/support/llm/job.attempt.js";
-import { buildFailedRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildFailedRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import { assembleRecipeCandidates, type GeneratedRecipeCandidate } from "../model/recipe.candidate.model.js";
@@ -120,13 +120,8 @@ export class ScanRecipeUsecase {
                 jobId: prep.jobId,
                 agentName: AGENT.recipeScan.id,
                 modelRequested: prep.model ?? featureModels(RECIPE_FEATURE)!.default,
-                promptVersion: prep.prompt.versionId,
-                promptFingerprint: {
-                    agent: AGENT.recipeScan.id,
-                    version: prep.prompt.semanticVersion,
-                    language: prep.language,
-                    contentHash: prep.prompt.contentHash,
-                },
+                promptVersion: prep.prompt.promptVersion,
+                promptContentHash: promptFingerprint(AGENT.recipeScan.id, prep.prompt.promptVersion, prep.language),
                 toolContractVersion: prep.prompt.toolContractVersion,
                 failure: error,
             }),

@@ -11,7 +11,6 @@ import { ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
 import {
     buildCleanupRepairPrompt,
     buildCleanupUserPrompt,
-    CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { MAX_REDISPATCH_ROUNDS, type CleanupDecision, type TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import {
@@ -78,7 +77,6 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const ctx: CleanupQueryContext = {
             runner: this.runner,
             input,
-            resolvedTemplates: new Map(),
             prompt: await this.prompts.resolve(AGENT.taskCleanup.id),
         };
         const batch: CleanupToolBatch = { candidates: input.candidates, batchTruncated: input.truncated };
@@ -136,7 +134,6 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
 
         const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
         const repairPrompt = buildCleanupRepairPrompt(ctx.prompt, decisionPrompt, decision.data, checked.errors);
-        ctx.resolvedTemplates.set(CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY, repairPrompt);
         let repaired: CleanupDecisionRun;
         try {
             repaired = await runCleanupDecision(ctx, this.deps, batch, coordinatorLedger, repairPrompt, repairLease, "repair");

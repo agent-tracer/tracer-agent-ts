@@ -24,7 +24,6 @@ export function runRecipeSurvey(
   lease: AgentBudgetLease,
 ): Promise<StructuredQueryResult<DispatchPlan>> {
   const systemPrompt = buildRecipeSurveySystemPrompt(ctx.prompt);
-  ctx.renderedTemplates.set("recipe-scan.survey.system", systemPrompt);
   return runRecipeQuery(ctx, {
     label: `${RECIPE_SCAN_SPEC.name}:survey`,
     prompt: buildRecipeSurveyPrompt(

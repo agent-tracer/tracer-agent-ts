@@ -1,8 +1,8 @@
-import { computeResolvedPromptBundleHash, mergeAgentTrajectory } from "@tracer-agent/llm";
+import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
 import type { GenerateCleanupSuggestionsInput, GenerateCleanupSuggestionsOutput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
-import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { cleanupModelName, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 import type { CleanupRunSegment } from "./cleanup.sdk.orchestration.js";
 
@@ -15,7 +15,6 @@ export function buildCleanupOutput(
     const input: GenerateCleanupSuggestionsInput = ctx.input;
     const accounting = mergeAgentCallAccounting(segments.map((segment) => segment.accounting));
     const steps = mergeAgentTrajectory(segments.map((segment) => ({ nodeName: segment.nodeName, steps: segment.steps })));
-    const promptHashes = computeResolvedPromptBundleHash(Object.fromEntries(ctx.resolvedTemplates));
 
     return {
         suggestions,
@@ -32,13 +31,8 @@ export function buildCleanupOutput(
             agentName: TASK_CLEANUP_SPEC.name,
             modelRequested: cleanupModelName(input),
             modelActual: modelUsed,
-            promptVersion: input.prompt.versionId,
-            promptFingerprint: {
-                agent: TASK_CLEANUP_SPEC.name,
-                version: input.prompt.semanticVersion,
-                language: input.language,
-                contentHash: input.prompt.contentHash,
-            },
+            promptVersion: input.prompt.promptVersion,
+            promptContentHash: promptFingerprint(TASK_CLEANUP_SPEC.name, input.prompt.promptVersion, input.language),
             toolContractVersion: input.prompt.toolContractVersion,
             durationMs: accounting.durationMs,
             costUsd: accounting.costUsd,
@@ -47,7 +41,6 @@ export function buildCleanupOutput(
             landed: false,
             repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
             validationPassed: true,
-            ...promptHashes,
         }),
     };
 }

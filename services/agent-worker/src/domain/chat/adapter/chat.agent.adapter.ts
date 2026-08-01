@@ -2,7 +2,6 @@ import {
     AGENT_BACKEND,
     buildClaudeRunObservation,
     buildMcpToolServer,
-    computeResolvedPromptBundleHash,
     mcpToolNames,
     stripMcpToolPrefix,
     withMcpToolPrefix,
@@ -14,10 +13,11 @@ import {
 import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import {
     buildChatSystemPrompt,
-    CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
     renderChatPrompt,
 } from "~agent-worker/domain/chat/model/chat.prompt.js";
 import { selectFinalChatText } from "~agent-worker/domain/chat/model/chat.response.js";
+import { CHAT_TOOL_CONTRACT } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
+import { promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { CHAT_SPEC } from "~agent-worker/domain/chat/model/chat.spec.js";
 import { chatStopReason } from "~agent-worker/domain/chat/model/chat.stop.reason.js";
 import type {
@@ -81,12 +81,8 @@ export class ChatAgentAdapter implements ChatAgentPort {
             CHAT_SPEC.toolNames,
             CHAT_MCP_SERVER,
         );
-        const resolvedSystemPrompt = buildChatSystemPrompt(
-            await this.prompts.resolve(CHAT_SPEC.name),
-            input.language,
-        );
-        const templates = { [CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY]: resolvedSystemPrompt };
-        const { resolvedPromptHash, resolvedPromptHashes } = computeResolvedPromptBundleHash(templates);
+        const agentPrompt = await this.prompts.resolve(CHAT_SPEC.name);
+        const resolvedSystemPrompt = buildChatSystemPrompt(agentPrompt, input.language);
         const systemPrompt = withMcpToolPrefix(
             resolvedSystemPrompt,
             CHAT_SPEC.toolNames,
@@ -123,16 +119,15 @@ export class ChatAgentAdapter implements ChatAgentPort {
             ...(input.abortSignal !== undefined ? { parentSignal: input.abortSignal } : {}),
         });
         // 대화에 남기는 도구 호출은 승인 결과가 인용할 확인 대기 행뿐이고 나머지 궤적은 steps가 갖는다.
-        const observation = {
-            ...buildClaudeRunObservation(
+        const observation = buildClaudeRunObservation(
                 {
                     executionId: input.idempotencyKey,
                     attemptId: String(input.attempt),
                     agentName: CHAT_SPEC.name,
                     modelRequested: model,
-                    promptVersion: CHAT_SPEC.promptVersion,
-                    promptContentHash: `sha256:${resolvedPromptHash}`,
-                    toolContractVersion: CHAT_SPEC.toolContractVersion,
+                    promptVersion: agentPrompt.version(),
+                    promptContentHash: promptFingerprint(CHAT_SPEC.name, agentPrompt.version(), input.language),
+                    toolContractVersion: CHAT_TOOL_CONTRACT.version,
                     modelCallId: `${input.idempotencyKey}:${input.attempt}:aggregate-model-call`,
                     repairAttempted: false,
                     validation: {
@@ -142,11 +137,8 @@ export class ChatAgentAdapter implements ChatAgentPort {
                         citationRecall: null,
                     },
                 },
-                result,
-            ),
-            resolvedPromptHash,
-            resolvedPromptHashes,
-        };
+            result,
+        );
 
         return {
             observation,

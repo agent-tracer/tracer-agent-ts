@@ -1,21 +1,14 @@
-import {
-    computeResolvedPromptBundleHash,
-    type AgentPromptBundle,
-    type ResolvedAgentPrompt,
-} from "@tracer-agent/llm";
+import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import type { InspectReport } from "./cleanup.dispatch.schema.js";
+import { CLEANUP_TOOL_CONTRACT } from "./cleanup.tool.schema.js";
 
 export const CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "task-cleanup.investigator.system" as const;
 export const CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY = "task-cleanup.investigator.repair" as const;
 export const CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY = "task-cleanup.triage.system" as const;
 export const CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY = "task-cleanup.inspect.system" as const;
 
-/** 이 번들이 바뀔 때마다 사람이 올리는 표시이며, 부트가 이 값과 원장 production 채널의 semantic version을 대조한다. */
-export const CLEANUP_PROMPT_VERSION = "v1";
-const TOOL_CONTRACT_VERSION = "1";
-const OUTPUT_SCHEMA_VERSION = "1";
 
 // 프롬프트 캐시는 접두사 일치라 시스템 프롬프트에 요청마다 바뀌는 값이 섞이면 매 요청 무효화된다.
 export function buildCleanupSystemPrompt(prompt: AgentPrompt, language: OutputLanguage): string {
@@ -119,21 +112,10 @@ export function buildCleanupInspectPrompt(taskId: string, turns: number): string
     return [`Task to judge: ${taskId}`, `Turns available: ${turns}`].join("\n");
 }
 
-/** claude-sdk 실행에 실을 이 번들의 코드 pin이며, 실행은 이 값을 원장 없이 그대로 쓰고 부트만 원장과 대조한다. */
-export function resolveCleanupPromptPin(
-    prompt: AgentPrompt,
-    language: OutputLanguage,
-): ResolvedAgentPrompt {
-    const bundle: AgentPromptBundle = {
-        investigatorSystemPrompt: buildCleanupSystemPrompt(prompt, language),
-        triageSystemPrompt: buildCleanupTriageSystemPrompt(prompt),
-        inspectSystemPrompt: buildCleanupInspectSystemPrompt(prompt),
-    };
+/** 실행에 실을 계약의 판이며 실행은 원장 없이 이 값을 그대로 쓴다. */
+export function resolveCleanupPromptPin(prompt: AgentPrompt): ResolvedAgentPrompt {
     return {
-        versionId: `task-cleanup:${language}:${CLEANUP_PROMPT_VERSION}`,
-        semanticVersion: CLEANUP_PROMPT_VERSION,
-        contentHash: computeResolvedPromptBundleHash(bundle).resolvedPromptHash,
-        toolContractVersion: TOOL_CONTRACT_VERSION,
-        outputSchemaVersion: OUTPUT_SCHEMA_VERSION,
+        promptVersion: prompt.version(),
+        toolContractVersion: CLEANUP_TOOL_CONTRACT.version,
     };
 }

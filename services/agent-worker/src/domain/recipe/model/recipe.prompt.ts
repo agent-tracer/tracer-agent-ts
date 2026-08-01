@@ -1,23 +1,15 @@
-import {
-    computeResolvedPromptBundleHash,
-    type AgentPromptBundle,
-    type ResolvedAgentPrompt,
-} from "@tracer-agent/llm";
+import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import type { DispatchPlan, ProbeReport } from "./recipe.dispatch.schema.js";
-import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
+import { RECIPE_CANDIDATE_LIMIT, RECIPE_TOOL_CONTRACT } from "./recipe.tool.schema.js";
 
 export const RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "recipe-scan.investigator.system" as const;
 export const RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY = "recipe-scan.investigator.repair" as const;
 export const RECIPE_SURVEY_SYSTEM_TEMPLATE_KEY = "recipe-scan.survey.system" as const;
 export const RECIPE_PROBE_SYSTEM_TEMPLATE_KEY = "recipe-scan.probe.system" as const;
 
-/** 이 번들이 바뀔 때마다 사람이 올리는 표시이며 기동 검사가 이 값을 원장의 채널과 대조한다. */
-export const RECIPE_PROMPT_VERSION = "v1";
 
-const TOOL_CONTRACT_VERSION = "1";
-const OUTPUT_SCHEMA_VERSION = "1";
 
 /** 도구 접두사가 붙지 않은, 조율자가 읽는 기준 시스템 프롬프트다. */
 export function buildRecipeSystemPrompt(prompt: AgentPrompt): string {
@@ -167,21 +159,10 @@ export function buildRecipeProbePrompt(taskId: string, question: string, turns: 
     ].join("\n");
 }
 
-/** 실행에 실을 이 번들의 코드 고정값이며 실행은 원장 없이 이 값을 그대로 쓴다. */
-export function resolveRecipePromptPin(
-    prompt: AgentPrompt,
-    language: OutputLanguage,
-): ResolvedAgentPrompt {
-    const bundle: AgentPromptBundle = {
-        investigatorSystemPrompt: buildRecipeSystemPrompt(prompt),
-        probeSystemPrompt: buildRecipeProbeSystemPrompt(prompt),
-        surveySystemPrompt: buildRecipeSurveySystemPrompt(prompt),
-    };
+/** 실행에 실을 계약의 판이며 실행은 원장 없이 이 값을 그대로 쓴다. */
+export function resolveRecipePromptPin(prompt: AgentPrompt): ResolvedAgentPrompt {
     return {
-        versionId: `recipe-scan:${language}:${RECIPE_PROMPT_VERSION}`,
-        semanticVersion: RECIPE_PROMPT_VERSION,
-        contentHash: computeResolvedPromptBundleHash(bundle).resolvedPromptHash,
-        toolContractVersion: TOOL_CONTRACT_VERSION,
-        outputSchemaVersion: OUTPUT_SCHEMA_VERSION,
+        promptVersion: prompt.version(),
+        toolContractVersion: RECIPE_TOOL_CONTRACT.version,
     };
 }

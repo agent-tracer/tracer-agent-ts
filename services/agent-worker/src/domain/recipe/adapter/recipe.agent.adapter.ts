@@ -10,9 +10,7 @@ import { JOB_KIND } from "~agent-worker/support/job.const.js";
 import { ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
 import {
   buildRecipeRepairPrompt,
-  buildRecipeRepairDirective,
   buildRecipeUserPrompt,
-  RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
 } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
 import {
   MAX_REDISPATCH_ROUNDS,
@@ -94,7 +92,6 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     const ctx: RecipeQueryContext = {
       runner: this.runner,
       input,
-      renderedTemplates: new Map(),
       prompt: await this.prompts.resolve(AGENT.recipeScan.id),
     };
     const { limits } = RECIPE_SCAN_SPEC;
@@ -218,10 +215,6 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         investigatePrompt,
         synthesis.data,
         errors,
-      );
-      ctx.renderedTemplates.set(
-        RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
-        buildRecipeRepairDirective(ctx.prompt),
       );
       repaired = await runRecipeSynthesis(
         ctx,

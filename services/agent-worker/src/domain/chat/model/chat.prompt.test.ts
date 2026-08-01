@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AgentPrompt, buildAgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
-import { readAgentPrompt } from "~agent-worker/support/contract.js";
+import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
 import { OUTPUT_LANGUAGES } from "~agent-worker/support/output.language.js";
 import { buildChatSystemPrompt, CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY } from "./chat.prompt.js";
 
@@ -46,5 +46,15 @@ describe("대화 시스템 프롬프트", () => {
 
     it("모르는 언어는 auto 의 지시문으로 되돌린다", () => {
         expect(PROMPT.languageDirective("kl")).toBe(PROMPT.languageDirective("auto"));
+    });
+});
+
+describe("대화 실행에 실리는 판", () => {
+    it("계약이 템플릿에 매긴 판을 그대로 싣는다", () => {
+        expect(PROMPT.version()).toBe(DECLARED.templates[CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY]!.version);
+    });
+
+    it("계약이 도구 선언에 매긴 판을 그대로 싣는다", () => {
+        expect(readAgentTools("chat").version).toBe(DECLARED.templates[CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY]!.version);
     });
 });

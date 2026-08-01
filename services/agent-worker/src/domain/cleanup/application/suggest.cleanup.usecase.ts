@@ -14,7 +14,7 @@ import {
     attemptRecordFromSuccess,
     type AgentUsageSummary,
 } from "~agent-worker/support/llm/job.attempt.js";
-import { buildFailedRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildFailedRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import { assembleCleanupSuggestions, type GeneratedCleanupSuggestion } from "../model/cleanup.suggestion.model.js";
@@ -113,13 +113,8 @@ export class SuggestCleanupUsecase {
                 jobId: prep.jobId,
                 agentName: AGENT.taskCleanup.id,
                 modelRequested: prep.model ?? featureModels(CLEANUP_FEATURE)!.default,
-                promptVersion: prep.prompt.versionId,
-                promptFingerprint: {
-                    agent: AGENT.taskCleanup.id,
-                    version: prep.prompt.semanticVersion,
-                    language: prep.language,
-                    contentHash: prep.prompt.contentHash,
-                },
+                promptVersion: prep.prompt.promptVersion,
+                promptContentHash: promptFingerprint(AGENT.taskCleanup.id, prep.prompt.promptVersion, prep.language),
                 toolContractVersion: prep.prompt.toolContractVersion,
                 failure: error,
             }),

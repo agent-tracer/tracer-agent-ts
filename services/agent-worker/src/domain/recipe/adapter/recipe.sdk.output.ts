@@ -1,8 +1,8 @@
-import { computeResolvedPromptBundleHash, mergeAgentTrajectory } from "@tracer-agent/llm";
+import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
 import type { GenerateRecipeCandidatesOutput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
-import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import type { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
     RECIPE_SCAN_SPEC,
@@ -28,9 +28,6 @@ export function buildRecipeOutput(
       steps: segment.steps,
     })),
   );
-  const promptHashes = computeResolvedPromptBundleHash(
-    Object.fromEntries(ctx.renderedTemplates),
-  );
 
   return {
     recipes,
@@ -48,13 +45,8 @@ export function buildRecipeOutput(
       agentName: RECIPE_SCAN_SPEC.name,
       modelRequested: recipeModelName(input),
       modelActual: modelUsed,
-      promptVersion: input.prompt.versionId,
-      promptFingerprint: {
-        agent: RECIPE_SCAN_SPEC.name,
-        version: input.prompt.semanticVersion,
-        language: input.language,
-        contentHash: input.prompt.contentHash,
-      },
+      promptVersion: input.prompt.promptVersion,
+      promptContentHash: promptFingerprint(RECIPE_SCAN_SPEC.name, input.prompt.promptVersion, input.language),
       toolContractVersion: input.prompt.toolContractVersion,
       durationMs: accounting.durationMs,
       costUsd: accounting.costUsd,
@@ -63,7 +55,6 @@ export function buildRecipeOutput(
       landed: false,
       repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
       validationPassed: true,
-      ...promptHashes,
     }),
   };
 }

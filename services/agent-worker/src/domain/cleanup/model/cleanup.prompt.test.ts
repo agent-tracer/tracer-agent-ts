@@ -12,6 +12,7 @@ import {
     CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
     CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY,
     CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY,
+    resolveCleanupPromptPin,
 } from "./cleanup.prompt.js";
 import { MAX_INSPECT_WEIGHT, MAX_REDISPATCH_ROUNDS } from "./cleanup.dispatch.schema.js";
 import { CLEANUP_MAX_EVIDENCE_EVENT_IDS } from "./cleanup.tool.schema.js";
@@ -79,5 +80,17 @@ describe("정리 제안 프롬프트", () => {
         expect(CLEANUP_MAX_EVIDENCE_EVENT_IDS).toBe(LIMITS["maxEvidenceEventIds"]);
         expect(MAX_INSPECT_WEIGHT).toBe(LIMITS["maxInspectWeight"]);
         expect(MAX_REDISPATCH_ROUNDS).toBe(LIMITS["maxRedispatchRounds"]);
+    });
+});
+
+describe("정리 제안 실행에 실리는 판", () => {
+    it("계약이 템플릿에 매긴 판을 그대로 싣는다", () => {
+        const versions = new Set(Object.values(DECLARED.templates).map((template) => template.version));
+
+        expect([...versions]).toEqual([resolveCleanupPromptPin(CLEANUP_PROMPT).promptVersion]);
+    });
+
+    it("계약이 도구 선언에 매긴 판을 그대로 싣는다", () => {
+        expect(resolveCleanupPromptPin(CLEANUP_PROMPT).toolContractVersion).toBe(readAgentTools("task-cleanup").version);
     });
 });

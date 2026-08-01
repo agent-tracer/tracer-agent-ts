@@ -3,7 +3,6 @@ import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js
 import {
     buildCleanupTriagePrompt,
     buildCleanupTriageSystemPrompt,
-    CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { triagePlanSchema, type TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import { CLEANUP_TRIAGE_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
@@ -30,7 +29,6 @@ export async function runCleanupTriage(
 ): Promise<CleanupTriageRun> {
     const ledger = new CleanupProvenanceLedger();
     const systemPrompt = buildCleanupTriageSystemPrompt(ctx.prompt);
-    ctx.resolvedTemplates.set(CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY, systemPrompt);
     const result = await runCleanupQuery(ctx, {
         label: `${TASK_CLEANUP_SPEC.name}:triage`,
         prompt: buildCleanupTriagePrompt(batch.candidates.length),

@@ -43,7 +43,6 @@ export interface CleanupQueryContext {
     readonly runner: IQueryRunner<ClaudeQueryOptions>;
     readonly input: GenerateCleanupSuggestionsInput;
     readonly prompt: AgentPrompt;
-    readonly resolvedTemplates: Map<string, string>;
 }
 
 export interface CleanupQuerySpec<T> {

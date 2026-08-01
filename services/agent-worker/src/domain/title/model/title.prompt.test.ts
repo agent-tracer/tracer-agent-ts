@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
-import { readAgentPrompt } from "~agent-worker/support/contract.js";
+import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
 import { TITLE_PROMPT } from "~agent-worker/domain/title/port/__fakes__/title.test-support.js";
 import {
     buildTitleRepairPrompt,
     buildTitleSystemPrompt,
     TITLE_REPAIR_TEMPLATE_KEY,
     TITLE_SYSTEM_TEMPLATE_KEY,
+    resolveTitlePromptPin,
 } from "./title.prompt.js";
 
 const DECLARED = readAgentPrompt(AGENT.titleSuggestion.id);
@@ -47,5 +48,17 @@ describe("제목 제안 프롬프트", () => {
 
     it("계약에 없는 슬롯을 부르면 거절한다", () => {
         expect(() => TITLE_PROMPT.slot(TITLE_SYSTEM_TEMPLATE_KEY, "toneOfVoice")).toThrow();
+    });
+});
+
+describe("제목 제안 실행에 실리는 판", () => {
+    it("계약이 템플릿에 매긴 판을 그대로 싣는다", () => {
+        const versions = new Set(Object.values(DECLARED.templates).map((template) => template.version));
+
+        expect([...versions]).toEqual([resolveTitlePromptPin(TITLE_PROMPT).promptVersion]);
+    });
+
+    it("계약이 도구 선언에 매긴 판을 그대로 싣는다", () => {
+        expect(resolveTitlePromptPin(TITLE_PROMPT).toolContractVersion).toBe(readAgentTools("title-suggestion").version);
     });
 });

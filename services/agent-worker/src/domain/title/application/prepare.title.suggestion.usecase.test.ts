@@ -63,7 +63,7 @@ describe("PrepareTitleSuggestionUsecase", () => {
         const prep = await usecase.execute({ jobId: "job-1", taskId: "task-1" });
 
         expect(prep.language).toBe("ko");
-        expect(prep.prompt.versionId).toContain("ko");
+        expect(prep.prompt.promptVersion).toBe("v0.0.1");
     });
 
     it("잡을 실행 상태로 올렸음을 알린다", async () => {

@@ -2,7 +2,6 @@ import { zodToClaudeOutputSchema, type StructuredQueryResult } from "@tracer-age
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import {
     buildCleanupSystemPrompt,
-    CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { CLEANUP_COORDINATOR_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { cleanupDecisionSchema, type CleanupDecision } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
@@ -26,7 +25,6 @@ export function runCleanupDecision(
     label: string,
 ): Promise<CleanupDecisionRun> {
     const systemPrompt = buildCleanupSystemPrompt(ctx.prompt, ctx.input.language);
-    ctx.resolvedTemplates.set(CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY, systemPrompt);
     return runCleanupQuery(ctx, {
         label: `${TASK_CLEANUP_SPEC.name}:${label}`,
         prompt,

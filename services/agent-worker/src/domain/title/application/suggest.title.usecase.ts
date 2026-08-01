@@ -4,7 +4,7 @@ import {
     attemptRecordFromFailure,
     attemptRecordFromSuccess,
 } from "~agent-worker/support/llm/job.attempt.js";
-import { buildFailedRunObservation } from "~agent-worker/support/llm/run.observation.js";
+import { buildFailedRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { TITLE_SETTING_KEY } from "~agent-worker/domain/title/model/title.const.js";
 import type {
     TitleSuggestionGenerateOutput,
@@ -105,13 +105,8 @@ export class SuggestTitleUsecase {
                     jobId: prep.jobId,
                     agentName: TITLE_SUGGESTION_SPEC.name,
                     modelRequested: prep.model ?? TITLE_SUGGESTION_SPEC.limits.defaultModel,
-                    promptVersion: prep.prompt.versionId,
-                    promptFingerprint: {
-                        agent: TITLE_SUGGESTION_SPEC.name,
-                        version: prep.prompt.semanticVersion,
-                        language: prep.language,
-                        contentHash: prep.prompt.contentHash,
-                    },
+                    promptVersion: prep.prompt.promptVersion,
+                    promptContentHash: promptFingerprint(TITLE_SUGGESTION_SPEC.name, prep.prompt.promptVersion, prep.language),
                     toolContractVersion: prep.prompt.toolContractVersion,
                     failure: err,
                 }),

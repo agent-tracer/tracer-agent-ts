@@ -43,7 +43,7 @@ export class PrepareTitleSuggestionUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.outputLanguage),
         );
-        const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id), language);
+        const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id));
 
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);

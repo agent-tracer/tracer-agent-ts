@@ -57,7 +57,7 @@ export class PrepareRecipeScanUsecase {
         if (!eligible) throw new TaskNotScannableError(input.taskId);
 
         const language = normalizeOutputLanguage(input.language);
-        const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id), language);
+        const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id));
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
         }

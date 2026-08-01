@@ -1,11 +1,8 @@
-import {
-    computeResolvedPromptBundleHash,
-    type AgentPromptBundle,
-    type ResolvedAgentPrompt,
-} from "@tracer-agent/llm";
+import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import type { TitleContext } from "./title.context.model.js";
+import { TITLE_TOOL_CONTRACT } from "./title.tool.schema.js";
 
 export const TITLE_SYSTEM_TEMPLATE_KEY = "title-suggestion.investigator.system" as const;
 
@@ -13,11 +10,7 @@ export const TITLE_REPAIR_TEMPLATE_KEY = "title-suggestion.investigator.repair" 
 
 export const TITLE_SUGGESTION_MAX_TURNS = 4;
 
-/** 이 번들이 바뀔 때마다 사람이 올리는 표시이며 기동 검사가 이 값을 원장의 채널과 대조한다. */
-export const TITLE_PROMPT_VERSION = "v1";
 
-const TOOL_CONTRACT_VERSION = "1";
-const OUTPUT_SCHEMA_VERSION = "1";
 
 // 도구 예산을 무엇으로 세는지는 실행 기계가 소유하므로 근거를 더 모으라는 문단만 이 구현이 쓴다.
 const PULL_MORE_EVIDENCE = [
@@ -47,18 +40,11 @@ export function buildTitleSystemPrompt(prompt: AgentPrompt, language: OutputLang
     ].join("\n");
 }
 
-/** 실행에 실을 이 번들의 코드 고정값이며 실행은 원장 없이 이 값을 그대로 쓴다. */
-export function resolveTitlePromptPin(
-    prompt: AgentPrompt,
-    language: OutputLanguage,
-): ResolvedAgentPrompt {
-    const bundle: AgentPromptBundle = { investigatorSystemPrompt: buildTitleSystemPrompt(prompt, language) };
+/** 실행에 실을 계약의 판이며 실행은 원장 없이 이 값을 그대로 쓴다. */
+export function resolveTitlePromptPin(prompt: AgentPrompt): ResolvedAgentPrompt {
     return {
-        versionId: `title-suggestion:${language}:${TITLE_PROMPT_VERSION}`,
-        semanticVersion: TITLE_PROMPT_VERSION,
-        contentHash: computeResolvedPromptBundleHash(bundle).resolvedPromptHash,
-        toolContractVersion: TOOL_CONTRACT_VERSION,
-        outputSchemaVersion: OUTPUT_SCHEMA_VERSION,
+        promptVersion: prompt.version(),
+        toolContractVersion: TITLE_TOOL_CONTRACT.version,
     };
 }
 

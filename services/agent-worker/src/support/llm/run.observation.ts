@@ -16,7 +16,7 @@ export interface SuccessfulRunObservationInput {
     readonly modelRequested: string;
     readonly modelActual: string;
     readonly promptVersion: string;
-    readonly promptFingerprint: unknown;
+    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly durationMs: number;
     readonly costUsd: number | null;
@@ -26,18 +26,13 @@ export interface SuccessfulRunObservationInput {
     readonly repairAttempted: boolean;
     readonly validationPassed: boolean;
     readonly validationErrorCodes?: readonly string[];
-    readonly resolvedPromptHash?: string;
-    readonly resolvedPromptHashes?: readonly {
-        readonly templateKey: string;
-        readonly contentHash: string;
-    }[];
 }
 
 /** 성공한 실행을 종결 관측으로 만들며 입력 원문은 되돌릴 수 없는 해시만 남긴다. */
 export function buildSuccessfulRunObservation(
     input: SuccessfulRunObservationInput,
 ): AgentRunObservation {
-    const common = buildClaudeRunObservation(
+    return buildClaudeRunObservation(
         {
             executionId: input.executionId,
             attemptId: String(input.attempt),
@@ -45,7 +40,7 @@ export function buildSuccessfulRunObservation(
             agentName: input.agentName,
             modelRequested: input.modelRequested,
             promptVersion: input.promptVersion,
-            promptContentHash: contentHash(input.promptFingerprint),
+            promptContentHash: input.promptContentHash,
             toolContractVersion: input.toolContractVersion,
             modelCallId: `${input.executionId}:${input.attempt}:aggregate-model-call`,
             repairAttempted: input.repairAttempted,
@@ -73,18 +68,12 @@ export function buildSuccessfulRunObservation(
             providerRequestId: null,
         },
     );
-    if (input.resolvedPromptHash === undefined || input.resolvedPromptHashes === undefined) {
-        return common;
-    }
-    return {
-        ...common,
-        resolvedPromptHash: input.resolvedPromptHash,
-        resolvedPromptHashes: input.resolvedPromptHashes,
-    };
 }
 
-function contentHash(value: unknown): string {
-    return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`;
+/** 관측이 실행의 프롬프트를 가리키는 값이며 계약의 판과 출력 언어만으로 결정된다. */
+export function promptFingerprint(agentName: string, promptVersion: string, language: string): string {
+    const canonical = JSON.stringify({ agent: agentName, version: promptVersion, language });
+    return `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
 }
 
 export interface FailedRunObservationInput {
@@ -94,7 +83,7 @@ export interface FailedRunObservationInput {
     readonly agentName: string;
     readonly modelRequested: string;
     readonly promptVersion: string;
-    readonly promptFingerprint: unknown;
+    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly failure: AgentExecutionFailure;
 }
@@ -110,7 +99,7 @@ export function buildFailedRunObservation(input: FailedRunObservationInput): Age
             agentName: input.agentName,
             modelRequested: input.modelRequested,
             promptVersion: input.promptVersion,
-            promptContentHash: contentHash(input.promptFingerprint),
+            promptContentHash: input.promptContentHash,
             toolContractVersion: input.toolContractVersion,
             modelCallId: `${input.executionId}:${input.attempt}:aggregate-model-call`,
             repairAttempted: false,

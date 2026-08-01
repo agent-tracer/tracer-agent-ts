@@ -59,6 +59,13 @@ export class AgentPrompt {
         return Object.keys(this.templates);
     }
 
+    /** 계약이 이 에이전트의 템플릿에 매긴 판이며 템플릿마다 다르면 하나를 고를 수 없어 거절한다. */
+    version(): string {
+        const declared = new Set(Object.values(this.templates).map((template) => template.version));
+        if (declared.size !== 1) throw new Error("prompt.template-versions-differ");
+        return [...declared][0] as string;
+    }
+
     /** 출력 언어에 맞는 지시문이며 모르는 언어는 auto 로 되돌린다. */
     languageDirective(language: string): string {
         const directive = this.languageDirectives[language] ?? this.languageDirectives[AUTO_LANGUAGE];

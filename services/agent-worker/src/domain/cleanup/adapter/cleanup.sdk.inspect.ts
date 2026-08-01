@@ -5,7 +5,6 @@ import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accoun
 import {
     buildCleanupInspectPrompt,
     buildCleanupInspectSystemPrompt,
-    CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { inspectReportSchema, type InspectAssignment, type InspectReport } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import { buildInspectFailureReport, CLEANUP_REVIEWER_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
@@ -39,7 +38,6 @@ export async function runCleanupInspect(
 
     try {
         const systemPrompt = buildCleanupInspectSystemPrompt(ctx.prompt);
-        ctx.resolvedTemplates.set(CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY, systemPrompt);
         const run = await runCleanupQuery(ctx, {
             label: `${TASK_CLEANUP_SPEC.name}:inspect:${assignment.taskId}`,
             prompt: buildCleanupInspectPrompt(assignment.taskId, lease.maxTurns),

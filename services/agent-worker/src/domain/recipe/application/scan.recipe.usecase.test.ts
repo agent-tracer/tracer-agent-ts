@@ -14,11 +14,8 @@ import type { RecipeScanPrep } from "./prepare.recipe.scan.usecase.js";
 import { ScanRecipeUsecase } from "./scan.recipe.usecase.js";
 
 const PROMPT: ResolvedAgentPrompt = {
-    versionId: "v1",
-    semanticVersion: "1.0.0",
-    contentHash: "mock-hash",
-    toolContractVersion: "v1",
-    outputSchemaVersion: "v1",
+    promptVersion: "v0.0.1",
+    toolContractVersion: "v0.0.1",
 };
 
 function prep(): RecipeScanPrep {

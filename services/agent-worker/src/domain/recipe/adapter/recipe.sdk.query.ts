@@ -43,7 +43,6 @@ export interface RecipeQueryContext {
   readonly runner: IQueryRunner<ClaudeQueryOptions>;
   readonly input: GenerateRecipeCandidatesInput;
   readonly prompt: AgentPrompt;
-  readonly renderedTemplates: Map<string, string>;
 }
 
 export interface RecipeQuerySpec<T> {

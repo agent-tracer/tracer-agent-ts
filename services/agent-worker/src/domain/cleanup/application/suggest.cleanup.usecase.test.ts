@@ -14,11 +14,8 @@ import type { TaskCleanupPrep } from "./prepare.task.cleanup.usecase.js";
 import { SuggestCleanupUsecase } from "./suggest.cleanup.usecase.js";
 
 const PROMPT: ResolvedAgentPrompt = {
-    versionId: "v1",
-    semanticVersion: "1.0.0",
-    contentHash: "mock-hash",
-    toolContractVersion: "v1",
-    outputSchemaVersion: "v1",
+    promptVersion: "v0.0.1",
+    toolContractVersion: "v0.0.1",
 };
 
 function prep(overrides: Partial<TaskCleanupPrep> = {}): TaskCleanupPrep {

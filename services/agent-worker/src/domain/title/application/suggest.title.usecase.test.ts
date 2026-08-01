@@ -24,7 +24,7 @@ const PREP: TitleSuggestionPrep = {
     language: "auto",
     currentTitle: "Task 1",
     context: titleContext(),
-    prompt: resolveTitlePromptPin(TITLE_PROMPT, "auto"),
+    prompt: resolveTitlePromptPin(TITLE_PROMPT),
 };
 
 class FakeTitleAgent implements TitleAgentPort {
