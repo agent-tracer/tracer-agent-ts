@@ -2,5 +2,3 @@
 export { recipeScanWorkflow } from "~agent-worker/domain/recipe/inbound/recipe.workflow.js";
 export { titleSuggestionWorkflow } from "~agent-worker/domain/title/inbound/title.workflow.js";
 export { taskCleanupWorkflow } from "~agent-worker/domain/cleanup/inbound/cleanup.workflow.js";
-export { evaluationRunWorkflow } from "~agent-worker/domain/evaluation/inbound/evaluation.workflow.js";
-export { evaluationExperimentWorkflow } from "~agent-worker/domain/evaluation/inbound/evaluation.experiment.workflow.js";

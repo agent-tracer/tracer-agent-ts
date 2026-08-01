@@ -43,7 +43,6 @@ import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/applicat
 import { SuggestCleanupUsecase } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { CleanupActivity } from "~agent-worker/domain/cleanup/inbound/cleanup.activity.js";
 import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/title.notification.adapter.js";
-import type { TitleEventReaderPort, TitleTimelineQuery } from "~agent-worker/domain/title/port/title.event.reader.port.js";
 import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/title.event.reader.adapter.js";
 import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
 import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
@@ -53,15 +52,6 @@ import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/appli
 import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
 import { SuggestTitleUsecase } from "~agent-worker/domain/title/application/suggest.title.usecase.js";
 import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity.js";
-import { HttpEvaluationExecutionClient } from "~agent-worker/domain/evaluation/adapter/agent-api.evaluation.execution.client.js";
-import { buildEvaluationAgentRegistry } from "~agent-worker/domain/evaluation/adapter/evaluation.agent.registry.js";
-import { RunEvaluationUsecase } from "~agent-worker/domain/evaluation/application/run.evaluation.usecase.js";
-import { RunExperimentStepUsecase } from "~agent-worker/domain/evaluation/application/run.experiment.step.usecase.js";
-import { EvaluationActivity } from "~agent-worker/domain/evaluation/inbound/evaluation.activity.js";
-import { EvaluationExperimentActivity } from "~agent-worker/domain/evaluation/inbound/evaluation.experiment.activity.js";
-import { EvaluatorRegistry } from "~agent-worker/domain/evaluation/model/evaluator.registry.js";
-import type { DeterministicEvaluatorImplementation } from "~agent-worker/domain/evaluation/model/deterministic.evaluator.model.js";
-import type { SnapshotTaskAndEventReader } from "~agent-worker/domain/evaluation/adapter/snapshot.readers.js";
 import { CLEANUP_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/cleanup/model/cleanup.prompt.fragments.js";
 import { RECIPE_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/recipe/model/recipe.prompt.fragments.js";
 import { TITLE_PROMPT_FRAGMENT_MANIFEST } from "~agent-worker/domain/title/model/title.prompt.fragments.js";
@@ -80,31 +70,6 @@ const GENERATE_ENTITIES = [
     AiJobStepEntity,
     AgentRunObservationEntity,
 ] as const;
-
-/** 평가 스냅샷 리더를 title 슬라이스가 요구하는 포트 모양으로 바꾸며, 없는 본문은 undefined로 비운다. */
-function toTitleEventReader(reader: SnapshotTaskAndEventReader): TitleEventReaderPort {
-    return {
-        taskExists: () => reader.taskExists(),
-        countByTask: () => reader.countByTask(),
-        readTimeline: async (query: TitleTimelineQuery) => {
-            const events = await reader.readTimeline({
-                limit: query.limit,
-                descending: query.descending,
-                ...(query.cursor !== undefined ? { cursor: query.cursor } : {}),
-            });
-            return events.map((event) => ({
-                id: event.id,
-                seq: event.seq,
-                kind: event.kind,
-                title: event.title,
-                filePaths: event.filePaths,
-                occurredAt: event.occurredAt,
-                ...(event.body !== null ? { body: event.body } : {}),
-                ...(event.toolName !== null ? { toolName: event.toolName } : {}),
-            }));
-        },
-    };
-}
 
 async function bootstrap(): Promise<void> {
     const config = loadApplicationConfig();
@@ -173,21 +138,6 @@ async function bootstrap(): Promise<void> {
         new FailCleanupJobUsecase(cleanupRepository, cleanupNotification, clock),
     );
 
-    // 결정적 채점기 구현은 아직 어떤 에이전트도 내놓지 않아 빈 목록으로 시작한다.
-    const deterministicEvaluators: readonly DeterministicEvaluatorImplementation[] = [];
-    const evaluationAgents = buildEvaluationAgentRegistry({
-        title: (events, resolveFragments) =>
-            new TitleAgentAdapter(claudeRunner, toTitleEventReader(events), resolveFragments),
-        recipe: (deps, resolveFragments) => new RecipeAgentAdapter(claudeRunner, deps, resolveFragments),
-        cleanup: (events, resolveFragments) =>
-            new CleanupSdkAgentAdapter(claudeRunner, { tasks: events, events }, resolveFragments),
-    });
-    const runEvaluation = new RunEvaluationUsecase(evaluationAgents, new EvaluatorRegistry(deterministicEvaluators));
-    const evaluation = new EvaluationActivity(runEvaluation);
-    const experiment = new EvaluationExperimentActivity(
-        new RunExperimentStepUsecase(new HttpEvaluationExecutionClient(resolveAgentApiUrl(config.agentApi.port)), runEvaluation),
-    );
-
     // replica 수와 이 값의 곱이 동시 모델 호출 총량이므로, 총량을 늘리려면 이 값을 replica 수로 나눠 정한다.
     const generateMaxConcurrentActivities = Number(process.env["GENERATE_MAX_CONCURRENT_ACTIVITIES"] ?? "6");
 
@@ -199,9 +149,6 @@ async function bootstrap(): Promise<void> {
             generateRecipeCandidates: recipe.generateRecipeCandidates,
             generateTitleSuggestion: title.generateTitleSuggestion,
             generateTaskCleanupSuggestions: cleanup.generateTaskCleanupSuggestions,
-            runEvaluationAgent: evaluation.runEvaluationAgent,
-            runNext: experiment.runNext,
-            finalize: experiment.finalize,
         },
         generateMaxConcurrentActivities,
     });
