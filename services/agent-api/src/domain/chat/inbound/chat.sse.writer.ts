@@ -9,8 +9,8 @@ export class SseWriter {
     constructor(private readonly res: Response) {}
 
     /** 이벤트를 직렬로 큐잉하고, 이 쓰기가 소켓으로 빠져나갈 때 이행되는 Promise를 준다. */
-    write(event: string, data: unknown, id?: string): Promise<void> {
-        this.tail = this.tail.then(() => this.flush(event, data, id));
+    write(event: string, data: unknown): Promise<void> {
+        this.tail = this.tail.then(() => this.flush(event, data));
         return this.tail;
     }
 
@@ -22,10 +22,9 @@ export class SseWriter {
         this.drainWaiters.clear();
     }
 
-    private flush(event: string, data: unknown, id?: string): Promise<void> {
+    private flush(event: string, data: unknown): Promise<void> {
         if (this.closed) return Promise.resolve();
-        const idLine = id === undefined ? "" : `id: ${id}\n`;
-        const ok = this.res.write(`${idLine}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+        const ok = this.res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
         // write가 false면 커널 버퍼가 찼다는 뜻이라, 닫힌 소켓에 계속 쓰지 않도록 비워질 때까지 기다린다.
         if (ok) return Promise.resolve();
         return new Promise<void>((resolve) => {

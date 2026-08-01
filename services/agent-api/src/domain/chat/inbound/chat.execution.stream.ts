@@ -43,7 +43,7 @@ export async function streamChatExecution(
     };
     const send = async (snapshot: ChatExecutionSnapshot): Promise<void> => {
         if (closed) return;
-        await writer.write("snapshot", snapshot, executionEventId(snapshot.execution));
+        await writer.write("snapshot", snapshot);
         if (isTerminalExecution(snapshot.execution.status)) response.end();
     };
     const refresh = (): void => {
@@ -58,10 +58,6 @@ export async function streamChatExecution(
     response.once("close", close);
     refresh();
     await refreshTail;
-}
-
-function executionEventId(execution: { readonly draftSeq: number; readonly updatedAt: string }): string {
-    return `${execution.draftSeq}:${execution.updatedAt}`;
 }
 
 function isTerminalExecution(status: string): boolean {
