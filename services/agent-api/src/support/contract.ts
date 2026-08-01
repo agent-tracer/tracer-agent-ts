@@ -82,6 +82,18 @@ export function readContractTables(): ReadonlyMap<string, ReadonlySet<string>> {
     return tables;
 }
 
+/** 실행 스냅샷 스트림이 지키는 규칙이며 resendIntervalMs 는 정본을 다시 내는 주기이고 headers 는 응답이 실어야 할 머리다. */
+export interface ChatExecutionStreamRules {
+    readonly resendIntervalMs: number;
+    readonly headers: Readonly<Record<string, string>>;
+    readonly replay: { readonly mode: string };
+}
+
+export function readChatExecutionStreamRules(): ChatExecutionStreamRules {
+    return readContractJson<{ readonly stream: ChatExecutionStreamRules }>("conformance/cases/chat.query.json")
+        .stream;
+}
+
 /** 서비스를 넘어 오가는 알림 토픽의 이름과 봉투와 종류를 계약이 적은 그대로 담는다. */
 export interface NotificationTopicDeclaration {
     readonly name: string;

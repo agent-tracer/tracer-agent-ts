@@ -4,10 +4,10 @@ import type {
     ChatExecutionSnapshot,
     WatchChatExecutionUseCase,
 } from "~agent-api/domain/chat/application/query/watch.chat.execution.usecase.js";
+import { readChatExecutionStreamRules } from "~agent-api/support/contract.js";
 import { SseWriter } from "./chat.sse.writer.js";
 
-// 깨움이 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.
-const HEARTBEAT_MS = 20_000;
+const STREAM_RULES = readChatExecutionStreamRules();
 
 export interface ChatExecutionStreamTarget {
     readonly userId: string;
@@ -15,7 +15,7 @@ export interface ChatExecutionStreamTarget {
     readonly executionId: string;
 }
 
-/** 실행 스냅샷을 열린 연결에 흘려보내고 종결되면 연결을 닫는다. */
+/** 재접속이 실어 보낸 Last-Event-ID 를 읽지 않고 그 순간의 정본부터 이어서 내보내며 종결되면 연결을 닫는다. */
 export async function streamChatExecution(
     watch: WatchChatExecutionUseCase,
     response: Response,
@@ -24,9 +24,7 @@ export async function streamChatExecution(
     await watch.snapshot(target.userId, target.threadId, target.executionId);
     response.status(HttpStatus.OK);
     response.setHeader("Content-Type", "text/event-stream");
-    response.setHeader("Cache-Control", "no-cache, no-transform");
-    response.setHeader("Connection", "keep-alive");
-    response.setHeader("X-Accel-Buffering", "no");
+    for (const [name, value] of Object.entries(STREAM_RULES.headers)) response.setHeader(name, value);
     response.flushHeaders();
 
     const writer = new SseWriter(response);
@@ -52,9 +50,10 @@ export async function streamChatExecution(
         }).catch(() => close());
     };
     unsubscribe = watch.subscribe(target.executionId, refresh);
+    // 깨움이 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.
     heartbeat = setInterval(() => {
         if (!closed) refresh();
-    }, HEARTBEAT_MS);
+    }, STREAM_RULES.resendIntervalMs);
     response.once("close", close);
     refresh();
     await refreshTail;

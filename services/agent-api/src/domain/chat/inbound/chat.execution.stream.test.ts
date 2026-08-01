@@ -1,7 +1,10 @@
 import type { Response } from "express";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatExecutionSnapshot } from "~agent-api/domain/chat/application/query/watch.chat.execution.usecase.js";
+import { readChatExecutionStreamRules } from "~agent-api/support/contract.js";
 import { streamChatExecution } from "./chat.execution.stream.js";
+
+const RULES = readChatExecutionStreamRules();
 
 const TARGET = { userId: "alice", threadId: "thread-1", executionId: "execution-1" } as const;
 
@@ -92,5 +95,52 @@ describe("streamChatExecution", () => {
 
         expect(response.chunks).toHaveLength(1);
         expect(response.ended).toBe(true);
+    });
+
+    it("재접속이 실어 보낸 Last-Event-ID 를 읽지 않고 그 순간의 정본을 낸다", async () => {
+        const response = new FakeResponse();
+        const readHeaders: string[] = [];
+        response.req = {
+            headers: new Proxy(
+                { "last-event-id": "1:2025-12-31T00:00:00.000Z" },
+                {
+                    get(target, key) {
+                        readHeaders.push(String(key));
+                        return Reflect.get(target, key) as string | undefined;
+                    },
+                },
+            ),
+        };
+        const current = snapshotOf("running", 9);
+
+        await streamChatExecution(watchOf(current) as never, response as unknown as Response, TARGET);
+        response.emit("close");
+
+        expect(RULES.replay.mode).toBe("none");
+        expect(readHeaders).toEqual([]);
+        expect(response.chunks[0]).toBe(`event: snapshot\ndata: ${JSON.stringify(current)}\n\n`);
+    });
+
+    it("계약이 정한 머리를 응답에 싣는다", async () => {
+        const response = new FakeResponse();
+
+        await streamChatExecution(watchOf(snapshotOf("running", 1)) as never, response as unknown as Response, TARGET);
+        response.emit("close");
+
+        expect(Object.fromEntries(response.headers)).toMatchObject(RULES.headers);
+    });
+
+    it("계약이 정한 주기마다 정본을 다시 낸다", async () => {
+        const response = new FakeResponse();
+        const watch = watchOf(snapshotOf("running", 1), snapshotOf("running", 2));
+
+        await streamChatExecution(watch as never, response as unknown as Response, TARGET);
+        await vi.advanceTimersByTimeAsync(RULES.resendIntervalMs - 1);
+        expect(response.chunks).toHaveLength(1);
+
+        await vi.advanceTimersByTimeAsync(1);
+        response.emit("close");
+
+        expect(response.chunks).toHaveLength(2);
     });
 });
