@@ -71,12 +71,15 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
             .andWhere("status IN (:...cancelable)", {
                 cancelable: [JOB_STATUS.pending, JOB_STATUS.running],
             })
-            // 대기 중 취소는 실행이 없지만, 실행 중 취소는 그 시도의 취소 관측이 먼저 있어야 종료로 닫힌다.
+            // 대기 중 취소는 실행이 없고, 실행 중 취소는 그 시도의 취소 관측이 있거나 관측이 하나도 없을 때 닫는다.
             .andWhere(`("status" = :pending OR EXISTS (
                 SELECT 1 FROM "agent_run_observations" observation
                 WHERE observation."execution_id" = "ai_jobs"."id"
                   AND observation."user_id" = "ai_jobs"."user_id"
                   AND observation."status" = 'cancelled'
+            ) OR NOT EXISTS (
+                SELECT 1 FROM "agent_run_observations" observation
+                WHERE observation."execution_id" = "ai_jobs"."id"
             ))`, { pending: JOB_STATUS.pending })
             .execute();
         return (result.affected ?? 0) > 0;

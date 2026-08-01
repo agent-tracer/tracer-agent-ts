@@ -80,12 +80,16 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo.createQueryBuilder().update(ChatExecutionEntity)
             .set({ status: CHAT_EXECUTION_STATUS.canceled, completedAt: now, updatedAt: now })
             .where("id = :id", { id })
-            .andWhere(`(status = :queued OR (status = :running AND EXISTS (
+            // running 행은 관측이 취소를 새겼거나 그 실행의 관측이 하나도 없을 때 닫는다.
+            .andWhere(`(status = :queued OR (status = :running AND (EXISTS (
                 SELECT 1 FROM agent_run_observations observation
                  WHERE observation.execution_id = chat_executions.id
                    AND observation.user_id = chat_executions.user_id
                    AND observation.status = 'cancelled'
-            )))`, { queued: CHAT_EXECUTION_STATUS.queued, running: CHAT_EXECUTION_STATUS.running })
+            ) OR NOT EXISTS (
+                SELECT 1 FROM agent_run_observations observation
+                 WHERE observation.execution_id = chat_executions.id
+            ))))`, { queued: CHAT_EXECUTION_STATUS.queued, running: CHAT_EXECUTION_STATUS.running })
             .execute();
         return result.affected === 1;
     }
