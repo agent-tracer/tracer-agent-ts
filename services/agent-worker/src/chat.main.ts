@@ -14,6 +14,7 @@ import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { CHAT_EXECUTION_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { resolveAgentApiUrl, resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { ChatAgentAdapter } from "~agent-worker/domain/chat/adapter/chat.agent.adapter.js";
+import { ContractPromptSourceAdapter } from "~agent-worker/domain/chat/adapter/contract.prompt.source.adapter.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import {
     ChatExecutionEntity,
@@ -79,7 +80,13 @@ async function bootstrap(): Promise<void> {
     const agentApiBaseUrl = resolveAgentApiUrl(config.agentApi.port);
     // 장기기억 원장은 에이전트 서비스가 소유하므로 계약이 선언한 같은 경로를 이 기점으로 부른다.
     const memoryApi = new TracerApiClient(agentApiBaseUrl);
-    const agent = new ChatAgentAdapter(runner, tracerApi, memoryApi, agentApiBaseUrl);
+    const agent = new ChatAgentAdapter(
+        runner,
+        tracerApi,
+        memoryApi,
+        agentApiBaseUrl,
+        new ContractPromptSourceAdapter(),
+    );
     const summarizer = new ChatSummarizerAdapter(new ClaudeQueryRunner(isLocal, isLocal));
     const scheduler = new ChatScheduler();
     const events = new ChatExecutionUpdatePublisher(producer);

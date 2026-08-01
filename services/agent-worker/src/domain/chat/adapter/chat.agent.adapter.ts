@@ -5,20 +5,18 @@ import {
     computeResolvedPromptBundleHash,
     mcpToolNames,
     stripMcpToolPrefix,
-    verifyResolvedPromptBundleHash,
     withMcpToolPrefix,
     type AgentStreamSink,
     type ClaudeQueryOptions,
     type IQueryRunner,
     type JobStepPayload,
-    type ResolvedPromptFragment,
 } from "@tracer-agent/llm";
 import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import {
     buildChatSystemPrompt,
+    CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
     renderChatPrompt,
 } from "~agent-worker/domain/chat/model/chat.prompt.js";
-import { CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY } from "~agent-worker/domain/chat/model/chat.prompt.fragments.js";
 import { selectFinalChatText } from "~agent-worker/domain/chat/model/chat.response.js";
 import { CHAT_SPEC } from "~agent-worker/domain/chat/model/chat.spec.js";
 import { chatStopReason } from "~agent-worker/domain/chat/model/chat.stop.reason.js";
@@ -28,6 +26,7 @@ import type {
     ChatTurnSink,
 } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.port.js";
+import type { PromptSourcePort } from "~agent-worker/domain/chat/port/prompt.source.port.js";
 import { buildChatMemoryToolHandlers } from "./chat.memory.tools.js";
 import { buildChatReadToolHandlers } from "./chat.read.tools.js";
 import { chatAgentReadToolNames } from "./chat.tool.gate.js";
@@ -42,6 +41,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
         private readonly tracerApi: TracerApiClient,
         private readonly memoryApi: TracerApiClient,
         private readonly agentApiBaseUrl: string,
+        private readonly prompts: PromptSourcePort,
     ) {}
 
     requiresLocalApiKey(): boolean {
@@ -81,17 +81,12 @@ export class ChatAgentAdapter implements ChatAgentPort {
             CHAT_SPEC.toolNames,
             CHAT_MCP_SERVER,
         );
-        const promptFragments = this.resolvePromptFragments(input);
-        const resolvedSystemPrompt = buildChatSystemPrompt(input.language, promptFragments);
+        const resolvedSystemPrompt = buildChatSystemPrompt(
+            await this.prompts.resolve(CHAT_SPEC.name),
+            input.language,
+        );
         const templates = { [CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY]: resolvedSystemPrompt };
         const { resolvedPromptHash, resolvedPromptHashes } = computeResolvedPromptBundleHash(templates);
-        if (input.promptIntegrity?.mode === "resolved-fragments") {
-            try {
-                verifyResolvedPromptBundleHash(templates, input.promptIntegrity);
-            } catch {
-                throw new Error("chat.prompt-fragment.resolved-prompt-hash-mismatch");
-            }
-        }
         const systemPrompt = withMcpToolPrefix(
             resolvedSystemPrompt,
             CHAT_SPEC.toolNames,
@@ -128,10 +123,6 @@ export class ChatAgentAdapter implements ChatAgentPort {
             ...(input.abortSignal !== undefined ? { parentSignal: input.abortSignal } : {}),
         });
         // 대화에 남기는 도구 호출은 승인 결과가 인용할 확인 대기 행뿐이고 나머지 궤적은 steps가 갖는다.
-        const fragmentSnapshots = promptFragments.map(
-            ({ content: _content, codeName: _codeName, backend: _backend, language: _language, ...snapshot }) =>
-                snapshot,
-        );
         const observation = {
             ...buildClaudeRunObservation(
                 {
@@ -153,7 +144,6 @@ export class ChatAgentAdapter implements ChatAgentPort {
                 },
                 result,
             ),
-            fragmentSnapshots,
             resolvedPromptHash,
             resolvedPromptHashes,
         };
@@ -173,16 +163,6 @@ export class ChatAgentAdapter implements ChatAgentPort {
         };
     }
 
-    /** 봉투가 조각을 싣지 않으면 조립이 코드 기본값을 쓴다는 뜻이라 빈 목록을 낸다. */
-    private resolvePromptFragments(input: ChatTurnInput): readonly ResolvedPromptFragment[] {
-        if (input.promptIntegrity?.mode === "full-prompt") {
-            throw new Error("chat.prompt-fragment.full-prompt-integrity-rejected");
-        }
-        if (input.promptIntegrity?.mode === "fragment-content-only") {
-            throw new Error("chat.prompt-fragment.content-only-integrity-rejected");
-        }
-        return input.promptIntegrity?.mode === "resolved-fragments" ? input.promptIntegrity.fragments : [];
-    }
 }
 
 /** 실행 궤적에도 계약 이름을 남겨 두 구현체의 스텝을 같은 어휘로 비교한다. */

@@ -1,5 +1,6 @@
 import { featureLimits, featureModels } from "@tracer-agent/llm";
 import { AGENT } from "~agent-worker/support/agent.const.js";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { CHAT_FEATURE } from "./chat.const.js";
 import { buildChatSystemPrompt } from "./chat.prompt.js";
 import { chatTurnResultSchema } from "./chat.result.schema.js";
@@ -12,7 +13,8 @@ export const CHAT_SPEC = {
     name: AGENT.chat.id,
     promptVersion: "1.0.0",
     toolContractVersion: "1.0.0",
-    systemPrompt: (language: string): string => buildChatSystemPrompt(language),
+    systemPrompt: (prompt: AgentPrompt, language: string): string =>
+        buildChatSystemPrompt(prompt, language),
     tools: CHAT_TOOL_DEFINITIONS,
     toolNames: CHAT_TOOL_NAMES,
     failures: CHAT_TOOL_FAILURES,

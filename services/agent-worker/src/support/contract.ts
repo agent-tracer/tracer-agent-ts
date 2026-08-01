@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ContractToolFile } from "@tracer-agent/llm";
+import type { PromptDeclarationFile } from "./agent.prompt.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -10,6 +12,21 @@ export const CONTRACT_ROOT = path.join(REPO_ROOT, "contract");
 /** 계약 뿌리를 기준으로 한 상대 경로의 JSON 파일 하나를 읽는다. */
 export function readContractJson<T>(relative: string): T {
     return JSON.parse(readFileSync(path.join(CONTRACT_ROOT, relative), "utf8")) as T;
+}
+
+/** 에이전트 하나의 조각과 템플릿 선언을 읽는다. */
+export function readAgentPrompt(agentName: string): PromptDeclarationFile {
+    return readContractJson<PromptDeclarationFile>(`agent/${agentName}/prompt.json`);
+}
+
+/** 에이전트 하나의 도구와 인자와 상한을 읽는다. */
+export function readAgentTools<T extends ContractToolFile>(agentName: string): T {
+    return readContractJson<T>(`agent/${agentName}/tool.json`);
+}
+
+/** 에이전트 하나의 구조화 출력 스키마를 읽는다. */
+export function readAgentOutput(agentName: string): { readonly schema: Record<string, unknown> } {
+    return readContractJson<{ readonly schema: Record<string, unknown> }>(`agent/${agentName}/output.json`);
 }
 
 /** 산출물 창구 하나의 요청 본문에 실릴 수 있는 칸이다. */

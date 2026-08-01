@@ -1,25 +1,13 @@
-import type { ResolvedPromptFragment } from "@tracer-agent/llm";
+import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { SAFETY_POLICY } from "~agent-worker/support/safety.policy.js";
-import { AGENT } from "~agent-worker/support/agent.const.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
-import {
-    CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
-    CHAT_GROUNDING_RULES,
-    CHAT_MEMORY_RULE,
-    CHAT_TOOL_EXECUTION_SEMANTICS,
-} from "./chat.prompt.fragments.js";
 import type { ChatTurnMessage, ChatUserFact } from "./chat.turn.model.js";
-import { languageDirective } from "./language.directive.js";
+
+export const CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY = "chat.assistant.system";
 
 // 프롬프트 캐시는 접두사 일치라 시스템 프롬프트에 요청마다 바뀌는 값이 섞이면 매 요청 무효화된다.
-export function buildChatSystemPrompt(
-    language: string,
-    resolved: readonly ResolvedPromptFragment[] = [],
-): string {
-    const fragment = (slot: string, codeDefault: string): string =>
-        resolved.find(
-            (item) => item.templateKey === CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY && item.fragmentSlot === slot,
-        )?.content ?? codeDefault;
+export function buildChatSystemPrompt(prompt: AgentPrompt, language: string): string {
+    const slot = (name: string): string => prompt.slot(CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY, name);
     return [
         SAFETY_POLICY,
         "",
@@ -28,15 +16,15 @@ export function buildChatSystemPrompt(
         "",
         "Your job is to work out what the user is actually asking for, reach for the tools that answer it,",
         "ground your reply in what they return, and propose the changes their work needs.",
-        fragment("toolExecutionSemantics", CHAT_TOOL_EXECUTION_SEMANTICS.defaultContent),
+        slot("toolExecutionSemantics"),
         "",
         "How to work:",
-        fragment("groundingRules", CHAT_GROUNDING_RULES.defaultContent),
+        slot("groundingRules"),
         "",
         "Memory:",
-        fragment("memoryRule", CHAT_MEMORY_RULE.defaultContent),
+        slot("memoryRule"),
         "",
-        `Output language: ${languageDirective(AGENT.chat.id, language)}`,
+        `Output language: ${prompt.languageDirective(language)}`,
     ].join("\n");
 }
 

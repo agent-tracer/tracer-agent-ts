@@ -3,7 +3,6 @@ import type {
     AgentQueryUsage,
     AgentRunObservation,
     JobStepPayload,
-    PromptIntegrityContract,
 } from "@tracer-agent/llm";
 import type { ChatMessageRole, ChatStopReason } from "./chat.const.js";
 import type { ChatMessage, ChatToolCall } from "./chat.message.model.js";
@@ -75,8 +74,6 @@ export interface ChatTurnInput {
     readonly draftToken?: string;
     /** 도구가 프로세스 밖에서 API를 부를 때 쓰는, 이 사용자와 이 실행에 매인 자격이다. */
     readonly scopeToken?: string;
-    /** 접수가 이 실행에 고정한 조각이며 없으면 기동 시점의 스냅샷을 쓴다. */
-    readonly promptIntegrity?: PromptIntegrityContract;
 }
 
 /** 한 대화 턴의 실행 결과다. */
