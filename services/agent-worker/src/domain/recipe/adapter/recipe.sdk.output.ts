@@ -2,7 +2,7 @@ import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
 import type { GenerateRecipeCandidatesOutput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
-import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
 import type { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
     RECIPE_SCAN_SPEC,
@@ -46,7 +46,6 @@ export function buildRecipeOutput(
       modelRequested: recipeModelName(input),
       modelActual: modelUsed,
       promptVersion: input.prompt.promptVersion,
-      promptContentHash: promptFingerprint(RECIPE_SCAN_SPEC.name, input.prompt.promptVersion, input.language),
       toolContractVersion: input.prompt.toolContractVersion,
       durationMs: accounting.durationMs,
       costUsd: accounting.costUsd,

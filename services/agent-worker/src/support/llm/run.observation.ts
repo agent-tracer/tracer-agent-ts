@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
     buildClaudeRunObservation,
     estimateCostUsd,
@@ -16,7 +15,6 @@ export interface SuccessfulRunObservationInput {
     readonly modelRequested: string;
     readonly modelActual: string;
     readonly promptVersion: string;
-    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly durationMs: number;
     readonly costUsd: number | null;
@@ -40,7 +38,6 @@ export function buildSuccessfulRunObservation(
             agentName: input.agentName,
             modelRequested: input.modelRequested,
             promptVersion: input.promptVersion,
-            promptContentHash: input.promptContentHash,
             toolContractVersion: input.toolContractVersion,
             modelCallId: `${input.executionId}:${input.attempt}:aggregate-model-call`,
             repairAttempted: input.repairAttempted,
@@ -70,11 +67,6 @@ export function buildSuccessfulRunObservation(
     );
 }
 
-/** 관측이 실행의 프롬프트를 가리키는 값이며 계약의 판과 출력 언어만으로 결정된다. */
-export function promptFingerprint(agentName: string, promptVersion: string, language: string): string {
-    const canonical = JSON.stringify({ agent: agentName, version: promptVersion, language });
-    return `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
-}
 
 export interface FailedRunObservationInput {
     readonly executionId: string;
@@ -83,7 +75,6 @@ export interface FailedRunObservationInput {
     readonly agentName: string;
     readonly modelRequested: string;
     readonly promptVersion: string;
-    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly failure: AgentExecutionFailure;
 }
@@ -99,7 +90,6 @@ export function buildFailedRunObservation(input: FailedRunObservationInput): Age
             agentName: input.agentName,
             modelRequested: input.modelRequested,
             promptVersion: input.promptVersion,
-            promptContentHash: input.promptContentHash,
             toolContractVersion: input.toolContractVersion,
             modelCallId: `${input.executionId}:${input.attempt}:aggregate-model-call`,
             repairAttempted: false,

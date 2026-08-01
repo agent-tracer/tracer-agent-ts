@@ -2,7 +2,7 @@ import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
 import type { GenerateCleanupSuggestionsInput, GenerateCleanupSuggestionsOutput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
-import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
 import { cleanupModelName, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 import type { CleanupRunSegment } from "./cleanup.sdk.orchestration.js";
 
@@ -32,7 +32,6 @@ export function buildCleanupOutput(
             modelRequested: cleanupModelName(input),
             modelActual: modelUsed,
             promptVersion: input.prompt.promptVersion,
-            promptContentHash: promptFingerprint(TASK_CLEANUP_SPEC.name, input.prompt.promptVersion, input.language),
             toolContractVersion: input.prompt.toolContractVersion,
             durationMs: accounting.durationMs,
             costUsd: accounting.costUsd,

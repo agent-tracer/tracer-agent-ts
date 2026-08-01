@@ -17,7 +17,6 @@ import {
 } from "~agent-worker/domain/chat/model/chat.prompt.js";
 import { selectFinalChatText } from "~agent-worker/domain/chat/model/chat.response.js";
 import { CHAT_TOOL_CONTRACT } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
-import { promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
 import { CHAT_SPEC } from "~agent-worker/domain/chat/model/chat.spec.js";
 import { chatStopReason } from "~agent-worker/domain/chat/model/chat.stop.reason.js";
 import type {
@@ -126,7 +125,6 @@ export class ChatAgentAdapter implements ChatAgentPort {
                     agentName: CHAT_SPEC.name,
                     modelRequested: model,
                     promptVersion: agentPrompt.version(),
-                    promptContentHash: promptFingerprint(CHAT_SPEC.name, agentPrompt.version(), input.language),
                     toolContractVersion: CHAT_TOOL_CONTRACT.version,
                     modelCallId: `${input.idempotencyKey}:${input.attempt}:aggregate-model-call`,
                     repairAttempted: false,

@@ -14,7 +14,7 @@ import {
 } from "@tracer-agent/llm";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { ExecutionBudget, type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
-import { buildSuccessfulRunObservation, promptFingerprint } from "~agent-worker/support/llm/run.observation.js";
+import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
 import { TITLE_JOB_KIND } from "~agent-worker/domain/title/model/title.const.js";
 import {
     buildTitleRepairPrompt,
@@ -201,7 +201,6 @@ function toOutput(
             modelRequested,
             modelActual: last.modelUsed,
             promptVersion: input.prompt.promptVersion,
-            promptContentHash: promptFingerprint(TITLE_SUGGESTION_SPEC.name, input.prompt.promptVersion, input.language),
             toolContractVersion: input.prompt.toolContractVersion,
             durationMs: accounting.durationMs,
             costUsd: accounting.costUsd,

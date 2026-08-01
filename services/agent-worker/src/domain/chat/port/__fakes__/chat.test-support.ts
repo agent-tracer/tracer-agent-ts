@@ -114,7 +114,6 @@ export function chatObservation(
         modelRequested: "claude-sonnet-4-6",
         modelActual: "claude-sonnet-4-6",
         promptVersion: "v0.0.1",
-        promptContentHash: "sha256:abc",
         toolContractVersion: "v0.0.1",
         status: "succeeded",
         durationMs: 10,

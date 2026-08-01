@@ -217,7 +217,6 @@ export function cleanupObservation(overrides: Partial<AgentRunObservation> = {})
         modelRequested: "claude-haiku-4-5",
         modelActual: "claude-haiku-4-5",
         promptVersion: "v0.0.1",
-        promptContentHash: "sha256:abc",
         toolContractVersion: "v0.0.1",
         status: "succeeded",
         durationMs: 1_200,

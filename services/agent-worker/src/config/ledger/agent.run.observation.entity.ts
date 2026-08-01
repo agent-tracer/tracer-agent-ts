@@ -33,9 +33,6 @@ export class AgentRunObservationEntity {
     @Column({ name: "prompt_version", type: "text" })
     promptVersion!: string;
 
-    @Column({ name: "prompt_content_hash", type: "text" })
-    promptContentHash!: string;
-
     @Column({ name: "tool_contract_version", type: "text" })
     toolContractVersion!: string;
 
@@ -85,7 +82,6 @@ export function toAgentRunObservationRow(
     row.modelRequested = observation.modelRequested;
     row.modelActual = observation.modelActual;
     row.promptVersion = observation.promptVersion;
-    row.promptContentHash = observation.promptContentHash;
     row.toolContractVersion = observation.toolContractVersion;
     row.status = observation.status;
     row.durationMs = observation.durationMs;

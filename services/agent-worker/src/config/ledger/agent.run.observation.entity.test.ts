@@ -13,7 +13,6 @@ const observation: AgentRunObservation = {
     modelRequested: "claude-requested",
     modelActual: "claude-actual",
     promptVersion: "v3",
-    promptContentHash: "sha256:abc",
     toolContractVersion: "tools-v2",
     status: "succeeded",
     durationMs: 120,
