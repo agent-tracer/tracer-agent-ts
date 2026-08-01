@@ -10,6 +10,7 @@ import { TrajectoryRecorder } from "~llm/observability/trajectory.js";
 import { estimateCostUsd } from "~llm/pricing/pricing.js";
 import { landingDirective } from "~llm/runner/landing.directive.js";
 import type { AgentQueryRequest, AgentQueryResult, IQueryRunner } from "~llm/runner/llm.runner.js";
+import { redactText } from "~llm/support/redaction.js";
 import { logWarn } from "@tracer-agent/platform";
 import { buildAgentEnv } from "./claude.env.js";
 import { resolveClaudeExecutablePath } from "./claude.executable.js";
@@ -22,7 +23,7 @@ import {
 } from "./claude.query.mappers.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
 import { partialAssistantDeltaText } from "./claude.stream.delta.js";
-import { createClaudeRunTree, finishClaudeRunTree, redactSecretText } from "./claude.trace.js";
+import { createClaudeRunTree, finishClaudeRunTree } from "./claude.trace.js";
 
 /** Claude Agent SDK로 도구 사용 질의를 실행한다. */
 export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
@@ -232,7 +233,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 errorSummary = "query aborted (parent signal or external cancellation)";
             } else {
                 errorSubtype = AGENT_ERROR_SUBTYPE.processError;
-                errorSummary = redactSecretText(err instanceof Error ? err.message : String(err));
+                errorSummary = redactText(err instanceof Error ? err.message : String(err));
             }
         } finally {
             deadline.dispose();

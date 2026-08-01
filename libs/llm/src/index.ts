@@ -24,6 +24,7 @@ export * from "./runner/llm.runner.js";
 export * from "./runner/structured.query.js";
 export * from "./support/contract.js";
 export * from "./support/parse.json.js";
+export * from "./support/redaction.js";
 export * from "./support/sha256.js";
 export * from "./tool/claude.output.schema.js";
 export * from "./tool/claude.subagent.catalog.js";

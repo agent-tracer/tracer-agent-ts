@@ -76,35 +76,33 @@ describe("추적 원문 공개", () => {
         expect(capturedClientOptions[0]).toEqual({ hideInputs: true, hideOutputs: true });
     });
 
-    it("공개 프로파일에서도 입력의 자격 증명과 식별자를 가린다", async () => {
+    it("공개 프로파일에서도 걸린 입력을 통째로 내보내지 않는다", async () => {
         await createClaudeRunTree(request(), true);
 
         const options = capturedClientOptions[0];
-        if (typeof options?.hideInputs !== "function") throw new Error("hideInputs must redact when disclosed");
-        const redacted = options.hideInputs(SECRET_FIXTURE);
+        if (typeof options?.hideInputs !== "function") throw new Error("hideInputs must narrow when disclosed");
 
-        const serialized = JSON.stringify(redacted);
-        expect(serialized).not.toContain("sk-ant-live-should-not-leak");
-        expect(serialized).not.toContain("lsv2_should-not-leak");
-        expect(serialized).not.toContain("callback-should-not-leak");
-        expect(serialized).not.toContain("scope-should-not-leak");
-        expect(serialized).not.toContain("user-should-not-leak");
-        expect(redacted.prompt).toBe("평범한 프롬프트 본문");
+        expect(options.hideInputs(SECRET_FIXTURE)).toEqual({});
     });
 
-    it("공개 프로파일에서도 출력의 같은 비밀 패턴을 가린다", async () => {
+    it("공개 프로파일에서도 걸린 출력을 통째로 내보내지 않는다", async () => {
         await createClaudeRunTree(request(), true);
 
         const options = capturedClientOptions[0];
-        if (typeof options?.hideOutputs !== "function") throw new Error("hideOutputs must redact when disclosed");
-        const redacted = options.hideOutputs(SECRET_FIXTURE);
+        if (typeof options?.hideOutputs !== "function") throw new Error("hideOutputs must narrow when disclosed");
 
-        const serialized = JSON.stringify(redacted);
-        expect(serialized).not.toContain("sk-ant-live-should-not-leak");
-        expect(serialized).not.toContain("lsv2_should-not-leak");
-        expect(serialized).not.toContain("callback-should-not-leak");
-        expect(serialized).not.toContain("scope-should-not-leak");
-        expect(serialized).not.toContain("user-should-not-leak");
+        expect(options.hideOutputs(SECRET_FIXTURE)).toEqual({});
+    });
+
+    it("공개 프로파일에서 걸리지 않은 payload 는 원문 그대로 내보낸다", async () => {
+        await createClaudeRunTree(request(), true);
+
+        const options = capturedClientOptions[0];
+        if (typeof options?.hideInputs !== "function") throw new Error("hideInputs must narrow when disclosed");
+
+        expect(options.hideInputs({ prompt: "평범한 프롬프트 본문" })).toEqual({
+            prompt: "평범한 프롬프트 본문",
+        });
     });
 
     it("추적 시작 실패를 모델 실행 경로로 전파하지 않는다", async () => {
