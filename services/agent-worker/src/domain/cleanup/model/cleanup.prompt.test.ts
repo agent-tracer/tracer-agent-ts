@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
-import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
+import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { CLEANUP_PROMPT } from "~agent-worker/domain/cleanup/port/__fakes__/cleanup.test-support.js";
 import {
     buildCleanupInspectSystemPrompt,
@@ -19,6 +21,12 @@ import { CLEANUP_MAX_EVIDENCE_EVENT_IDS } from "./cleanup.tool.schema.js";
 
 const DECLARED = readAgentPrompt(AGENT.taskCleanup.id);
 const LIMITS = readAgentTools(AGENT.taskCleanup.id).limits ?? {};
+const LANGUAGE = readAgentCases<{ language: AgentLanguageCases }>(AGENT.taskCleanup.id).language;
+
+/** 계약이 그 언어 변형에 적은 조각 본문이며 조립 결과가 이 본문을 그대로 실어야 한다. */
+function variant(name: string): string {
+    return (DECLARED.fragments[LANGUAGE.fragment]?.byLanguage?.[name] ?? []).join("\n");
+}
 
 /** 슬롯마다 그 이름만 담은 프롬프트라 조립 결과에서 어느 슬롯을 썼는지 그대로 읽힌다. */
 function labelled(): AgentPrompt {
@@ -67,6 +75,17 @@ describe("정리 제안 프롬프트", () => {
         expect(used(buildCleanupInspectSystemPrompt(labelled()))).toEqual(
             declaredSlots(CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY).sort(),
         );
+    });
+
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+        for (const declared of LANGUAGE.cases) {
+            const expected = variant(declared.expect.variant);
+            const language = normalizeOutputLanguage(declared.input.language);
+            const rendered = buildCleanupSystemPrompt(CLEANUP_PROMPT, language);
+
+            expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
+            expect(rendered, declared.expect.variant).toContain(expected);
+        }
     });
 
     it("자리표시자를 계약의 상한 값으로 치환한다", () => {
