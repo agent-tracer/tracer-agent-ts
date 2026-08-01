@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { describe, expect, it } from "vitest";
 import { JOB_KIND } from "~agent-api/domain/job/model/job.const.js";
 import { FakeJobSettingReader } from "~agent-api/domain/job/port/__fakes__/fake.job.setting.reader.js";
@@ -56,6 +57,28 @@ describe("EnqueueJobUseCase", () => {
 
         expect(job).toMatchObject({ id: "job-id-1", kind: JOB_KIND.recipeScan, status: "pending", executor: "temporal" });
         expect(dispatcher.started).toEqual([{ kind: JOB_KIND.recipeScan, jobId: "job-id-1", input: { taskId: "task-1" } }]);
+    });
+
+    it("접수한 잡이 아직 대기 중이어도 원장에 이 접수구의 축을 갖는다", async () => {
+        const { useCase, jobs } = makeHarness();
+
+        const { job } = await useCase.execute("local", JOB_KIND.recipeScan, { taskId: "task-1" });
+        const stored = await jobs.findById("job-id-1");
+
+        expect(job.status).toBe("pending");
+        expect(job.backend).toBe(AGENT_BACKEND);
+        expect(stored?.backend).toBe(AGENT_BACKEND);
+    });
+
+    it("워크플로를 기동하지 않는 종류도 원장에 축을 갖는다", async () => {
+        const { useCase } = makeHarness();
+
+        const { job } = await useCase.execute("local", JOB_KIND.ruleGeneration, {
+            taskId: "task-1",
+            anchorEventId: "e1",
+        });
+
+        expect(job.backend).toBe(AGENT_BACKEND);
     });
 
     it("입력에 실린 태스크를 컬럼으로 올린다", async () => {

@@ -1,3 +1,4 @@
+import type { AgentAxis } from "@tracer-agent/llm";
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 import type { JobExecutor, JobKind, JobStatus } from "~agent-api/domain/job/model/job.const.js";
 import { Job } from "~agent-api/domain/job/model/job.model.js";
@@ -10,6 +11,9 @@ import { Job } from "~agent-api/domain/job/model/job.model.js";
     where: "\"status\" = 'running' AND \"lease_expires_at\" IS NOT NULL",
 })
 @Index("ai_jobs_active_status_kind_executor", ["status", "kind", "executor"], {
+    where: "\"status\" IN ('pending', 'running')",
+})
+@Index("ai_jobs_active_backend", ["backend", "kind"], {
     where: "\"status\" IN ('pending', 'running')",
 })
 @Index("ai_jobs_idempotency_key", ["userId", "kind", "idempotencyKey"], {
@@ -28,6 +32,9 @@ export class JobEntity {
 
     @Column({ type: "text" })
     executor!: JobExecutor;
+
+    @Column({ type: "text" })
+    backend!: AgentAxis;
 
     @Column({ type: "text" })
     status!: JobStatus;
@@ -81,6 +88,7 @@ export function toJob(row: JobEntity): Job {
     job.userId = row.userId;
     job.kind = row.kind;
     job.executor = row.executor;
+    job.backend = row.backend;
     job.status = row.status;
     job.attempts = row.attempts;
     job.taskId = row.taskId;
@@ -105,6 +113,7 @@ export function toJobRow(job: Job): JobEntity {
     row.userId = job.userId;
     row.kind = job.kind;
     row.executor = job.executor;
+    row.backend = job.backend;
     row.status = job.status;
     row.attempts = job.attempts;
     row.taskId = job.taskId;

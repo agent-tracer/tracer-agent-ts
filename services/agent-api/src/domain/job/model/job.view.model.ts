@@ -1,3 +1,4 @@
+import type { AgentAxis } from "@tracer-agent/llm";
 import type { JobExecutor, JobKind, JobStatus } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
 
@@ -7,6 +8,7 @@ export interface JobDto {
     readonly userId: string;
     readonly kind: JobKind;
     readonly executor: JobExecutor;
+    readonly backend: AgentAxis;
     readonly status: JobStatus;
     readonly attempts: number;
     readonly taskId: string | null;
@@ -31,6 +33,7 @@ export function mapJob(job: Job): JobDto {
         userId: job.userId,
         kind: job.kind,
         executor: job.executor,
+        backend: job.backend,
         status: job.status,
         attempts: job.attempts,
         taskId: job.taskId,

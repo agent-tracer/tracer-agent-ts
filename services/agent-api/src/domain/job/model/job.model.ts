@@ -1,3 +1,4 @@
+import { AGENT_BACKEND, type AgentAxis } from "@tracer-agent/llm";
 import { InvariantViolationError } from "@tracer-agent/platform";
 import {
     isCancelableJobStatus,
@@ -25,6 +26,9 @@ export class Job {
     kind!: JobKind;
 
     executor!: JobExecutor;
+
+    /** 이 잡을 받은 접수구의 축이며 접수 본문이 싣는 값이 아니다. */
+    backend!: AgentAxis;
 
     status!: JobStatus;
 
@@ -70,6 +74,7 @@ export class Job {
         job.userId = userId;
         job.kind = kind;
         job.executor = JOB_EXECUTOR[kind];
+        job.backend = AGENT_BACKEND;
         job.status = JOB_STATUS.pending;
         job.attempts = 0;
         job.taskId = extractTaskId(input);
