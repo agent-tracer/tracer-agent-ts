@@ -1,7 +1,4 @@
-import type { PromptFragmentManifestEntry } from "@tracer-agent/llm";
-import {
-    buildPromptFragmentManifest, definePromptFragment, type PromptFragmentBindingSpec,
-} from "~agent-worker/support/prompt.fragment.js";
+import { definePromptFragment } from "~agent-worker/support/prompt.fragment.js";
 
 export const CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY = "chat.assistant.system";
 
@@ -46,25 +43,3 @@ export const CHAT_MEMORY_RULE = defineChatFragment(
         "works, never one-off details of the current task.",
     ].join("\n"),
 );
-
-const CHAT_PROMPT_FRAGMENT_BINDINGS: readonly PromptFragmentBindingSpec[] = [
-    {
-        templateKey: CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
-        fragmentSlot: "toolExecutionSemantics",
-        fragment: CHAT_TOOL_EXECUTION_SEMANTICS,
-    },
-    {
-        templateKey: CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
-        fragmentSlot: "groundingRules",
-        fragment: CHAT_GROUNDING_RULES,
-    },
-    {
-        templateKey: CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
-        fragmentSlot: "memoryRule",
-        fragment: CHAT_MEMORY_RULE,
-    },
-];
-
-/** 조립 근원이 등록 경계에 건네는 대화 프롬프트 조각 manifest다. */
-export const CHAT_PROMPT_FRAGMENT_MANIFEST: readonly PromptFragmentManifestEntry[] =
-    buildPromptFragmentManifest("chat", CHAT_PROMPT_FRAGMENT_BINDINGS);

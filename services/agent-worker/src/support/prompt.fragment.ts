@@ -1,10 +1,6 @@
-import {
-    computePromptFragmentHash, extractPromptFragmentPlaceholders, type PromptFragmentManifestEntry,
-} from "@tracer-agent/llm";
+import { computePromptFragmentHash, extractPromptFragmentPlaceholders } from "@tracer-agent/llm";
 
 const FRAGMENT_LANGUAGE = "en";
-const TOOL_CONTRACT_VERSION = "1";
-const OUTPUT_SCHEMA_VERSION = "1";
 
 export interface PromptFragmentDefault {
     readonly codeName: string;
@@ -53,23 +49,4 @@ export function renderPromptFragment(
         if (value === undefined) throw new Error(`unknown prompt placeholder: ${name}`);
         return String(value);
     });
-}
-
-export function buildPromptFragmentManifest(
-    agentName: string,
-    bindings: readonly PromptFragmentBindingSpec[],
-): readonly PromptFragmentManifestEntry[] {
-    return bindings.map(({ fragment, templateKey, fragmentSlot }) => ({
-        backend: "claude-sdk",
-        agentName,
-        language: FRAGMENT_LANGUAGE,
-        codeName: fragment.codeName,
-        definitionKey: fragment.definitionKey,
-        fragmentName: fragmentSlot,
-        defaultVersion: fragment.defaultVersion,
-        defaultContent: fragment.defaultContent,
-        toolContractVersion: TOOL_CONTRACT_VERSION,
-        outputSchemaVersion: OUTPUT_SCHEMA_VERSION,
-        bindings: [{ templateKey, fragmentSlot }],
-    }));
 }

@@ -1,6 +1,4 @@
-import type { PromptFragmentManifestEntry } from "@tracer-agent/llm";
 import {
-    buildPromptFragmentManifest,
     definePromptFragment,
     type PromptFragmentBindingSpec,
 } from "~agent-worker/support/prompt.fragment.js";
@@ -84,6 +82,3 @@ export const CLEANUP_PROMPT_FRAGMENT_BINDINGS: readonly PromptFragmentBindingSpe
     },
 ];
 
-/** 조립 근원이 등록 경계에 건네는 task-cleanup 프롬프트 조각 manifest다. */
-export const CLEANUP_PROMPT_FRAGMENT_MANIFEST: readonly PromptFragmentManifestEntry[] =
-    buildPromptFragmentManifest("task-cleanup", CLEANUP_PROMPT_FRAGMENT_BINDINGS);

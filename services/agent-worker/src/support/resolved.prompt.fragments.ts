@@ -8,16 +8,16 @@ import {
     type ResolvedPromptBundleHash,
     type ResolvedPromptFragment,
 } from "@tracer-agent/llm";
-import type { PromptFragmentDefault } from "./prompt.fragment.js";
+import { renderPromptFragment, type PromptFragmentDefault } from "./prompt.fragment.js";
 
 const PLACEHOLDER = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
-/** 실행 하나가 쓴 조각을 모으며 조각마다 무결성을 검사하고 마지막에 해시를 낸다. */
+/** 실행 하나가 쓴 조각을 모으며 실행 밖에서 실려 온 조각은 무결성을 검사하고 마지막에 해시를 낸다. */
 export class PromptFragmentRunResolver {
     private readonly used: ResolvedPromptFragment[] = [];
 
     constructor(
-        private readonly fragments: readonly ResolvedPromptFragment[],
+        private readonly fragments: readonly ResolvedPromptFragment[] = [],
         private readonly expected?: string | ResolvedPromptBundleHash,
     ) {}
 
@@ -30,7 +30,7 @@ export class PromptFragmentRunResolver {
         const resolved = this.fragments.find(
             (entry) => entry.templateKey === templateKey && entry.fragmentSlot === fragmentSlot,
         );
-        if (resolved === undefined) throw new Error(`prompt-fragment.missing:${templateKey}/${fragmentSlot}`);
+        if (resolved === undefined) return renderPromptFragment(local, placeholderValues);
         if (resolved.definitionKey !== local.definitionKey) {
             throw new Error("prompt-fragment.definition-mismatch");
         }

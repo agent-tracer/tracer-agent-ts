@@ -11,6 +11,7 @@ import {
     type ClaudeQueryOptions,
     type IQueryRunner,
     type JobStepPayload,
+    type ResolvedPromptFragment,
 } from "@tracer-agent/llm";
 import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import {
@@ -27,7 +28,6 @@ import type {
     ChatTurnSink,
 } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.port.js";
-import type { ChatPromptFragmentSnapshotPort } from "~agent-worker/domain/chat/port/chat.prompt.fragment.snapshot.port.js";
 import { buildChatMemoryToolHandlers } from "./chat.memory.tools.js";
 import { buildChatReadToolHandlers } from "./chat.read.tools.js";
 import { chatAgentReadToolNames } from "./chat.tool.gate.js";
@@ -42,7 +42,6 @@ export class ChatAgentAdapter implements ChatAgentPort {
         private readonly tracerApi: TracerApiClient,
         private readonly memoryApi: TracerApiClient,
         private readonly agentApiBaseUrl: string,
-        private readonly promptFragments: ChatPromptFragmentSnapshotPort,
     ) {}
 
     requiresLocalApiKey(): boolean {
@@ -174,18 +173,15 @@ export class ChatAgentAdapter implements ChatAgentPort {
         };
     }
 
-    private resolvePromptFragments(input: ChatTurnInput) {
+    /** 봉투가 조각을 싣지 않으면 조립이 코드 기본값을 쓴다는 뜻이라 빈 목록을 낸다. */
+    private resolvePromptFragments(input: ChatTurnInput): readonly ResolvedPromptFragment[] {
         if (input.promptIntegrity?.mode === "full-prompt") {
             throw new Error("chat.prompt-fragment.full-prompt-integrity-rejected");
         }
         if (input.promptIntegrity?.mode === "fragment-content-only") {
             throw new Error("chat.prompt-fragment.content-only-integrity-rejected");
         }
-        const fragments = input.promptIntegrity?.mode === "resolved-fragments"
-            ? input.promptIntegrity.fragments
-            : this.promptFragments.read();
-        this.promptFragments.validate(fragments);
-        return fragments;
+        return input.promptIntegrity?.mode === "resolved-fragments" ? input.promptIntegrity.fragments : [];
     }
 }
 

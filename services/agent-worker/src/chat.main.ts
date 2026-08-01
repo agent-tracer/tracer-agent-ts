@@ -23,9 +23,6 @@ import {
 import { ChatExecutionSinkFactory } from "~agent-worker/domain/chat/adapter/chat.execution.sink.js";
 import { ChatExecutionStepEntity } from "~agent-worker/domain/chat/adapter/chat.execution.step.entity.js";
 import { ChatExecutionUpdatePublisher } from "~agent-worker/domain/chat/adapter/chat.execution.update.publisher.js";
-import { initializeChatPromptFragments } from "~agent-worker/domain/chat/adapter/chat.prompt.fragment.bootstrap.js";
-import { ChatPromptFragmentRegistryAdapter } from "~agent-worker/domain/chat/adapter/chat.prompt.fragment.registry.adapter.js";
-import { ChatPromptFragmentSnapshot } from "~agent-worker/domain/chat/adapter/chat.prompt.fragment.snapshot.js";
 import { ChatReplayClient } from "~agent-worker/domain/chat/adapter/chat.replay.client.js";
 import { ChatScheduler } from "~agent-worker/domain/chat/adapter/chat.scheduler.js";
 import { ChatSettingReaderAdapter } from "~agent-worker/domain/chat/adapter/chat.setting.reader.adapter.js";
@@ -82,13 +79,7 @@ async function bootstrap(): Promise<void> {
     const agentApiBaseUrl = resolveAgentApiUrl(config.agentApi.port);
     // 장기기억 원장은 에이전트 서비스가 소유하므로 계약이 선언한 같은 경로를 이 기점으로 부른다.
     const memoryApi = new TracerApiClient(agentApiBaseUrl);
-    const promptFragments = new ChatPromptFragmentSnapshot();
-    await initializeChatPromptFragments(
-        promptFragments,
-        new ChatPromptFragmentRegistryAdapter(agentApiBaseUrl),
-        config.profile,
-    );
-    const agent = new ChatAgentAdapter(runner, tracerApi, memoryApi, agentApiBaseUrl, promptFragments);
+    const agent = new ChatAgentAdapter(runner, tracerApi, memoryApi, agentApiBaseUrl);
     const summarizer = new ChatSummarizerAdapter(new ClaudeQueryRunner(isLocal, isLocal));
     const scheduler = new ChatScheduler();
     const events = new ChatExecutionUpdatePublisher(producer);
