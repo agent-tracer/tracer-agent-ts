@@ -68,7 +68,6 @@ export interface AgentQueryObservationContext {
     readonly executionId?: string;
     readonly attemptId?: string;
     readonly promptVersion?: string;
-    readonly promptContentHash?: string;
     readonly toolContractVersion?: string;
 }
 

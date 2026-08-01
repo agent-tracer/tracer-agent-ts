@@ -32,7 +32,7 @@ function result(overrides: Partial<AgentQueryResult> = {}): AgentQueryResult {
 const input = {
     executionId: "exec-1", attemptId: "attempt-1", jobId: "job-1",
     agentName: "title-suggestion",
-    modelRequested: "claude-requested", promptVersion: "v3", promptContentHash: "sha256:abc",
+    modelRequested: "claude-requested", promptVersion: "v3",
     toolContractVersion: "tools-v2", modelCallId: "model-call-1",
     repairAttempted: false,
     validation: { passed: true, errorCodes: [], citationPrecision: null, citationRecall: null },

@@ -8,7 +8,7 @@ import {
 
 const observation = {
     executionId: "exec-1", attemptId: "attempt-1",
-    promptVersion: "prompt-v1", promptContentHash: "sha256:abc",
+    promptVersion: "prompt-v1",
     toolContractVersion: "tools-v1", modelCallId: "call-1",
 };
 
@@ -26,7 +26,6 @@ describe("공통 관측 span 속성", () => {
             [AGENT_TRACER_ATTR.executionId]: "exec-1",
             [AGENT_TRACER_ATTR.attemptId]: "attempt-1",
             [AGENT_TRACER_ATTR.promptVersion]: "prompt-v1",
-            [AGENT_TRACER_ATTR.promptHash]: "sha256:abc",
             [AGENT_TRACER_ATTR.toolContractVersion]: "tools-v1",
             [AGENT_TRACER_ATTR.modelCallId]: "call-1",
         });

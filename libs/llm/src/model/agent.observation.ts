@@ -71,7 +71,6 @@ export interface AgentRunObservation extends AgentAttemptIdentity {
     readonly modelRequested: string;
     readonly modelActual: string | null;
     readonly promptVersion: string;
-    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly status: AgentRunObservationStatus;
     readonly durationMs: number;

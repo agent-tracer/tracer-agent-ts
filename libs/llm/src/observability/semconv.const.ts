@@ -23,7 +23,6 @@ export const AGENT_TRACER_ATTR = {
     attemptId: "agent_tracer.attempt.id",
     modelCallId: "agent_tracer.model_call.id",
     promptVersion: "agent_tracer.prompt.version",
-    promptHash: "agent_tracer.prompt.hash",
     toolContractVersion: "agent_tracer.tool.contract.version",
     jobKind: "agent_tracer.job.kind",
     backend: "agent_tracer.backend",

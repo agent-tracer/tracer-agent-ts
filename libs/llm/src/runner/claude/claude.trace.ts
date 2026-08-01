@@ -66,7 +66,6 @@ export async function createClaudeRunTree(
                     "agent_tracer.backend": "typescript",
                     "agent_tracer.model.requested": request.model,
                     "agent_tracer.prompt.version": request.observation?.promptVersion,
-                    "agent_tracer.prompt.content_hash": request.observation?.promptContentHash,
                     "agent_tracer.tool.contract.version": request.observation?.toolContractVersion,
                     "agent_tracer.job.id": request.jobId,
                     "agent_tracer.execution.id": request.observation?.executionId,

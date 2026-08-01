@@ -15,7 +15,6 @@ export interface ClaudeObservationInput extends AgentAttemptIdentity {
     readonly agentName: string;
     readonly modelRequested: string;
     readonly promptVersion: string;
-    readonly promptContentHash: string;
     readonly toolContractVersion: string;
     readonly modelCallId?: string;
     readonly repairAttempted: boolean;
@@ -38,7 +37,6 @@ export function buildClaudeRunObservation(
         modelRequested: input.modelRequested,
         modelActual: result.actualModel,
         promptVersion: input.promptVersion,
-        promptContentHash: input.promptContentHash,
         toolContractVersion: input.toolContractVersion,
         status,
         durationMs: result.durationMs,

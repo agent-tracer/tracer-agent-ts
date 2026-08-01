@@ -29,7 +29,6 @@ export interface AgentTelemetryIdentity {
     readonly executionId?: string;
     readonly attemptId?: string;
     readonly promptVersion?: string;
-    readonly promptContentHash?: string;
     readonly toolContractVersion?: string;
     readonly modelCallId?: string;
 }
@@ -124,7 +123,6 @@ function buildObservationAttributes(input: AgentTelemetryIdentity | undefined): 
         [AGENT_TRACER_ATTR.executionId]: input.executionId,
         [AGENT_TRACER_ATTR.attemptId]: input.attemptId,
         [AGENT_TRACER_ATTR.promptVersion]: input.promptVersion,
-        [AGENT_TRACER_ATTR.promptHash]: input.promptContentHash,
         [AGENT_TRACER_ATTR.toolContractVersion]: input.toolContractVersion,
         [AGENT_TRACER_ATTR.modelCallId]: input.modelCallId,
     });
