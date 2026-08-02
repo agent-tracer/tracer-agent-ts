@@ -5,7 +5,9 @@ import { readAgentCases, readAgentOutput } from "~agent-worker/support/contract.
 import { outputSchemaShape } from "~agent-worker/support/output.schema.shape.js";
 import { recipeCandidatesListSchema } from "./recipe.scan.schema.js";
 
-const RESULT_EXAMPLE = readAgentCases<{ resultExample: unknown }>(AGENT.recipeScan.id).resultExample;
+const RESULT_EXAMPLE = readAgentCases<{ resultExample: Record<string, unknown> }>(
+    AGENT.recipeScan.id,
+).resultExample;
 
 describe("레시피 후보 출력 스키마", () => {
     it("칸 이름과 필수 여부와 열거값이 계약과 같다", () => {
@@ -18,6 +20,7 @@ describe("레시피 후보 출력 스키마", () => {
     it("계약이 예시로 적은 최종 출력을 그대로 받아 그대로 돌려준다", () => {
         const parsed = recipeCandidatesListSchema.parse(RESULT_EXAMPLE);
 
-        expect(JSON.parse(JSON.stringify(parsed))).toEqual(RESULT_EXAMPLE);
+        // 예시는 더 파견할 전문가가 없는 종결 산출이라 redispatch를 적지 않았고, 배타 스키마가 빈 배열을 채운다.
+        expect(JSON.parse(JSON.stringify(parsed))).toEqual({ ...RESULT_EXAMPLE, redispatch: [] });
     });
 });

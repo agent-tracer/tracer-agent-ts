@@ -257,6 +257,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
   }
 }
 
+// 산출 배타를 스키마가 강제하므로 redispatch가 채워졌다면 recipes는 이미 비어 있다.
 function wantsRedispatch(synthesis: RecipeSynthesis): boolean {
-  return synthesis.recipes.length === 0 && synthesis.redispatch.length > 0;
+  return synthesis.redispatch.length > 0;
 }

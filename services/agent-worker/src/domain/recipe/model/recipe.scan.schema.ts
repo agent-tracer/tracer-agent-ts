@@ -1,5 +1,18 @@
 import { z } from "zod";
-import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
+import { MAX_PROBE_WEIGHT, MAX_REDISPATCH_PROBES, RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
+
+export const RECIPE_PROBE_NAMES = ["timeline", "rules", "repetition"] as const;
+
+export type RecipeProbeName = (typeof RECIPE_PROBE_NAMES)[number];
+
+export const MAX_PROBE_QUESTION_CHARS = 300;
+
+/** 전문가에게 추가 조사를 맡기는 배정 하나이며 최종 출력의 redispatch 칸이 이 모양을 담는다. */
+export const probeAssignmentSchema = z.object({
+    probe: z.enum(RECIPE_PROBE_NAMES),
+    weight: z.number().int().min(1).max(MAX_PROBE_WEIGHT),
+    question: z.string().trim().min(1).max(MAX_PROBE_QUESTION_CHARS),
+});
 
 /** 스텝 하나의 이행을 원장 이벤트로 확인할 수 있게 하는 관측 가능한 신호다. */
 const verifyCommandSchema = z.object({
@@ -73,9 +86,15 @@ const candidateSchema = z.object({
 });
 
 /** 어느 구현체로 실행하든 스캔 한 번이 돌려주는 구조화 출력이며 모양은 계약이 소유한다. */
-export const recipeCandidatesListSchema = z.object({
-    recipes: z.array(candidateSchema).max(RECIPE_CANDIDATE_LIMIT).default([]),
-});
+export const recipeCandidatesListSchema = z
+    .object({
+        recipes: z.array(candidateSchema).max(RECIPE_CANDIDATE_LIMIT).default([]),
+        redispatch: z.array(probeAssignmentSchema).max(MAX_REDISPATCH_PROBES).default([]),
+    })
+    .refine((value) => value.recipes.length === 0 || value.redispatch.length === 0, {
+        message: "recipes and redispatch cannot both be non-empty",
+        path: ["redispatch"],
+    });
 
 export type RecipeStepPayload = z.infer<typeof stepSchema>;
 export type RecipeCorrectionPayload = z.infer<typeof correctionSchema>;
@@ -83,4 +102,5 @@ export type RecipePitfallPayload = z.infer<typeof pitfallSchema>;
 export type RecipeTouchedFilePayload = z.infer<typeof touchedFileSchema>;
 export type RecipeSlicePayload = z.infer<typeof sliceSchema>;
 export type RecipeCandidatePayload = z.infer<typeof candidateSchema>;
+export type ProbeAssignment = z.infer<typeof probeAssignmentSchema>;
 export type RecipeCandidatesList = z.infer<typeof recipeCandidatesListSchema>;
