@@ -2,6 +2,7 @@ import {
   type StructuredQueryResult,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
+import { SURVEY_WALL_CLOCK_MS } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import {
   buildRecipeSurveyPrompt,
   buildRecipeSurveySystemPrompt,
@@ -35,5 +36,6 @@ export function runRecipeSurvey(
     handlers: {},
     outputSchema: dispatchPlanSchema,
     lease,
+    deadlineMs: SURVEY_WALL_CLOCK_MS,
   });
 }

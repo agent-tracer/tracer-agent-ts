@@ -59,6 +59,8 @@ export interface RecipeQuerySpec<T, Name extends RecipeScanToolName = RecipeScan
   /** 모델이 볼 JSON Schema와 결과를 검증할 파서가 이 하나에서 함께 나온다. */
   readonly outputSchema: StructuredSchema<T>;
   readonly lease: AgentBudgetLease;
+  /** 이 호출 하나가 쓸 수 있는 벽시계 상한이며 없으면 실행 데드라인 전체다. */
+  readonly deadlineMs?: number;
 }
 
 /** 이 실행이 부를 모델 이름이며, 요청이 모델을 지정하지 않으면 명세의 기본 모델이다. */
@@ -96,7 +98,7 @@ export function runRecipeQuery<T, Name extends RecipeScanToolName>(
       model,
       maxTurns: spec.lease.maxTurns,
       maxOutputTokens: modelMaxOutputTokens(RECIPE_FEATURE, model),
-      deadlineMs: limits.deadlineMs,
+      deadlineMs: spec.deadlineMs ?? limits.deadlineMs,
       // Agent SDK 하위 프로세스의 활동을 사용자 태스크와 구분하도록 출처를 표시한다.
       env: {
         MONITOR_TASK_TITLE: `Agent · ${spec.label}`,

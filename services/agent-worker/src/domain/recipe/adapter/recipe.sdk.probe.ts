@@ -3,6 +3,7 @@ import {
   AgentExecutionFailure,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
+import { weightedWallClockMs } from "~agent-worker/support/llm/agent.deadline.js";
 import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
   buildRecipeProbePrompt,
@@ -16,6 +17,7 @@ import {
 import {
   buildProbeFailureReport,
   probeToolNames,
+  PROBE_WALL_CLOCK_CEILING_MS,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
@@ -61,6 +63,11 @@ export async function runRecipeProbe(
       handlers,
       outputSchema: probeReportSchema,
       lease,
+      deadlineMs: weightedWallClockMs(
+        PROBE_WALL_CLOCK_CEILING_MS,
+        lease.maxBudgetUsd,
+        RECIPE_SCAN_SPEC.limits.maxBudgetUsd,
+      ),
     });
     return {
       report: run.data,

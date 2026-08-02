@@ -1,7 +1,10 @@
 import {
+    featureLimits,
     loadExecutionBudgetContract,
     renderFailureText,
 } from "@tracer-agent/llm";
+import { deadlineFractionMs } from "~agent-worker/support/llm/agent.deadline.js";
+import { RECIPE_FEATURE } from "./recipe.const.js";
 import {
     MAX_PROBE_WEIGHT,
     MAX_VERDICT_CHARS,
@@ -11,6 +14,7 @@ import {
 import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL, type RecipeScanToolName } from "./recipe.tool.schema.js";
 
 const { reservation } = loadExecutionBudgetContract();
+const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
 
 // 첫 실행이 예산을 거의 다 써도 수리가 도구를 쥔 채 출력을 낼 최소 여지는 남긴다.
 export const REPAIR_RESERVED_TURNS = reservation.repair.turns;
@@ -22,6 +26,15 @@ export const SURVEY_BUDGET_SHARE = reservation.survey.budgetShare;
 
 /** 종합에 먼저 떼어 두는, 전문가에게 넘기지 않는 최소 턴이다. */
 export const MIN_SYNTHESIS_TURNS = reservation.synthesisFloor.turns;
+
+/** 조율자가 진전 없이 머무는 상한이다. */
+export const SURVEY_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.15);
+
+/** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 도는 것을 막지 않는다. */
+export const PROBE_WALL_CLOCK_CEILING_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.3);
+
+/** 종합과 수리가 진전 없이 머무는 상한이다. */
+export const SYNTHESIS_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.5);
 
 /** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
 export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;

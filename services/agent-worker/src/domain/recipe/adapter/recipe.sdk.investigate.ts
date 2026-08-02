@@ -5,7 +5,10 @@ import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js
 import {
   buildRecipeSystemPrompt,
 } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
-import { RECIPE_COORDINATOR_TOOLS } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
+import {
+  RECIPE_COORDINATOR_TOOLS,
+  SYNTHESIS_WALL_CLOCK_MS,
+} from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import {
   recipeSynthesisSchema,
   type RecipeSynthesis,
@@ -41,5 +44,6 @@ export function runRecipeSynthesis(
     handlers: buildRecipeToolHandlers(ctx.input.userId, deps, ledger),
     outputSchema: recipeSynthesisSchema,
     lease,
+    deadlineMs: SYNTHESIS_WALL_CLOCK_MS,
   });
 }
