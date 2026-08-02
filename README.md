@@ -1,6 +1,6 @@
 # tracer-agent-ts
 
-에이전트 서비스의 TypeScript 구현이며 계약의 정본입니다. NestJS API가 대화·잡·평가 실행의 접수와 조회와 취소와 스트림을 제공하고, Temporal 워커가 chat·jobs·generate 큐를 각각 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 이 서비스가 소유하며, 실행에 필요한 기록은 추적 API를 HTTP로 읽고 산출물도 같은 경로로 되돌려 보냅니다.
+에이전트 서비스의 TypeScript 구현이며 계약의 정본입니다. NestJS API가 대화와 잡의 접수와 조회와 취소와 스트림을 제공하고, Temporal 워커가 chat·jobs·generate 큐를 각각 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 이 서비스가 소유하며, 실행에 필요한 기록은 추적 API를 HTTP로 읽고 산출물도 같은 경로로 되돌려 보냅니다.
 
 같은 계약을 만족하는 Python 구현이 따로 있고 배포에서 어느 이미지를 올리느냐로 둘 중 하나가 선택됩니다. 두 구현체 사이에 지금 남아 있는 차이는 계약 저장소의 `conformance/cases/divergence.json`이 갖습니다.
 
@@ -9,9 +9,10 @@
 - Claude Agent SDK 기반 대화 실행과 취소·재생·도구 확인
 - Temporal 기반 대화·잡 워크플로와 큐 분리
 - recipe scan, task cleanup, rule generation, title suggestion 에이전트
-- 데이터셋·프롬프트·평가 실험·사람 검토 API
 - 실행 단계·토큰 사용량·비용·모델 호출의 관측 정보 기록
 - 추적 API를 사용하는 도구와 산출물 연동
+- 로컬 실행기가 잡을 가져가고 되돌리는 리스 창구
+- 자격 증명이 답과 초안과 도구 결과로 새지 않도록 가리는 절차
 - OpenTelemetry와 선택적 LangSmith 연동
 
 ## 아키텍처
@@ -152,8 +153,8 @@ tracer-agent-ts/
 │   ├── llm/                     Claude 실행기·가격·관측·오류
 │   └── tracer-client/           추적 API 클라이언트와 API 창
 ├── services/
-│   ├── agent-api/               HTTP 표면과 대화·잡·평가·설정·헬스 슬라이스
-│   └── agent-worker/            Temporal 진입점과 대화·레시피·정리·평가·제목 슬라이스
+│   ├── agent-api/               HTTP 표면과 대화·잡·설정·헬스 슬라이스
+│   └── agent-worker/            Temporal 진입점과 대화·레시피·정리·제목 슬라이스
 ├── scripts/                     경로·린트·의존·커밋 검사
 ├── architecture.manifest.mjs    계층·단위·봉인·예산 규칙의 정본
 ├── llm.yaml                     모델 가격과 카탈로그 입력

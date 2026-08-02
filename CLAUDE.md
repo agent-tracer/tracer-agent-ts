@@ -4,7 +4,7 @@
 
 ## 저장소 역할
 
-NestJS API가 대화·잡·평가 실행을 접수하고 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 `agent-db`가 소유합니다. 추적 데이터와 산출물은 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`와 OpenSearch를 직접 읽지 않습니다.
+NestJS API가 대화와 잡의 실행을 접수하고 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 `agent-db`가 소유합니다. 추적 데이터와 산출물은 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`와 OpenSearch를 직접 읽지 않습니다.
 
 Python 구현은 별도의 저장소입니다. 두 구현체의 현재 차이는 `contract/conformance/cases/divergence.json`이 갖습니다.
 
@@ -51,6 +51,9 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 - chat·jobs·generate 워커를 한 프로세스로 합치지 않습니다.
 - `libs/tracer-client`를 우회해 추적 데이터베이스나 OpenSearch에 직접 접근하지 않습니다.
 - 응답 봉투와 `x-monitor-user` 헤더는 계약의 정본과 일치시킵니다.
+- 잡 리스 창구는 `x-monitor-lease-owner`를 요구하며 쥔 실행기만 종결하거나 반납합니다. 리스 수명은 계약의 `wire/job.kinds.json`이 갖습니다.
+- 가리는 절차와 실행 자격의 모양은 `agent/shared/`의 계약을 읽어 씁니다. 두 구현체가 같은 입력에 같은 글자를 내야 하므로 언어의 기본 동작에 맡기지 않습니다.
+- 사용자에게 닿는 답과 흘려보내는 초안은 내보내기 전에 가립니다. 추적으로만 가리면 추적을 끈 실행에서 원문이 그대로 나갑니다.
 - 새 유스케이스는 테스트와 함께 추가하고 다른 유스케이스를 직접 부르지 않습니다.
 - 파일의 역할을 `.controller.ts`, `.usecase.ts`, `.port.ts`, `.adapter.ts`, `.workflow.ts`, `.activity.ts` 접미사로 드러냅니다.
 - 테스트 없는 유스케이스와 300줄을 넘는 소스 파일을 추가하지 않습니다.
