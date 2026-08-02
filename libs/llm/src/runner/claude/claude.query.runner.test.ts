@@ -236,7 +236,10 @@ describe("출력 한도 전달", () => {
     });
 });
 
-function passedOptions(): { settingSources: readonly string[]; skills: string[] | "all" } {
+function passedOptions(): Record<string, unknown> & {
+    settingSources: readonly string[];
+    skills: string[] | "all";
+} {
     const [call] = queryMock.mock.calls;
     const { options } = call![0] as {
         options: { settingSources: readonly string[]; skills: string[] | "all" };
@@ -291,5 +294,20 @@ describe("프롬프트 캐시 경계", () => {
         await new ClaudeQueryRunner(true).run(request({ systemPrompt: "정적 지침" }));
 
         expect(passedSystemPrompt()).toBe("정적 지침");
+    });
+});
+
+
+describe("도구 표면", () => {
+    it("사전 승인 목록 밖의 도구를 프롬프트 없이 거절하는 모드로 실행한다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request({ allowedTools: ["mcp__monitor-chat__get_task"] }));
+
+        const options = passedOptions();
+        expect(options["permissionMode"]).toBe("dontAsk");
+        expect(options["allowDangerouslySkipPermissions"]).toBeUndefined();
+        expect(options["disallowedTools"]).toEqual(expect.arrayContaining(["Bash", "Write", "Edit"]));
     });
 });

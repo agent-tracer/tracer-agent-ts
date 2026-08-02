@@ -1,4 +1,4 @@
-import { query, SYSTEM_PROMPT_DYNAMIC_BOUNDARY, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
+import { query, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
 import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import { createAgentDeadline, DeadlineExceededError } from "~llm/model/deadline.js";
@@ -23,7 +23,9 @@ import {
     toUsage,
 } from "./claude.query.mappers.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
+import { buildQueryPermissions, reportPermissionDenials } from "./claude.query.permissions.js";
 import { partialAssistantDeltaText } from "./claude.stream.delta.js";
+import { buildSystemPrompt } from "./claude.system.prompt.js";
 import { createClaudeRunTree, finishClaudeRunTree } from "./claude.trace.js";
 
 /** Claude Agent SDK로 도구 사용 질의를 실행한다. */
@@ -99,6 +101,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         const options = request.providerOptions;
         const systemPrompt = buildSystemPrompt(request, options);
         const executablePath = resolveClaudeExecutablePath();
+        const permissions = buildQueryPermissions(request.allowedTools, request.disallowedTools);
 
         const stream = query({
             prompt: request.prompt,
@@ -108,8 +111,9 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(options?.cwd !== undefined ? { cwd: options.cwd } : {}),
                 ...(options?.mcpServers !== undefined ? { mcpServers: options.mcpServers } : {}),
                 model: request.model,
-                // allowedTools는 자동 승인 목록이고 tools는 사용 가능한 빌트인 도구 집합이다.
-                allowedTools: [...request.allowedTools],
+                // 자동 승인 목록은 권한 모드를 제약하지 않으므로 모드와 거절 목록이 함께 표면을 잠근다.
+                allowedTools: [...permissions.allowedTools],
+                disallowedTools: [...permissions.disallowedTools],
                 tools: [...(options?.builtInTools ?? [])],
                 maxTurns: request.maxTurns,
                 systemPrompt,
@@ -124,9 +128,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                         ? { CLAUDE_CODE_MAX_OUTPUT_TOKENS: String(request.maxOutputTokens) }
                         : {}),
                 }),
-                // 승인 프롬프트 없이 실행하므로 호출자는 읽기 전용 도구만 허용해야 한다.
-                permissionMode: "bypassPermissions",
-                allowDangerouslySkipPermissions: true,
+                permissionMode: permissions.permissionMode,
                 strictMcpConfig: true,
                 includePartialMessages: request.stream !== undefined,
                 persistSession: false,
@@ -204,6 +206,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     continue;
                 }
                 if (msg.type === "result") {
+                    reportPermissionDenials(request.label, request.jobId ?? null, msg.permission_denials);
                     numTurns = msg.num_turns;
                     costUsd = msg.total_cost_usd;
                     usage = toUsage(msg.usage);
@@ -276,22 +279,4 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         logAgentQuery(request.label, GEN_AI_PROVIDER.anthropic, request.model, result, request.jobId);
         return result;
     }
-}
-
-/** 지침을 정적 접두부와 턴별 맥락으로 나누어 앞쪽만 프롬프트 캐시에 남게 한다. */
-function buildSystemPrompt(
-    request: AgentQueryRequest<ClaudeQueryOptions>,
-    options: ClaudeQueryOptions | undefined,
-): string | string[] | { type: "preset"; preset: "claude_code"; append: string; excludeDynamicSections?: boolean } {
-    const dynamic = request.dynamicSystemPrompt;
-    if (options?.useClaudeCodePreset === true) {
-        return {
-            type: "preset" as const,
-            preset: "claude_code" as const,
-            append: dynamic === undefined ? request.systemPrompt : `${request.systemPrompt}\n\n${dynamic}`,
-            ...(options.excludeDynamicSections === true ? { excludeDynamicSections: true } : {}),
-        };
-    }
-    if (dynamic === undefined) return request.systemPrompt;
-    return [request.systemPrompt, SYSTEM_PROMPT_DYNAMIC_BOUNDARY, dynamic];
 }
