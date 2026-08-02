@@ -211,3 +211,33 @@ describe("출력 한도 전달", () => {
         expect(passedEnv()).not.toHaveProperty("CLAUDE_CODE_MAX_OUTPUT_TOKENS");
     });
 });
+
+function passedOptions(): { settingSources: readonly string[]; skills: string[] | "all" } {
+    const [call] = queryMock.mock.calls;
+    const { options } = call![0] as {
+        options: { settingSources: readonly string[]; skills: string[] | "all" };
+    };
+    return options;
+}
+
+describe("실행 표면", () => {
+    it("운영 프로파일은 컨테이너의 설정과 스킬을 읽지 않는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(false).run(request());
+
+        expect(passedOptions().settingSources).toEqual([]);
+        expect(passedOptions().skills).toEqual([]);
+    });
+
+    it("로컬 프로파일은 사용자 설정과 스킬을 그대로 쓴다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request());
+
+        expect(passedOptions().settingSources).toEqual(["user"]);
+        expect(passedOptions().skills).toBe("all");
+    });
+});

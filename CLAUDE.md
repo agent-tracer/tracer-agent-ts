@@ -32,6 +32,8 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 
 `MONITOR_PROFILE=local`로 API와 세 워커를 모두 실행하면 사용자별 Anthropic API key 없이 사용자의 로컬 Claude CLI 인증을 사용합니다. API는 Claude를 실행하지 않으므로 프로파일만 필요하고, `HOME`과 `CLAUDE_CODE_OAUTH_TOKEN`은 워커의 하위 Claude 프로세스에만 전달됩니다. `prd` 프로파일은 설정 API의 암호화된 Anthropic API key를 사용하며 `MONITOR_SETTINGS_ENCRYPTION_KEY`를 운영 값으로 지정합니다. 이 로컬 CLI 인증 경로는 TypeScript 구현에만 해당합니다.
 
+**두 프로파일은 실행 표면이 다릅니다.** `prd`는 `settingSources`와 `skills`를 비워 컨테이너 `HOME`의 `~/.claude/settings.json`과 디스크의 스킬이 모델·permissions·hooks·도구 표면을 바꾸지 못하게 합니다. `local`은 둘을 그대로 두어 개발자의 CLI 설정과 스킬을 씁니다. 따라서 `local`에서 재현한 도구 표면과 실행 결과가 `prd`와 다를 수 있으며, 표면에 관한 판단은 `prd`로 확인합니다. 운영에 필요한 값은 파일 설정이 아니라 실행기의 질의 옵션으로 명시합니다.
+
 ## 구조와 경계
 
 - `services/agent-api`는 HTTP 표면과 application 슬라이스를 소유합니다.

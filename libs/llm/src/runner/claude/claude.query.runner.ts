@@ -134,7 +134,9 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 strictMcpConfig: true,
                 includePartialMessages: request.stream !== undefined,
                 persistSession: false,
-                settingSources: ["user"],
+                // 운영에서는 컨테이너의 CLI 설정과 스킬이 실행 표면을 바꾸지 못하게 둘 다 비운다.
+                settingSources: this.useLocalCliAuth ? ["user"] : [],
+                skills: this.useLocalCliAuth ? "all" : [],
                 ...(request.effort !== undefined ? { effort: request.effort } : {}),
                 ...(request.maxBudgetUsd !== undefined ? { maxBudgetUsd: request.maxBudgetUsd } : {}),
                 ...(options?.fallbackModel !== undefined ? { fallbackModel: options.fallbackModel } : {}),
