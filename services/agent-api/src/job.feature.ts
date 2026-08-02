@@ -35,6 +35,8 @@ import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.j
 import { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { TRACER_API_WINDOW } from "~agent-api/config/tracer.api.token.js";
 import { RULE_ANCHOR_READER } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
+import { SCAN_ANCHOR_READER } from "~agent-api/domain/job/port/scan.anchor.reader.port.js";
+import { ScanAnchorReaderAdapter } from "~agent-api/domain/job/adapter/scan.anchor.reader.adapter.js";
 import { JOB_SETTING_READER } from "~agent-api/domain/job/port/setting.reader.port.js";
 import { SETTING_REPOSITORY } from "~agent-api/domain/settings/port/setting.repository.port.js";
 import { WORKFLOW_DISPATCHER } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
@@ -68,6 +70,8 @@ export const jobFeature = {
         },
         RuleAnchorReaderAdapter,
         { provide: RULE_ANCHOR_READER, useExisting: RuleAnchorReaderAdapter },
+        ScanAnchorReaderAdapter,
+        { provide: SCAN_ANCHOR_READER, useExisting: ScanAnchorReaderAdapter },
         { provide: JOB_CLOCK, useClass: SystemClock },
         JobUlidGenerator,
         { provide: JOB_ID_GENERATOR, useExisting: JobUlidGenerator },

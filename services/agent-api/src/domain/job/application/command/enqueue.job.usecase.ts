@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { JOB_API_KEY_SETTING, JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import {
+    IneligibleScanAnchorError,
     InvalidRuleAnchorError,
     JobIdempotencyConflictError,
     LlmKeyMissingError,
@@ -14,6 +15,15 @@ import { JOB_ID_GENERATOR, type JobIdGeneratorPort } from "~agent-api/domain/job
 import { JOB_REPOSITORY, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
 import { LOCAL_CLI_AUTH, type LocalCliAuthPort } from "~agent-api/domain/job/port/local.cli.auth.port.js";
 import { RULE_ANCHOR_READER, type RuleAnchorReaderPort } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
+import {
+    SCAN_ANCHOR_READER,
+    type ScanAnchorReaderPort,
+} from "~agent-api/domain/job/port/scan.anchor.reader.port.js";
+import {
+    SCAN_TRIGGER,
+    scanAnchorEligible,
+    type ScanTrigger,
+} from "~agent-api/domain/job/model/scan.anchor.contract.js";
 import { JOB_SETTING_READER, type JobSettingReaderPort } from "~agent-api/domain/job/port/setting.reader.port.js";
 import { WORKFLOW_DISPATCHER, type WorkflowDispatcherPort } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
 
@@ -27,6 +37,7 @@ export class EnqueueJobUseCase {
     constructor(
         @Inject(JOB_REPOSITORY) private readonly jobs: JobRepositoryPort,
         @Inject(RULE_ANCHOR_READER) private readonly anchors: RuleAnchorReaderPort,
+        @Inject(SCAN_ANCHOR_READER) private readonly scanAnchors: ScanAnchorReaderPort,
         @Inject(JOB_SETTING_READER) private readonly settings: JobSettingReaderPort,
         @Inject(WORKFLOW_DISPATCHER) private readonly dispatcher: WorkflowDispatcherPort,
         @Inject(JOB_CLOCK) private readonly clock: ClockPort,
@@ -42,6 +53,7 @@ export class EnqueueJobUseCase {
         options: EnqueueJobOptions = {},
     ): Promise<{ readonly job: JobDto }> {
         if (kind === JOB_KIND.ruleGeneration) await this.validateRuleAnchor(userId, input);
+        if (kind === JOB_KIND.recipeScan) await this.validateScanAnchor(userId, input);
         // 로컬 자격으로 도는 이미지는 API 키가 필요 없어 접수 검사를 건너뛴다.
         if (kind !== JOB_KIND.ruleGeneration && !this.localCliAuth) {
             const apiKey = await this.settings.findByScopeAndKey(userId, JOB_API_KEY_SETTING);
@@ -79,6 +91,17 @@ export class EnqueueJobUseCase {
         const anchor = await this.anchors.findById(userId, anchorEventId);
         if (anchor === null || anchor.taskId !== taskId || !anchor.userMessage) {
             throw new InvalidRuleAnchorError();
+        }
+    }
+
+    /** 자격이 없는 앵커는 접수가 거절해 잡 행도 워커 실행도 서지 않는다. */
+    private async validateScanAnchor(userId: string, input: Record<string, unknown>): Promise<void> {
+        const taskId = readRequiredText(input["taskId"]);
+        if (taskId === null) throw new IneligibleScanAnchorError();
+        // 창구가 남의 태스크를 없는 것으로 내므로 소유자 검사는 그 자리가 갖는다.
+        const anchor = await this.scanAnchors.findById(userId, taskId);
+        if (anchor === null || !scanAnchorEligible(anchor, readScanTrigger(input))) {
+            throw new IneligibleScanAnchorError();
         }
     }
 
@@ -126,4 +149,9 @@ function getErrorCode(error: unknown): string | undefined {
     if (typeof error !== "object" || error === null) return undefined;
     const code = (error as { readonly code?: unknown }).code;
     return typeof code === "string" ? code : undefined;
+}
+
+/** 요청이 표면을 말하지 않으면 계약이 정한 대로 dashboard 로 본다. */
+function readScanTrigger(input: Record<string, unknown>): ScanTrigger {
+    return input["trigger"] === SCAN_TRIGGER.session ? SCAN_TRIGGER.session : SCAN_TRIGGER.dashboard;
 }

@@ -39,3 +39,13 @@ export class JobLeaseHeldError extends DomainError {
         super("Job lease is held by another runner");
     }
 }
+
+/** 스캔의 앵커가 계약이 정한 자격을 갖추지 못했음을 알린다. */
+export class IneligibleScanAnchorError extends DomainError {
+    readonly httpStatus = 400;
+    readonly code = "job.invalid-scan-anchor";
+
+    constructor() {
+        super("Recipe scan requires a completed root user task");
+    }
+}
