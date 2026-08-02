@@ -184,10 +184,20 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                         ...(msg.message.stop_reason !== null ? { stopReason: msg.message.stop_reason } : {}),
                     });
                     if (request.maxBudgetUsd !== undefined) {
-                        // 폴백이 걸리면 실제 응답 모델이 요청 모델과 달라질 수 있어 이 추정은 근사다.
-                        const callCost = estimateCostUsd(request.model, callUsage) ?? 0;
-                        runningCostUsd += callCost;
-                        peakCallCostUsd = Math.max(peakCallCostUsd, callCost);
+                        // 폴백이 걸리면 응답이 요청 모델과 다른 모델에서 오므로 실제 응답 모델로 단가를 고른다.
+                        const pricedModel = msg.message.model || request.model;
+                        const callCost = estimateCostUsd(pricedModel, callUsage);
+                        if (callCost === null) {
+                            // 단가를 모르면 지출이 0으로 세어져 착지가 오지 않으므로 그 사실을 남긴다.
+                            logWarn({
+                                msg: "agent.query.unpriced",
+                                label: request.label,
+                                jobId: request.jobId ?? null,
+                                model: pricedModel,
+                            });
+                        }
+                        runningCostUsd += callCost ?? 0;
+                        peakCallCostUsd = Math.max(peakCallCostUsd, callCost ?? 0);
                         landing = runningCostUsd + peakCallCostUsd >= request.maxBudgetUsd;
                     }
                     continue;

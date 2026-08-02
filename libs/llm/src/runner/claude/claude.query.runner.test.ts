@@ -311,3 +311,40 @@ describe("도구 표면", () => {
         expect(options["disallowedTools"]).toEqual(expect.arrayContaining(["Bash", "Write", "Edit"]));
     });
 });
+
+function assistantFrom(model: string): unknown {
+    return {
+        type: "assistant",
+        message: { content: [{ type: "text", text: "" }], usage: USAGE, stop_reason: null, model },
+        parent_tool_use_id: null,
+        uuid: "u-a",
+        session_id: "s-1",
+    };
+}
+
+describe("예산 착지 판정", () => {
+    // 이 예산은 opus 두 호출은 감당하지 못하고 haiku 두 호출은 감당한다.
+    const BUDGET_USD = 3e-5;
+
+    it("요청보다 비싼 모델이 응답하면 그 모델의 단가로 착지한다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("claude-opus-5"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "claude-haiku-4-5", maxBudgetUsd: BUDGET_USD }),
+        );
+
+        expect(result.landed).toBe(true);
+    });
+
+    it("요청보다 싼 모델이 응답하면 그 모델의 단가로 아직 착지하지 않는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("claude-haiku-4-5"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "claude-opus-5", maxBudgetUsd: BUDGET_USD }),
+        );
+
+        expect(result.landed).toBe(false);
+    });
+});
