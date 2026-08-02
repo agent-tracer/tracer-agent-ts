@@ -10,6 +10,7 @@ import {
     type StructuredQueryResult,
     featureLimits,
     featureModels,
+    modelMaxOutputTokens,
     type LlmToolDefinition,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
@@ -32,7 +33,7 @@ export const RECIPE_SCAN_SPEC = {
         deadlineMs: RECIPE_LIMITS.deadlineMs,
         maxOutputTokens: RECIPE_LIMITS.maxOutputTokens,
         maxBudgetUsd: RECIPE_LIMITS.budgetUsd,
-        effort: "low",
+        effort: RECIPE_LIMITS.effort,
     },
 } as const;
 
@@ -90,7 +91,7 @@ export function runRecipeQuery<T>(
       },
       model,
       maxTurns: spec.lease.maxTurns,
-      maxOutputTokens: limits.maxOutputTokens,
+      maxOutputTokens: modelMaxOutputTokens(RECIPE_FEATURE, model),
       deadlineMs: limits.deadlineMs,
       // Agent SDK 하위 프로세스의 활동을 사용자 태스크와 구분하도록 출처를 표시한다.
       env: {
@@ -101,7 +102,7 @@ export function runRecipeQuery<T>(
           : {}),
       },
       outputSchema: spec.claudeOutputSchema,
-      effort: limits.effort,
+      ...(limits.effort !== undefined ? { effort: limits.effort } : {}),
       ...(spec.lease.maxBudgetUsd !== undefined
         ? { maxBudgetUsd: spec.lease.maxBudgetUsd }
         : {}),

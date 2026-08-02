@@ -5,6 +5,7 @@ export * from "./model/agent.usage.js";
 export * from "./model/deadline.js";
 export * from "./model/execution.budget.schema.js";
 export * from "./model/job.step.js";
+export * from "./model/model.envelope.schema.js";
 export * from "./model/prompt.resolution.js";
 export * from "./observability/agent.run.observation.js";
 export * from "./observability/agent.trajectory.js";

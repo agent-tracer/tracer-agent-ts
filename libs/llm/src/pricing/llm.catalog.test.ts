@@ -1,10 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { featureLimits, featureModels, isPricedModel, modelRate, wireModelRates } from "./llm.catalog.schema.js";
+import {
+    featureLimits,
+    featureModels,
+    isPricedModel,
+    modelMaxOutputTokens,
+    modelRate,
+    wireModelRates,
+} from "./llm.catalog.schema.js";
 
 describe("모델 카탈로그", () => {
     it("대화 기능의 기본 모델과 한도를 낸다", () => {
         expect(featureModels("chat")!.default).toBe("claude-sonnet-4-6");
         expect(featureLimits("chat").maxTurns).toBe(14);
+    });
+
+    it("레시피 스캔 기능이 계약의 effort 어휘로 낮은 노력을 싣는다", () => {
+        expect(featureLimits("recipe-scan").effort).toBe("low");
+    });
+
+    it("모델별 출력 한도가 없으면 기능의 출력 한도로 떨어진다", () => {
+        expect(modelMaxOutputTokens("recipe-scan", "claude-opus-5")).toBe(
+            featureLimits("recipe-scan").maxOutputTokens,
+        );
     });
 
     it("한도를 적지 않은 기능을 거절한다", () => {

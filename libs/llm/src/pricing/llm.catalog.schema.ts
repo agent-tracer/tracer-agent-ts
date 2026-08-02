@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { z } from "zod";
+import { assertModelEnvelopeVocabulary, MODEL_ENVELOPE_EFFORT_VALUES } from "~llm/model/model.envelope.schema.js";
 
 const rateSchema = z.object({
     label: z.string().min(1),
@@ -19,6 +20,10 @@ const limitsSchema = z.object({
     maxOutputTokens: z.number().int().positive(),
     deadlineMs: z.number().int().positive(),
     stallMs: z.number().int().positive().optional(),
+    /** 모델별 출력 한도이며 없는 모델은 이 기능의 maxOutputTokens를 그대로 쓴다. */
+    maxOutputTokensByModel: z.record(z.number().int().positive()).optional(),
+    /** 모델에 실어 보내는 추론 노력 수준이며 없으면 공급자의 기본값을 쓴다. */
+    effort: z.enum(MODEL_ENVELOPE_EFFORT_VALUES).optional(),
 });
 
 const featureSchema = z.object({
@@ -50,6 +55,7 @@ function catalogPath(): string {
 }
 
 function readCatalog(): LlmCatalog {
+    assertModelEnvelopeVocabulary();
     const file = catalogPath();
     const parsed: unknown = parse(fs.readFileSync(file, "utf8"));
     const catalog = catalogSchema.parse(parsed);
@@ -108,4 +114,11 @@ export function featureLimits(feature: string): FeatureLimits {
     const limits = loadLlmCatalog().features[feature]?.limits;
     if (limits === undefined) throw new Error(`llm.yaml: feature ${feature} has no limits`);
     return limits;
+}
+
+/** 모델별 출력 한도가 있으면 그 값을, 없으면 기능의 출력 한도를 낸다. */
+export function modelMaxOutputTokens(feature: string, model: string): number {
+    const limits = featureLimits(feature);
+    const alias = modelAlias(model) ?? model;
+    return limits.maxOutputTokensByModel?.[alias] ?? limits.maxOutputTokens;
 }
