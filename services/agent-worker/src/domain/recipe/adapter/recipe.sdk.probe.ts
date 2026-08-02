@@ -17,6 +17,7 @@ import {
 import {
   buildProbeFailureReport,
   probeToolNames,
+  PROBE_MIN_WALL_CLOCK_FRACTION,
   PROBE_WALL_CLOCK_CEILING_MS,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
@@ -70,6 +71,7 @@ export async function runRecipeProbe(
         PROBE_WALL_CLOCK_CEILING_MS,
         lease.maxBudgetUsd,
         RECIPE_SCAN_SPEC.limits.maxBudgetUsd,
+        PROBE_MIN_WALL_CLOCK_FRACTION,
       ),
     });
     return {

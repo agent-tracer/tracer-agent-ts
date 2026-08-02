@@ -17,11 +17,33 @@ const reservationSchema = z.object({
     synthesisFloor: reservationEntrySchema,
 });
 
+const wallClockSchema = z.object({
+    meaning: z.string().min(1),
+    survey: z.number().gt(0).max(1),
+    probe: z.number().gt(0).max(1),
+    synthesis: z.number().gt(0).max(1),
+    probeMinFraction: z.object({ value: z.number().gt(0).max(1), reason: z.string().min(1) }),
+});
+
+const pricingSchema = z.object({
+    meaning: z.string().min(1),
+    model: z.object({ value: z.enum(["actual", "requested"]), reason: z.string().min(1) }),
+    onUnpricedModel: z.object({
+        value: z.enum(["fail", "ignore"]),
+        reason: z.string().min(1),
+        subtype: z.string().min(1),
+    }),
+});
+
 const executionBudgetSchema = z.object({
     meaning: z.string().min(1),
     reservation: reservationSchema,
+    wallClock: wallClockSchema,
+    pricing: pricingSchema,
 });
 
+export type ExecutionBudgetWallClock = z.infer<typeof wallClockSchema>;
+export type ExecutionBudgetPricing = z.infer<typeof pricingSchema>;
 export type ExecutionBudgetReservationEntry = z.infer<typeof reservationEntrySchema>;
 export type ExecutionBudgetReservation = z.infer<typeof reservationSchema>;
 export type ExecutionBudgetContract = z.infer<typeof executionBudgetSchema>;

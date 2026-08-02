@@ -141,6 +141,17 @@ export function isBudgetExhaustedSubtype(subtype: string | null): boolean {
 }
 
 /** 예약된 몫으로도 모델이 턴이나 비용을 다 써버려 빈 출력조차 내지 못한 실패인지 본다. */
+/** 단가를 모르는 모델이라 이 실행의 예산을 집행할 수 없다. */
+export class UnpricedModelError extends Error {
+    constructor(
+        readonly label: string,
+        readonly model: string,
+    ) {
+        super(`${label} cannot enforce its budget for model ${model}`);
+        this.name = "UnpricedModelError";
+    }
+}
+
 export function isBudgetExhaustedFailure(error: unknown): error is AgentExecutionFailure {
     return error instanceof AgentExecutionFailure && isBudgetExhaustedSubtype(error.errorSubtype);
 }

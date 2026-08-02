@@ -6,6 +6,11 @@ import {
     withInvokeAgentTelemetry,
 } from "@tracer-agent/llm";
 import { AGENT } from "~agent-worker/support/agent.const.js";
+import {
+  recordModelLanded,
+  recordRedispatchRounds,
+  recordValidationFailure,
+} from "~agent-worker/support/llm/execution.metrics.js";
 import { JOB_KIND } from "~agent-worker/support/job.const.js";
 import { ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
 import {
@@ -147,6 +152,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     );
 
     // 조율자가 근거 부족을 지목하면 남은 예산으로 전문가를 다시 호출하고 종합한다.
+    let redispatched = 0;
     for (
       let round = 0;
       round < MAX_REDISPATCH_ROUNDS &&
@@ -178,7 +184,10 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         coordinatorLedger,
         segments,
       );
+      redispatched += 1;
     }
+    recordRedispatchRounds(AGENT.recipeScan.id, redispatched);
+    if (synthesis.landed) recordModelLanded(AGENT.recipeScan.id);
 
     const errors = await withNodeTrajectory(segments, AGENT.recipeScan.id, VALIDATE_NODE, () =>
       Promise.resolve(
@@ -248,6 +257,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       ),
     );
     if (remaining.length > 0) pushValidationFailed(segments, VALIDATE_NODE, remaining.join("; "));
+    recordValidationFailure(AGENT.recipeScan.id, remaining.length === 0);
     return buildRecipeOutput(
       ctx,
       segments,

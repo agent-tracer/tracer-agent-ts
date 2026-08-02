@@ -21,6 +21,7 @@ import {
   runRecipeSynthesis,
   type RecipeSynthesisRun,
 } from "./recipe.sdk.investigate.js";
+import { recordProbeExhaustion } from "~agent-worker/support/llm/execution.metrics.js";
 import {
   pushRouteSelected,
   withNodeTrajectory,
@@ -91,7 +92,9 @@ export async function dispatchRecipeProbes(
     ),
   );
   return runs.map((run, index) => {
-    budget.settle(leases[index]!, {
+    const lease = leases[index]!;
+    recordProbeExhaustion(AGENT_NAME, run.report.probe, run.accounting.costUsd, lease.maxBudgetUsd);
+    budget.settle(lease, {
       costUsd: run.accounting.costUsd,
       numTurns: run.accounting.numTurns,
     });

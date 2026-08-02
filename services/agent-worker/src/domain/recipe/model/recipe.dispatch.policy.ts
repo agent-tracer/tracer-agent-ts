@@ -17,7 +17,7 @@ import {
     type RecipeScanToolName,
 } from "./recipe.tool.schema.js";
 
-const { reservation } = loadExecutionBudgetContract();
+const { reservation, wallClock } = loadExecutionBudgetContract();
 const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
 
 // 첫 실행이 예산을 거의 다 써도 수리가 도구를 쥔 채 출력을 낼 최소 여지는 남긴다.
@@ -32,13 +32,16 @@ export const SURVEY_BUDGET_SHARE = reservation.survey.budgetShare;
 export const MIN_SYNTHESIS_TURNS = reservation.synthesisFloor.turns;
 
 /** 조율자가 진전 없이 머무는 상한이다. */
-export const SURVEY_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.15);
+export const SURVEY_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.survey);
 
 /** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 도는 것을 막지 않는다. */
-export const PROBE_WALL_CLOCK_CEILING_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.3);
+export const PROBE_WALL_CLOCK_CEILING_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.probe);
 
 /** 종합과 수리가 진전 없이 머무는 상한이다. */
-export const SYNTHESIS_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, 0.5);
+export const SYNTHESIS_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.synthesis);
+
+/** 달러 몫이 아주 작은 전문가도 이만큼은 받아 조사를 시작할 수 있다. */
+export const PROBE_MIN_WALL_CLOCK_FRACTION = wallClock.probeMinFraction.value;
 
 /** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
 export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;

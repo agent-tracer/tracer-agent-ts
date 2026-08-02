@@ -1,5 +1,5 @@
 import { query, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
-import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE } from "~llm/model/agent.error.js";
+import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE, UnpricedModelError } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import { createAgentDeadline, DeadlineExceededError } from "~llm/model/deadline.js";
 import type { JobStepToolCall } from "~llm/model/job.step.js";
@@ -188,16 +188,17 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                         const pricedModel = msg.message.model || request.model;
                         const callCost = estimateCostUsd(pricedModel, callUsage);
                         if (callCost === null) {
-                            // 단가를 모르면 지출이 0으로 세어져 착지가 오지 않으므로 그 사실을 남긴다.
+                            // 값을 셀 수 없으면 예산 상한이 무의미해지므로 계속하지 않고 끊는다.
                             logWarn({
                                 msg: "agent.query.unpriced",
                                 label: request.label,
                                 jobId: request.jobId ?? null,
                                 model: pricedModel,
                             });
+                            throw new UnpricedModelError(request.label, pricedModel);
                         }
-                        runningCostUsd += callCost ?? 0;
-                        peakCallCostUsd = Math.max(peakCallCostUsd, callCost ?? 0);
+                        runningCostUsd += callCost;
+                        peakCallCostUsd = Math.max(peakCallCostUsd, callCost);
                         landing = runningCostUsd + peakCallCostUsd >= request.maxBudgetUsd;
                     }
                     continue;
@@ -251,7 +252,10 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             }
         } catch (err) {
             const reason: unknown = deadline.controller.signal.reason;
-            if (deadline.controller.signal.aborted && reason instanceof DeadlineExceededError) {
+            if (err instanceof UnpricedModelError) {
+                errorSubtype = AGENT_ERROR_SUBTYPE.budgetExceeded;
+                errorSummary = err.message;
+            } else if (deadline.controller.signal.aborted && reason instanceof DeadlineExceededError) {
                 errorSubtype = AGENT_ERROR_SUBTYPE.deadlineExceeded;
                 errorSummary = reason.message;
             } else if (deadline.controller.signal.aborted) {

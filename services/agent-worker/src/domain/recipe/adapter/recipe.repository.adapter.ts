@@ -1,6 +1,7 @@
 import type { GeneratedJobStep } from "@tracer-agent/llm";
 import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import type { DataSource, EntityManager } from "typeorm";
+import { RECIPE_ANCHOR } from "~agent-worker/domain/recipe/model/recipe.const.js";
 import { readAppSetting } from "~agent-worker/config/app.setting.reader.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
@@ -23,10 +24,8 @@ import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/jo
 import { wireObject, wireText } from "~agent-worker/support/wire.value.js";
 
 /** 서버 자신의 에이전트가 만든 태스크를 나타내는 출처 값이며 앵커 자격에서 뺀다. */
-const SERVER_SDK_TASK_ORIGIN = "server-sdk";
 
 /** 스캔이 근거로 삼을 수 있는 태스크의 종결 상태다. */
-const COMPLETED_TASK_STATUS = "completed";
 
 /** 레시피 슬라이스의 저장 포트를 잡 원장과 추적 조회 창구로 구현한다. */
 export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
@@ -55,11 +54,14 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
     async findAnchor(userId: string, taskId: string): Promise<RecipeAnchorSnapshot | null> {
         const task = await this.findTask(userId, taskId);
         if (task === null) return null;
+        const origin = wireText(task["origin"]);
         const rootUserTask =
-            wireText(task["origin"]) !== SERVER_SDK_TASK_ORIGIN && wireText(task["parentTaskId"]) === null;
+            (origin === null || !RECIPE_ANCHOR.origin.excludes.includes(origin))
+            && (wireText(task["parentTaskId"]) === null) === RECIPE_ANCHOR.root.value;
+        const status = wireText(task["status"]);
         return {
             ownedByUser: true,
-            scanEligible: rootUserTask && wireText(task["status"]) === COMPLETED_TASK_STATUS,
+            scanEligible: rootUserTask && status !== null && RECIPE_ANCHOR.status.oneOf.includes(status),
             sessionScanEligible: rootUserTask,
         };
     }
