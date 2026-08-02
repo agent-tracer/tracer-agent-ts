@@ -1,10 +1,11 @@
-import { BadRequestException, Body, ConflictException, Controller, Headers, HttpCode, HttpStatus, NotFoundException, Param, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Headers, HttpCode, HttpStatus, NotFoundException, Param, Post } from "@nestjs/common";
 import { MONITOR_USER_HEADER } from "@tracer-agent/platform";
 import { ClaimRuleJobUseCase } from "~agent-api/domain/job/application/command/claim.rule.job.usecase.js";
 import { ReleaseRuleJobUseCase } from "~agent-api/domain/job/application/command/release.rule.job.usecase.js";
 import { RenewRuleJobLeaseUseCase } from "~agent-api/domain/job/application/command/renew.rule.job.lease.usecase.js";
 import { SettleRuleJobUseCase } from "~agent-api/domain/job/application/command/settle.rule.job.usecase.js";
 import { JOB_STATUS, type JobStatus } from "~agent-api/domain/job/model/job.const.js";
+import { JobLeaseHeldError } from "~agent-api/domain/job/model/job.errors.js";
 import { MONITOR_LEASE_OWNER_HEADER } from "~agent-api/domain/job/model/job.lease.const.js";
 import { failureBodySchema, reportBodySchema, type FailureBody, type ReportBody } from "./job.lease.schema.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
@@ -60,7 +61,7 @@ export class JobCommandController {
     ) {
         const lease = await this.claimRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), new Date());
         if (lease === null) throw new NotFoundException("Job not found");
-        if (!lease.held) throw new ConflictException("Job lease is held by another runner");
+        if (!lease.held) throw new JobLeaseHeldError();
         return lease;
     }
 
@@ -118,7 +119,7 @@ export class JobCommandController {
     ) {
         const settled = await this.settleRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), outcome, new Date());
         if (settled === "not-found") throw new NotFoundException("Job not found");
-        if (settled === "lease-lost") throw new ConflictException("Job lease is held by another runner");
+        if (settled === "lease-lost") throw new JobLeaseHeldError();
         return { settled: true };
     }
 }

@@ -29,3 +29,13 @@ export class InvalidRuleAnchorError extends DomainError {
         super("Rule generation requires an owned user-message anchor");
     }
 }
+
+/** 리스를 쥔 실행기만 잡을 종결하거나 반납하므로 회수당한 실행기는 이 거절을 받는다. */
+export class JobLeaseHeldError extends DomainError {
+    readonly httpStatus = 409;
+    readonly code = "job.lease-held";
+
+    constructor() {
+        super("Job lease is held by another runner");
+    }
+}
