@@ -2,21 +2,24 @@ import {
   buildMcpToolServer,
   type ClaudeQueryOptions,
   type IQueryRunner,
-  type OutputSchema,
   type ToolHandlers,
   mcpToolNames,
   withMcpToolPrefix,
   runStructuredQuery,
+    zodToClaudeOutputSchema,
+    type StructuredSchema,
     type StructuredQueryResult,
     featureLimits,
     featureModels,
     modelMaxOutputTokens,
-    type LlmToolDefinition,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { RECIPE_FEATURE } from "~agent-worker/domain/recipe/model/recipe.const.js";
-import { RECIPE_SCAN_FAILURES } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
+import {
+    RECIPE_SCAN_FAILURES,
+    RECIPE_SCAN_TOOLS,
+} from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { GenerateRecipeCandidatesInput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 
@@ -51,11 +54,9 @@ export interface RecipeQuerySpec<T> {
   readonly prompt: string;
   readonly systemPrompt: string;
   readonly toolNames: readonly string[];
-  readonly toolSpecs: readonly LlmToolDefinition[];
   readonly handlers: ToolHandlers;
-  readonly outputSchema: OutputSchema<T>;
-  /** 호출부가 자기 zod 스키마로 미리 만들어 건네는, Claude 구조화 출력용 JSON 스키마다. */
-  readonly claudeOutputSchema: Record<string, unknown>;
+  /** 모델이 볼 JSON Schema와 결과를 검증할 파서가 이 하나에서 함께 나온다. */
+  readonly outputSchema: StructuredSchema<T>;
   readonly lease: AgentBudgetLease;
 }
 
@@ -72,6 +73,7 @@ export function runRecipeQuery<T>(
   const { limits } = RECIPE_SCAN_SPEC;
   const model = recipeModelName(ctx.input);
   const allowedTools = mcpToolNames(RECIPE_MCP_SERVER, spec.toolNames);
+  const toolSpecs = RECIPE_SCAN_TOOLS.filter((one) => spec.toolNames.includes(one.name));
 
   return runStructuredQuery(
     ctx.runner,
@@ -101,7 +103,7 @@ export function runRecipeQuery<T>(
           ? { ANTHROPIC_API_KEY: ctx.input.apiKey }
           : {}),
       },
-      outputSchema: spec.claudeOutputSchema,
+      outputSchema: zodToClaudeOutputSchema(spec.outputSchema),
       ...(limits.effort !== undefined ? { effort: limits.effort } : {}),
       ...(spec.lease.maxBudgetUsd !== undefined
         ? { maxBudgetUsd: spec.lease.maxBudgetUsd }
@@ -110,14 +112,19 @@ export function runRecipeQuery<T>(
         ...(model !== limits.fallbackModel
           ? { fallbackModel: limits.fallbackModel }
           : {}),
-        mcpServers: {
-          [RECIPE_MCP_SERVER]: buildMcpToolServer(
-            RECIPE_MCP_SERVER,
-            spec.toolSpecs,
-            spec.handlers,
-            RECIPE_SCAN_SPEC.failures,
-          ),
-        },
+        // 도구 없이 도는 호출에는 MCP 서버 자체를 세우지 않아 열지 않기로 한 도구가 새어 나갈 자리를 없앤다.
+        ...(toolSpecs.length > 0
+          ? {
+            mcpServers: {
+              [RECIPE_MCP_SERVER]: buildMcpToolServer(
+                RECIPE_MCP_SERVER,
+                toolSpecs,
+                spec.handlers,
+                RECIPE_SCAN_SPEC.failures,
+              ),
+            },
+          }
+          : {}),
       },
       ...(ctx.input.idempotencyKey !== undefined
         ? { idempotencyKey: ctx.input.idempotencyKey }

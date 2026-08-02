@@ -1,5 +1,4 @@
 import {
-  zodToClaudeOutputSchema,
   type StructuredQueryResult,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
@@ -33,10 +32,8 @@ export function runRecipeSurvey(
     ),
     systemPrompt,
     toolNames: [],
-    toolSpecs: [],
     handlers: {},
     outputSchema: dispatchPlanSchema,
-    claudeOutputSchema: zodToClaudeOutputSchema(dispatchPlanSchema),
     lease,
   });
 }

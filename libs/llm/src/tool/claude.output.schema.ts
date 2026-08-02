@@ -1,6 +1,9 @@
 import type { ZodType, ZodTypeDef } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+/** 결과를 검증하는 파서와 모델이 볼 JSON Schema 가 함께 나오는 스키마 하나다. */
+export type StructuredSchema<T> = ZodType<T, ZodTypeDef, unknown>;
+
 // Claude 구조화 출력이 400으로 거부하는 JSON Schema 키워드이며 문자열 길이 제약은 받아들인다.
 export const CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS: readonly string[] = [
     "minItems",

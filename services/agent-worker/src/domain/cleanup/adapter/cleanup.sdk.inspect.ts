@@ -1,5 +1,5 @@
 import type { JobStepPayload } from "@tracer-agent/llm";
-import { AgentExecutionFailure, zodToClaudeOutputSchema } from "@tracer-agent/llm";
+import { AgentExecutionFailure } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
@@ -9,13 +9,10 @@ import {
 import { inspectReportSchema, type InspectAssignment, type InspectReport } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import { buildInspectFailureReport, CLEANUP_REVIEWER_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
-import { TASK_CLEANUP_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import { buildCleanupToolHandlers, type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import { runCleanupQuery, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 
 const INSPECT_TOOL_NAMES = CLEANUP_REVIEWER_TOOLS;
-const INSPECT_TOOL_SPECS = TASK_CLEANUP_TOOLS.filter((spec) =>
-    (CLEANUP_REVIEWER_TOOLS as readonly string[]).includes(spec.name));
 
 /** 후보 하나를 자기 도구·자기 장부·자기 예산으로 조사한 결과다. */
 export interface CleanupInspectRun {
@@ -43,10 +40,8 @@ export async function runCleanupInspect(
             prompt: buildCleanupInspectPrompt(assignment.taskId, lease.maxTurns),
             systemPrompt,
             toolNames: INSPECT_TOOL_NAMES,
-            toolSpecs: INSPECT_TOOL_SPECS,
             handlers,
             outputSchema: inspectReportSchema,
-            claudeOutputSchema: zodToClaudeOutputSchema(inspectReportSchema),
             lease,
         });
         return {

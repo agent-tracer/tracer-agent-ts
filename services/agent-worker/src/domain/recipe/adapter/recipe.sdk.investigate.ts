@@ -1,5 +1,4 @@
 import {
-  zodToClaudeOutputSchema,
   type StructuredQueryResult,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
@@ -11,7 +10,6 @@ import {
   recipeSynthesisSchema,
   type RecipeSynthesis,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
-import { RECIPE_SCAN_TOOLS } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
   buildRecipeToolHandlers,
@@ -40,12 +38,8 @@ export function runRecipeSynthesis(
     prompt,
     systemPrompt,
     toolNames: RECIPE_COORDINATOR_TOOLS,
-    toolSpecs: RECIPE_SCAN_TOOLS.filter((spec) =>
-      (RECIPE_COORDINATOR_TOOLS as readonly string[]).includes(spec.name),
-    ),
     handlers: buildRecipeToolHandlers(ctx.input.userId, deps, ledger),
     outputSchema: recipeSynthesisSchema,
-    claudeOutputSchema: zodToClaudeOutputSchema(recipeSynthesisSchema),
     lease,
   });
 }

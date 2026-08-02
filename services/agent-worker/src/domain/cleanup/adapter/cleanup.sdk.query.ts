@@ -5,13 +5,14 @@ import {
     mcpToolNames,
     runStructuredQuery,
     withMcpToolPrefix,
+    zodToClaudeOutputSchema,
+    type StructuredSchema,
     type ClaudeQueryOptions,
     type IQueryRunner,
-    type LlmToolDefinition,
-    type OutputSchema,
     type StructuredQueryResult,
     type ToolHandlers,
 } from "@tracer-agent/llm";
+import { TASK_CLEANUP_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
@@ -50,11 +51,9 @@ export interface CleanupQuerySpec<T> {
     readonly prompt: string;
     readonly systemPrompt: string;
     readonly toolNames: readonly string[];
-    readonly toolSpecs: readonly LlmToolDefinition[];
     readonly handlers: ToolHandlers;
-    readonly outputSchema: OutputSchema<T>;
-    /** 호출부가 자기 zod 스키마로 미리 만들어 건네는, Claude 구조화 출력용 JSON 스키마다. */
-    readonly claudeOutputSchema: Record<string, unknown>;
+    /** 모델이 볼 JSON Schema와 결과를 검증할 파서가 이 하나에서 함께 나온다. */
+    readonly outputSchema: StructuredSchema<T>;
     readonly lease: AgentBudgetLease;
 }
 
@@ -71,6 +70,7 @@ export function runCleanupQuery<T>(
     const { limits } = TASK_CLEANUP_SPEC;
     const model = cleanupModelName(ctx.input);
     const allowedTools = mcpToolNames(CLEANUP_MCP_SERVER, spec.toolNames);
+    const toolSpecs = TASK_CLEANUP_TOOLS.filter((one) => spec.toolNames.includes(one.name));
 
     return runStructuredQuery(
         ctx.runner,
@@ -91,18 +91,18 @@ export function runCleanupQuery<T>(
                 MONITOR_TASK_ORIGIN: "server-sdk",
                 ...(ctx.input.apiKey !== undefined ? { ANTHROPIC_API_KEY: ctx.input.apiKey } : {}),
             },
-            outputSchema: spec.claudeOutputSchema,
+            outputSchema: zodToClaudeOutputSchema(spec.outputSchema),
             effort: limits.effort,
             ...(spec.lease.maxBudgetUsd !== undefined ? { maxBudgetUsd: spec.lease.maxBudgetUsd } : {}),
             providerOptions: {
                 ...(model !== limits.fallbackModel ? { fallbackModel: limits.fallbackModel } : {}),
                 // 도구 없이 도는 호출(조율자)에는 MCP 서버 자체를 세우지 않아 열지 않기로 한 도구가 새어 나갈 자리를 없앤다.
-                ...(spec.toolSpecs.length > 0
+                ...(toolSpecs.length > 0
                     ? {
                         mcpServers: {
                             [CLEANUP_MCP_SERVER]: buildMcpToolServer(
                                 CLEANUP_MCP_SERVER,
-                                spec.toolSpecs,
+                                toolSpecs,
                                 spec.handlers,
                                 TASK_CLEANUP_SPEC.failures,
                             ),

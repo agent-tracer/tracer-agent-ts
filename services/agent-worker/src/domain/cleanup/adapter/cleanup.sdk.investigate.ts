@@ -1,16 +1,14 @@
-import { zodToClaudeOutputSchema, type StructuredQueryResult } from "@tracer-agent/llm";
+import { type StructuredQueryResult } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import {
     buildCleanupSystemPrompt,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import { CLEANUP_COORDINATOR_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { cleanupDecisionSchema, type CleanupDecision } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
-import { TASK_CLEANUP_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import type { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import { buildCleanupToolHandlers, type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import { runCleanupQuery, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 
-const COORDINATOR_TOOL_SPECS = TASK_CLEANUP_TOOLS.filter((spec) => CLEANUP_COORDINATOR_TOOLS.includes(spec.name));
 
 export type CleanupDecisionRun = StructuredQueryResult<CleanupDecision>;
 
@@ -30,10 +28,8 @@ export function runCleanupDecision(
         prompt,
         systemPrompt,
         toolNames: CLEANUP_COORDINATOR_TOOLS,
-        toolSpecs: COORDINATOR_TOOL_SPECS,
         handlers: buildCleanupToolHandlers(ctx.input.userId, deps, batch, ledger),
         outputSchema: cleanupDecisionSchema,
-        claudeOutputSchema: zodToClaudeOutputSchema(cleanupDecisionSchema),
         lease,
     });
 }

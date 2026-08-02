@@ -1,7 +1,6 @@
 import type { JobStepPayload } from "@tracer-agent/llm";
 import {
   AgentExecutionFailure,
-  zodToClaudeOutputSchema,
 } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
@@ -17,7 +16,6 @@ import {
 import {
   buildProbeFailureReport,
   probeToolNames,
-  probeToolSpecs,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
@@ -60,10 +58,8 @@ export async function runRecipeProbe(
       ),
       systemPrompt,
       toolNames,
-      toolSpecs: probeToolSpecs(assignment.probe),
       handlers,
       outputSchema: probeReportSchema,
-      claudeOutputSchema: zodToClaudeOutputSchema(probeReportSchema),
       lease,
     });
     return {

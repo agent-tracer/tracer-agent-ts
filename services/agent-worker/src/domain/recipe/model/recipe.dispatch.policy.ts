@@ -1,7 +1,6 @@
 import {
     loadExecutionBudgetContract,
     renderFailureText,
-    type LlmToolDefinition,
 } from "@tracer-agent/llm";
 import {
     MAX_PROBE_WEIGHT,
@@ -9,7 +8,7 @@ import {
     type ProbeReport,
     type RecipeProbeName,
 } from "./recipe.dispatch.schema.js";
-import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL, RECIPE_SCAN_TOOLS } from "./recipe.tool.schema.js";
+import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL } from "./recipe.tool.schema.js";
 
 const { reservation } = loadExecutionBudgetContract();
 
@@ -54,10 +53,6 @@ export function probeToolNames(probe: RecipeProbeName): readonly string[] {
     return RECIPE_PROBE_TOOL_NAMES[probe];
 }
 
-export function probeToolSpecs(probe: RecipeProbeName): readonly LlmToolDefinition[] {
-    const names = new Set<string>(RECIPE_PROBE_TOOL_NAMES[probe]);
-    return RECIPE_SCAN_TOOLS.filter((spec) => names.has(spec.name));
-}
 
 /** 전문가 실행이 무너진 사유를 판정 상한 안으로 줄여 실패 보고로 강등한다. */
 export function buildProbeFailureReport(probe: RecipeProbeName, error: unknown): ProbeReport {
