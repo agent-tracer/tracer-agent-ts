@@ -1,5 +1,5 @@
 import { query, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
-import { AGENT_ERROR_SUBTYPE } from "~llm/model/agent.error.js";
+import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import { createAgentDeadline, DeadlineExceededError } from "~llm/model/deadline.js";
 import type { JobStepToolCall } from "~llm/model/job.step.js";
@@ -200,9 +200,13 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     costUsd = msg.total_cost_usd;
                     usage = toUsage(msg.usage);
                     actualModel = dominantModel(msg.modelUsage);
-                    if (msg.subtype === "success") {
+                    if (msg.subtype === "success" && msg.stop_reason !== "refusal") {
                         resultText = msg.result;
                         structuredOutput = msg.structured_output ?? null;
+                    } else if (msg.subtype === "success") {
+                        // 안전 분류기가 거절해도 결과는 success 모양으로 오므로 stop_reason으로 가른다.
+                        errorSubtype = PROVIDER_ERROR_SUBTYPE.refusal;
+                        errorSummary = "model refused the request";
                     } else {
                         errorSubtype = normalizeClaudeResultSubtype(msg.subtype);
                         errorSummary = `${msg.subtype}${msg.errors.length > 0 ? `: ${msg.errors.join("; ")}` : ""}`;
