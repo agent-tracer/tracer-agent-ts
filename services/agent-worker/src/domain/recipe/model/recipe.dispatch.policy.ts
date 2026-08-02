@@ -11,7 +11,11 @@ import {
     type ProbeReport,
     type RecipeProbeName,
 } from "./recipe.dispatch.schema.js";
-import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL, type RecipeScanToolName } from "./recipe.tool.schema.js";
+import {
+    RECIPE_SCAN_FAILURES,
+    RECIPE_TOOL_CONTRACT,
+    type RecipeScanToolName,
+} from "./recipe.tool.schema.js";
 
 const { reservation } = loadExecutionBudgetContract();
 const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
@@ -39,28 +43,17 @@ export const SYNTHESIS_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadline
 /** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
 export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;
 
-/** 조율자는 근거를 직접 모으지 않고 전문가가 합친 장부의 인용만 확인하므로 도구가 하나다. */
-export const RECIPE_COORDINATOR_TOOLS = [RECIPE_SCAN_TOOL.checkCitations] as const;
+/** 계획이 규모를 모른 채 서지 않도록 조율자가 요약 하나를 쥔다. */
+export const RECIPE_SURVEY_TOOLS: readonly RecipeScanToolName[] = RECIPE_TOOL_CONTRACT.orchestration.surveyTools;
+
+/** 조율자는 근거를 직접 모으지 않고 전문가가 합친 장부의 인용만 확인한다. */
+export const RECIPE_COORDINATOR_TOOLS: readonly RecipeScanToolName[] =
+    RECIPE_TOOL_CONTRACT.orchestration.coordinatorTools;
 
 /** 전문가는 자기 근거 원천에 닿는 도구만 쥐고 어느 전문가든 쓰는 인용 확인만 모두에게 준다. */
-export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>> = {
-    timeline: [
-        RECIPE_SCAN_TOOL.getTaskSummary,
-        RECIPE_SCAN_TOOL.getTaskEvents,
-        RECIPE_SCAN_TOOL.searchEvents,
-        RECIPE_SCAN_TOOL.checkCitations,
-    ],
-    rules: [
-        RECIPE_SCAN_TOOL.listRules,
-        RECIPE_SCAN_TOOL.searchRecipes,
-        RECIPE_SCAN_TOOL.checkCitations,
-    ],
-    repetition: [
-        RECIPE_SCAN_TOOL.searchEvents,
-        RECIPE_SCAN_TOOL.findSimilarTasks,
-        RECIPE_SCAN_TOOL.checkCitations,
-    ],
-};
+export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>> =
+    RECIPE_TOOL_CONTRACT.orchestration.roles;
+
 
 export function probeToolNames(probe: RecipeProbeName): readonly RecipeScanToolName[] {
     return RECIPE_PROBE_TOOL_NAMES[probe];

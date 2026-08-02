@@ -44,6 +44,7 @@ export async function runRecipeProbe(
   deps: RecipeToolDeps,
   assignment: ProbeAssignment,
   lease: AgentBudgetLease,
+  siblings: readonly ProbeAssignment[] = [],
 ): Promise<RecipeProbeRun> {
   const ledger = new ProvenanceLedger();
   const handlers = buildRecipeToolHandlers(ctx.input.userId, deps, ledger);
@@ -54,9 +55,11 @@ export async function runRecipeProbe(
     const run = await runRecipeQuery(ctx, {
       label: `${RECIPE_SCAN_SPEC.name}:probe:${assignment.probe}`,
       prompt: buildRecipeProbePrompt(
+        ctx.prompt,
         ctx.input.taskId,
         assignment.question,
         lease.maxTurns,
+        siblings,
       ),
       systemPrompt,
       toolNames,

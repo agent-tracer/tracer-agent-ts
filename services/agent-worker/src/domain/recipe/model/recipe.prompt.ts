@@ -1,13 +1,15 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
-import type { DispatchPlan, ProbeReport } from "./recipe.dispatch.schema.js";
+import type { DispatchPlan, ProbeAssignment, ProbeReport } from "./recipe.dispatch.schema.js";
 import { RECIPE_CANDIDATE_LIMIT, RECIPE_TOOL_CONTRACT } from "./recipe.tool.schema.js";
 
 export const RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "recipe-scan.investigator.system" as const;
 export const RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY = "recipe-scan.investigator.repair" as const;
 export const RECIPE_SURVEY_SYSTEM_TEMPLATE_KEY = "recipe-scan.survey.system" as const;
 export const RECIPE_PROBE_SYSTEM_TEMPLATE_KEY = "recipe-scan.probe.system" as const;
+export const RECIPE_PROBE_USER_TEMPLATE_KEY = "recipe-scan.probe.user" as const;
+export const RECIPE_SURVEY_USER_TEMPLATE_KEY = "recipe-scan.survey.user" as const;
 
 
 
@@ -49,7 +51,7 @@ export function buildRecipeRepairPrompt(
     return [
         basePrompt,
         "",
-        "Your previous output:",
+        prompt.slot(RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY, "repairPriorOutput"),
         JSON.stringify(previousOutput),
         "",
         "Deterministic provenance validation rejected your output:",
@@ -123,13 +125,14 @@ export function buildRecipeSurveySystemPrompt(prompt: AgentPrompt): string {
 }
 
 export function buildRecipeSurveyPrompt(
+    prompt: AgentPrompt,
     taskId: string,
     userPrompt: string | undefined,
     availableTurns: number,
 ): string {
     const lines = [
         `Anchor task ID: ${taskId}`,
-        `Investigation turns available in total: ${availableTurns}`,
+        prompt.slot(RECIPE_SURVEY_USER_TEMPLATE_KEY, "turnAllowance", { turns: String(availableTurns) }),
     ];
     if (userPrompt !== undefined && userPrompt.trim().length > 0) {
         lines.push(`What the user asked for: ${userPrompt.trim()}`);
@@ -146,17 +149,30 @@ export function buildRecipeProbeSystemPrompt(prompt: AgentPrompt): string {
         slot("specialistCharter"),
         "",
         slot("specialistReporting"),
-        "If your turns run out with the question still open, say so in exhausted so the coordinator can",
-        "decide whether to spend more.",
+        "",
+        slot("probeBoundary"),
+        "",
+        slot("budgetExhaustion"),
     ].join("\n");
 }
 
-export function buildRecipeProbePrompt(taskId: string, question: string, turns: number): string {
-    return [
+export function buildRecipeProbePrompt(
+    prompt: AgentPrompt,
+    taskId: string,
+    question: string,
+    turns: number,
+    siblings: readonly ProbeAssignment[] = [],
+): string {
+    const lines = [
         `Anchor task ID: ${taskId}`,
         `Your question: ${question}`,
-        `Turns available: ${turns}`,
-    ].join("\n");
+        prompt.slot(RECIPE_PROBE_USER_TEMPLATE_KEY, "turnAllowance", { turns: String(turns) }),
+    ];
+    if (siblings.length > 0) {
+        lines.push("", prompt.slot(RECIPE_PROBE_USER_TEMPLATE_KEY, "siblingAssignments"));
+        lines.push(...siblings.map((one) => `- ${one.probe}: ${one.question}`));
+    }
+    return lines.join("\n");
 }
 
 /** 실행에 실을 계약의 판이며 실행은 원장 없이 이 값을 그대로 쓴다. */

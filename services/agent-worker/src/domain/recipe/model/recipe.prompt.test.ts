@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
-import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
+import { readAgentCases, readAgentPrompt, readAgentTools, readCase } from "~agent-worker/support/contract.js";
 import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { RECIPE_PROMPT } from "~agent-worker/domain/recipe/port/__fakes__/recipe.test-support.js";
 import {
     buildRecipeProbeSystemPrompt,
-    buildRecipeRepairDirective,
+    buildRecipeProbePrompt,
+    buildRecipeRepairPrompt,
+    buildRecipeSurveyPrompt,
     buildRecipeSurveySystemPrompt,
     buildRecipeSystemPrompt,
     buildRecipeUserPrompt,
@@ -17,6 +19,7 @@ import {
     RECIPE_SURVEY_SYSTEM_TEMPLATE_KEY,
     resolveRecipePromptPin,
 } from "./recipe.prompt.js";
+import type { ProbeAssignment } from "./recipe.dispatch.schema.js";
 import {
     MAX_PROBE_WEIGHT,
     MAX_REDISPATCH_PROBES,
@@ -66,9 +69,9 @@ describe("레시피 조사 프롬프트", () => {
     });
 
     it("수리 템플릿이 선언한 슬롯을 빠짐없이 쓴다", () => {
-        expect(used(buildRecipeRepairDirective(labelled()))).toEqual(
-            declaredSlots(RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY).sort(),
-        );
+        const repair = buildRecipeRepairPrompt(labelled(), "기준 지시문", { recipes: [] }, ["오류"]);
+
+        expect(used(repair)).toEqual(declaredSlots(RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY).sort());
     });
 
     it("계획 템플릿이 선언한 슬롯을 빠짐없이 쓴다", () => {
@@ -125,5 +128,57 @@ describe("레시피 조사 실행에 실리는 판", () => {
 
     it("계약이 도구 선언에 매긴 판을 그대로 싣는다", () => {
         expect(resolveRecipePromptPin(RECIPE_PROMPT).toolContractVersion).toBe(readAgentTools("recipe-scan").version);
+    });
+});
+
+const PROMPT_PARITY = readCase<RecipePromptParityCases>("recipe.prompt");
+
+interface RecipePromptParityCase {
+    readonly name: string;
+    readonly input: Record<string, unknown>;
+    readonly mustContain?: readonly string[];
+    readonly mustNotContain?: readonly string[];
+}
+
+interface RecipePromptParityCases {
+    readonly survey: { readonly cases: readonly RecipePromptParityCase[] };
+    readonly probe: { readonly cases: readonly RecipePromptParityCase[] };
+}
+
+function assertParity(rendered: string, declared: RecipePromptParityCase): void {
+    for (const needle of declared.mustContain ?? []) {
+        expect(rendered, `${declared.name}: ${needle}`).toContain(needle);
+    }
+    for (const needle of declared.mustNotContain ?? []) {
+        expect(rendered, `${declared.name}: ${needle}`).not.toContain(needle);
+    }
+}
+
+describe("두 축이 같은 글자를 내야 하는 조사 프롬프트", () => {
+    it("계약이 적은 계획 프롬프트 케이스를 모두 만족한다", () => {
+        for (const declared of PROMPT_PARITY.survey.cases) {
+            const rendered = buildRecipeSurveyPrompt(
+                RECIPE_PROMPT,
+                declared.input["taskId"] as string,
+                (declared.input["userPrompt"] as string | null) ?? undefined,
+                declared.input["availableTurns"] as number,
+            );
+
+            assertParity(rendered, declared);
+        }
+    });
+
+    it("계약이 적은 전문가 프롬프트 케이스를 모두 만족한다", () => {
+        for (const declared of PROMPT_PARITY.probe.cases) {
+            const rendered = buildRecipeProbePrompt(
+                RECIPE_PROMPT,
+                declared.input["taskId"] as string,
+                declared.input["question"] as string,
+                declared.input["turns"] as number,
+                declared.input["siblings"] as readonly ProbeAssignment[],
+            );
+
+            assertParity(rendered, declared);
+        }
     });
 });

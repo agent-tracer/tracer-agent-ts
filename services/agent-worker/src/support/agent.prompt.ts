@@ -40,11 +40,15 @@ export class AgentPrompt {
         private readonly languageDirectives: Readonly<Record<string, string>>,
     ) {}
 
-    /** 템플릿의 슬롯 하나에 들어갈 본문이며 없으면 거절한다. */
-    slot(templateKey: string, slotName: string): string {
+    /** 템플릿의 슬롯 하나에 들어갈 본문이며 호출마다 달라지는 자리는 values 가 채운다. */
+    slot(
+        templateKey: string,
+        slotName: string,
+        values: Readonly<Record<string, string | number>> = {},
+    ): string {
         const found = this.templates[templateKey]?.slots[slotName];
         if (found === undefined) throw new Error(`prompt.slot-missing:${templateKey}.${slotName}`);
-        return found.content;
+        return fill(found.content, values);
     }
 
     /** 템플릿 하나가 갖는 슬롯 이름 전부다. */
@@ -74,8 +78,17 @@ export class AgentPrompt {
     }
 }
 
+// 호출마다 달라지는 자리는 조립 시점에 값이 없으므로 그대로 두고 slot 이 채운다.
 function render(lines: readonly string[], values: Readonly<Record<string, string | number>>): string {
-    return lines.join("\n").replace(PLACEHOLDER, (_match, name: string) => {
+    return lines.join("\n").replace(PLACEHOLDER, (match, name: string) => {
+        const value = values[name];
+        return value === undefined ? match : String(value);
+    });
+}
+
+/** 조립 시점에 남겨 둔 자리를 이 호출의 값으로 채우며 값이 없으면 거절한다. */
+function fill(content: string, values: Readonly<Record<string, string | number>>): string {
+    return content.replace(PLACEHOLDER, (_match, name: string) => {
         const value = values[name];
         if (value === undefined) throw new Error(`prompt.placeholder-value-missing:${name}`);
         return String(value);

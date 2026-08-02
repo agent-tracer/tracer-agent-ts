@@ -33,6 +33,7 @@ const AGENT_NAME = RECIPE_SCAN_SPEC.name;
 
 export async function runRecipeSurveyPhase(
   ctx: RecipeQueryContext,
+  deps: RecipeToolDeps,
   budget: ExecutionBudget,
   lease: AgentBudgetLease,
   segments: RecipeRunSegment[],
@@ -45,7 +46,7 @@ export async function runRecipeSurveyPhase(
   if (lease.maxTurns <= 0) return fallback;
   try {
     const run = await withNodeTrajectory(segments, AGENT_NAME, "survey", () =>
-      runRecipeSurvey(ctx, availableTurns, lease),
+      runRecipeSurvey(ctx, deps, availableTurns, lease),
     );
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
     segments.push(toRecipeRunSegment(run, "survey"));
@@ -79,7 +80,13 @@ export async function dispatchRecipeProbes(
   const runs = await Promise.all(
     plan.probes.map((assignment, index) =>
       withNodeTrajectory(segments, AGENT_NAME, "probe", () =>
-        runRecipeProbe(ctx, deps, assignment, leases[index]!),
+        runRecipeProbe(
+          ctx,
+          deps,
+          assignment,
+          leases[index]!,
+          plan.probes.filter((other) => other.probe !== assignment.probe),
+        ),
       ),
     ),
   );

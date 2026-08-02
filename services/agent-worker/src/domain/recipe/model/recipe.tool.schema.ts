@@ -25,12 +25,16 @@ export const RECIPE_SCAN_TOOL = {
 
 export type RecipeScanToolName = (typeof RECIPE_SCAN_TOOL)[keyof typeof RECIPE_SCAN_TOOL];
 
+/** 계약이 배분을 적는 전문가의 축이며 도구 선언과 같은 어휘를 쓴다. */
+export type RecipeProbeName = "timeline" | "rules" | "repetition";
+
 /** 레시피 조사 도구 선언이며 조율자가 단독으로 쥐는 도구를 오케스트레이션 절이 갖는다. */
 export interface RecipeToolContract extends ContractToolFile {
     readonly orchestration: {
         readonly workerMaxTurns: number;
-        readonly coordinatorTools: readonly string[];
-        readonly roles: Readonly<Record<string, readonly string[]>>;
+        readonly surveyTools: readonly RecipeScanToolName[];
+        readonly coordinatorTools: readonly RecipeScanToolName[];
+        readonly roles: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>>;
     };
 }
 

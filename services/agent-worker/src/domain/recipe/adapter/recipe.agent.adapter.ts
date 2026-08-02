@@ -114,6 +114,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     const segments: RunSegment[] = [];
     const { plan, modelUsed } = await runRecipeSurveyPhase(
       ctx,
+      this.deps,
       budget,
       surveyLease,
       segments,

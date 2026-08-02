@@ -73,6 +73,11 @@ export interface AgentLanguageCases {
 }
 
 /** 에이전트 하나의 판정 케이스이며 어느 절을 갖는지는 에이전트마다 다르다. */
+/** 적합성 케이스 하나를 이름으로 읽는다. */
+export function readCase<T>(name: string): T {
+    return readContractJson<T>(`conformance/cases/${name}.json`);
+}
+
 export function readAgentCases<T>(agentName: string): T {
     return readContractJson<T>(`agent/${agentName}/cases.json`);
 }
