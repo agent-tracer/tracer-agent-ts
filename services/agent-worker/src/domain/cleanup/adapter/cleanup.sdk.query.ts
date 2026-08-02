@@ -12,7 +12,10 @@ import {
     type StructuredQueryResult,
     type ToolHandlers,
 } from "@tracer-agent/llm";
-import { TASK_CLEANUP_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
+import {
+    TASK_CLEANUP_TOOLS,
+    type TaskCleanupToolName,
+} from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
@@ -46,12 +49,12 @@ export interface CleanupQueryContext {
     readonly prompt: AgentPrompt;
 }
 
-export interface CleanupQuerySpec<T> {
+export interface CleanupQuerySpec<T, Name extends TaskCleanupToolName = TaskCleanupToolName> {
     readonly label: string;
     readonly prompt: string;
     readonly systemPrompt: string;
-    readonly toolNames: readonly string[];
-    readonly handlers: ToolHandlers;
+    readonly toolNames: readonly Name[];
+    readonly handlers: ToolHandlers<Name>;
     /** 모델이 볼 JSON Schema와 결과를 검증할 파서가 이 하나에서 함께 나온다. */
     readonly outputSchema: StructuredSchema<T>;
     readonly lease: AgentBudgetLease;
@@ -63,14 +66,15 @@ export function cleanupModelName(input: GenerateCleanupSuggestionsInput): string
 }
 
 /** task-cleanup 호출 하나가 공통으로 거치는 모델·예산·MCP 배선을 한 곳에 모은다. */
-export function runCleanupQuery<T>(
+export function runCleanupQuery<T, Name extends TaskCleanupToolName>(
     ctx: CleanupQueryContext,
-    spec: CleanupQuerySpec<T>,
+    spec: CleanupQuerySpec<T, Name>,
 ): Promise<StructuredQueryResult<T>> {
     const { limits } = TASK_CLEANUP_SPEC;
     const model = cleanupModelName(ctx.input);
     const allowedTools = mcpToolNames(CLEANUP_MCP_SERVER, spec.toolNames);
-    const toolSpecs = TASK_CLEANUP_TOOLS.filter((one) => spec.toolNames.includes(one.name));
+    const opened = new Set<string>(spec.toolNames);
+    const toolSpecs = TASK_CLEANUP_TOOLS.filter((one) => opened.has(one.name));
 
     return runStructuredQuery(
         ctx.runner,

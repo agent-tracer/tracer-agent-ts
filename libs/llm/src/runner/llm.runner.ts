@@ -16,7 +16,8 @@ export type AgentEffortLevel = "low" | "medium" | "high" | "xhigh" | "max";
 /** 언어 모델이 실행 중 부를 수 있는 도구 하나다. */
 export type ToolHandler = (args: Record<string, unknown>) => Promise<string>;
 
-export type ToolHandlers = Readonly<Record<string, ToolHandler>>;
+/** 도구 이름을 좁히면 그 집합의 핸들러를 빠짐없이 요구한다. */
+export type ToolHandlers<Name extends string = string> = Readonly<Record<Name, ToolHandler>>;
 
 /** 스트리밍 실행에서 모델이 제안한 도구 호출 한 건이며 args는 모델이 낸 원본 인자다. */
 export interface AgentStreamToolCall {

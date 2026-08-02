@@ -8,7 +8,7 @@ import {
     type ProbeReport,
     type RecipeProbeName,
 } from "./recipe.dispatch.schema.js";
-import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL } from "./recipe.tool.schema.js";
+import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL, type RecipeScanToolName } from "./recipe.tool.schema.js";
 
 const { reservation } = loadExecutionBudgetContract();
 
@@ -30,7 +30,7 @@ export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;
 export const RECIPE_COORDINATOR_TOOLS = [RECIPE_SCAN_TOOL.checkCitations] as const;
 
 /** 전문가는 자기 근거 원천에 닿는 도구만 쥐고 어느 전문가든 쓰는 인용 확인만 모두에게 준다. */
-export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly string[]>> = {
+export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>> = {
     timeline: [
         RECIPE_SCAN_TOOL.getTaskSummary,
         RECIPE_SCAN_TOOL.getTaskEvents,
@@ -49,7 +49,7 @@ export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly 
     ],
 };
 
-export function probeToolNames(probe: RecipeProbeName): readonly string[] {
+export function probeToolNames(probe: RecipeProbeName): readonly RecipeScanToolName[] {
     return RECIPE_PROBE_TOOL_NAMES[probe];
 }
 

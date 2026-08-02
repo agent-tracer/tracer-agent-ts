@@ -19,6 +19,7 @@ import { RECIPE_FEATURE } from "~agent-worker/domain/recipe/model/recipe.const.j
 import {
     RECIPE_SCAN_FAILURES,
     RECIPE_SCAN_TOOLS,
+    type RecipeScanToolName,
 } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { GenerateRecipeCandidatesInput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
@@ -49,12 +50,12 @@ export interface RecipeQueryContext {
   readonly prompt: AgentPrompt;
 }
 
-export interface RecipeQuerySpec<T> {
+export interface RecipeQuerySpec<T, Name extends RecipeScanToolName = RecipeScanToolName> {
   readonly label: string;
   readonly prompt: string;
   readonly systemPrompt: string;
-  readonly toolNames: readonly string[];
-  readonly handlers: ToolHandlers;
+  readonly toolNames: readonly Name[];
+  readonly handlers: ToolHandlers<Name>;
   /** 모델이 볼 JSON Schema와 결과를 검증할 파서가 이 하나에서 함께 나온다. */
   readonly outputSchema: StructuredSchema<T>;
   readonly lease: AgentBudgetLease;
@@ -66,14 +67,15 @@ export function recipeModelName(input: GenerateRecipeCandidatesInput): string {
 }
 
 /** recipe-scan 호출 하나가 공통으로 거치는 모델·예산·MCP 배선을 한 곳에 모은다. */
-export function runRecipeQuery<T>(
+export function runRecipeQuery<T, Name extends RecipeScanToolName>(
   ctx: RecipeQueryContext,
-  spec: RecipeQuerySpec<T>,
+  spec: RecipeQuerySpec<T, Name>,
 ): Promise<StructuredQueryResult<T>> {
   const { limits } = RECIPE_SCAN_SPEC;
   const model = recipeModelName(ctx.input);
   const allowedTools = mcpToolNames(RECIPE_MCP_SERVER, spec.toolNames);
-  const toolSpecs = RECIPE_SCAN_TOOLS.filter((one) => spec.toolNames.includes(one.name));
+  const opened = new Set<string>(spec.toolNames);
+  const toolSpecs = RECIPE_SCAN_TOOLS.filter((one) => opened.has(one.name));
 
   return runStructuredQuery(
     ctx.runner,

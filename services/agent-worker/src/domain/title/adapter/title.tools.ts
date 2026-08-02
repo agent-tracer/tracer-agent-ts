@@ -10,13 +10,14 @@ import {
     MIN_EVENT_LIMIT,
     TITLE_SUGGESTION_TOOL,
     parseGetTaskEventsArgs,
+    type TitleSuggestionToolName,
 } from "~agent-worker/domain/title/model/title.tool.schema.js";
 import type { TitleEventReaderPort } from "~agent-worker/domain/title/port/title.event.reader.port.js";
 
 const AGENT_NAME = AGENT.titleSuggestion.id;
 
 /** 사용자 범위를 고정한 이 슬라이스 소유의 이벤트 조회 도구 핸들러를 만든다. */
-export function buildTitleToolHandlers(userId: string, reader: TitleEventReaderPort): ToolHandlers {
+export function buildTitleToolHandlers(userId: string, reader: TitleEventReaderPort): ToolHandlers<TitleSuggestionToolName> {
     return {
         [TITLE_SUGGESTION_TOOL.getTaskEvents]: async (raw) => {
             const { taskId, limit, cursor, order } = parseGetTaskEventsArgs(raw);

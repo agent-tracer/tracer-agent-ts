@@ -34,6 +34,7 @@ import {
     parseSearchRecipesArgs,
     RECIPE_SCAN_TOOL,
     SUMMARY_EVENT_WINDOW,
+    type RecipeScanToolName,
 } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import { toSlimRule } from "./recipe.rule.view.js";
 import type { RecipeSearchPort } from "~agent-worker/domain/recipe/port/recipe.search.port.js";
@@ -53,7 +54,7 @@ export function buildRecipeToolHandlers(
     userId: string,
     deps: RecipeToolDeps,
     ledger: ProvenanceLedger = new ProvenanceLedger(),
-): ToolHandlers {
+): ToolHandlers<RecipeScanToolName> {
     const telemetry = async (
         toolName: string,
         parameters: Record<string, unknown>,
