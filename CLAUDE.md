@@ -63,6 +63,8 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 - 파일의 역할을 `.controller.ts`, `.usecase.ts`, `.port.ts`, `.adapter.ts`, `.workflow.ts`, `.activity.ts` 접미사로 드러냅니다.
 - 테스트 없는 유스케이스와 300줄을 넘는 소스 파일을 추가하지 않습니다.
 - 계약·DB 스키마·큐를 바꾸면 `contract` submodule과 적합성 케이스를 먼저 갱신합니다.
+- 실행 구조 문서는 설명하는 코드와 같은 디렉터리의 `README.md`에 둡니다. `services/agent-worker/src/domain/README.md`와 도메인별 `README.md`가 그 자리이며 뿌리 `README.md`가 링크합니다. `docs/` 디렉터리로 모으지 않습니다.
+- 실행 구조 문서는 지금 코드가 하는 일만 적고 인용한 경로·식별자·수치가 실재해야 합니다. 계약이 소유한 값을 복제하지 않고, Python 구현의 같은 문서와 절의 이름과 순서를 맞춥니다.
 
 ## 검증
 
