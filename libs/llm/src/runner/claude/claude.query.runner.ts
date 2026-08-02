@@ -120,7 +120,14 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(request.outputSchema !== undefined
                     ? { outputFormat: { type: "json_schema" as const, schema: request.outputSchema } }
                     : {}),
-                env: buildAgentEnv({ ...request.env, IS_SANDBOX: "1" }),
+                // 봉투가 정한 출력 한도를 CLI 는 질의 옵션이 아니라 이 환경변수로만 받는다.
+                env: buildAgentEnv({
+                    ...request.env,
+                    IS_SANDBOX: "1",
+                    ...(request.maxOutputTokens !== undefined
+                        ? { CLAUDE_CODE_MAX_OUTPUT_TOKENS: String(request.maxOutputTokens) }
+                        : {}),
+                }),
                 // 승인 프롬프트 없이 실행하므로 호출자는 읽기 전용 도구만 허용해야 한다.
                 permissionMode: "bypassPermissions",
                 allowDangerouslySkipPermissions: true,

@@ -185,3 +185,29 @@ describe("공급자 요청 식별자", () => {
         expect(result.providerRequestId).not.toBe("s-1");
     });
 });
+
+function passedEnv(): Record<string, string | undefined> {
+    const [call] = queryMock.mock.calls;
+    const { options } = call![0] as { options: { env: Record<string, string | undefined> } };
+    return options.env;
+}
+
+describe("출력 한도 전달", () => {
+    it("봉투가 한도를 정하면 하위 프로세스 환경이 그 값을 갖는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request({ maxOutputTokens: 16000 }));
+
+        expect(passedEnv()["CLAUDE_CODE_MAX_OUTPUT_TOKENS"]).toBe("16000");
+    });
+
+    it("봉투가 한도를 정하지 않으면 그 이름이 환경에 없다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request());
+
+        expect(passedEnv()).not.toHaveProperty("CLAUDE_CODE_MAX_OUTPUT_TOKENS");
+    });
+});
