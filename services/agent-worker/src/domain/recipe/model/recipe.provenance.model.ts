@@ -14,6 +14,20 @@ export class ProvenanceLedger {
     private readonly ruleIds = new Set<string>();
     private readonly recipeRevs = new Map<string, number>();
 
+    /** 원장에서 되살린 스냅숏으로 장부를 다시 세운다. */
+    static from(snapshot: ProvenanceSnapshot): ProvenanceLedger {
+        const ledger = new ProvenanceLedger();
+        for (const [taskId, ids] of Object.entries(snapshot.eventIdsByTask)) {
+            ledger.eventIdsByTask.set(taskId, new Set(ids));
+        }
+        for (const [taskId, ids] of Object.entries(snapshot.turnIdsByTask)) {
+            ledger.turnIdsByTask.set(taskId, new Set(ids));
+        }
+        ledger.recordRules(snapshot.ruleIds);
+        for (const [recipeId, rev] of Object.entries(snapshot.recipeRevs)) ledger.recordRecipe(recipeId, rev);
+        return ledger;
+    }
+
     /** 도구가 모델에게 돌려준 이벤트만 받아 그 이벤트가 실은 턴까지 함께 검증 대상에 올린다. */
     recordEvents(taskId: string, events: readonly RecipeSlimEvent[]): void {
         if (events.length === 0) return;

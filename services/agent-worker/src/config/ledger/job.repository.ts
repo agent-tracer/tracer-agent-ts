@@ -1,5 +1,6 @@
 import { In, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import type { AiJobEntity } from "./ai.job.entity.js";
+import { AiJobStageOutputEntity } from "./ai.job.stage.output.entity.js";
 import { AiJobStepEntity } from "./ai.job.step.entity.js";
 import { JOB_STATUS, type JobStatus } from "~agent-worker/support/job.const.js";
 
@@ -41,6 +42,31 @@ export class TypeOrmAiJobStepRepository {
             .values(steps as unknown as QueryDeepPartialEntity<AiJobStepEntity>[])
             .orIgnore()
             .execute();
+    }
+}
+
+/** 끝난 단계의 산출을 잡 단위로 읽고 적으며 종결한 잡의 것은 지운다. */
+export class TypeOrmAiJobStageOutputRepository {
+    constructor(private readonly repo: Repository<AiJobStageOutputEntity>) {}
+
+    async find(jobId: string, stage: string, slot: string): Promise<unknown> {
+        const found = await this.repo.findOneBy({ jobId, stage, slot });
+        return found === null ? null : found.payload;
+    }
+
+    async save(jobId: string, stage: string, slot: string, payload: unknown, now: Date): Promise<void> {
+        // 같은 단계를 다시 돈 시도가 앞선 산출을 덮지 않도록 먼저 적힌 것을 남긴다.
+        await this.repo
+            .createQueryBuilder()
+            .insert()
+            .into(AiJobStageOutputEntity)
+            .values({ jobId, stage, slot, payload, createdAt: now } as QueryDeepPartialEntity<AiJobStageOutputEntity>)
+            .orIgnore()
+            .execute();
+    }
+
+    async clear(jobId: string): Promise<void> {
+        await this.repo.delete({ jobId });
     }
 }
 

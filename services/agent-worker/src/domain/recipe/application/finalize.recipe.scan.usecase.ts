@@ -12,6 +12,7 @@ import {
 import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
 import type { RecipeOutputPort } from "../port/recipe.output.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
+import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 
 export interface RecipeScanFinalizeOutput extends AgentUsageSummary {
@@ -35,6 +36,7 @@ export class FinalizeRecipeScanUsecase {
         private readonly output: RecipeOutputPort,
         private readonly notification: RecipeNotificationPort,
         private readonly clock: IClock,
+        private readonly stageOutputs: RecipeStageOutputPort | null = null,
     ) {}
 
     async execute(input: RecipeScanFinalizeInput): Promise<void> {
@@ -45,6 +47,8 @@ export class FinalizeRecipeScanUsecase {
             sourceJobId: input.jobId,
             recipes: input.output.recipes,
         });
+        // 종결한 잡은 다시 시도하지 않으므로 그 단계 산출을 원장에 남기지 않는다.
+        await this.stageOutputs?.clear(input.jobId);
         const settled = await this.repository.commitScan({
             jobId: input.jobId,
             userId: input.userId,

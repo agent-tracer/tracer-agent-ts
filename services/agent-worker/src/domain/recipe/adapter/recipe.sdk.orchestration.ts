@@ -4,11 +4,16 @@ import type {
   ExecutionBudget,
 } from "~agent-worker/support/llm/agent.budget.js";
 import { buildRecipeUserPrompt } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
-import type {
-  DispatchPlan,
-  ProbeReport,
+import {
+  dispatchPlanSchema,
+  type DispatchPlan,
+  type ProbeReport,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
-import type { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
+import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
+import {
+  RECIPE_STAGE,
+  type RecipeStageResumePort,
+} from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
 import {
   RECIPE_SCAN_SPEC,
@@ -16,7 +21,11 @@ import {
   type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
 import { runRecipeSurvey } from "./recipe.sdk.survey.js";
-import { agentFailureAccounting, runRecipeProbe } from "./recipe.sdk.probe.js";
+import { agentFailureAccounting, runRecipeProbe, type RecipeProbeRun } from "./recipe.sdk.probe.js";
+import {
+  probeStageSchema,
+  type ProbeStageOutput,
+} from "~agent-worker/domain/recipe/model/recipe.stage.schema.js";
 import {
   runRecipeSynthesis,
   type RecipeSynthesisRun,
@@ -32,6 +41,24 @@ export type { RecipeRunSegment };
 
 const AGENT_NAME = RECIPE_SCAN_SPEC.name;
 
+// 한 실행에 한 번뿐인 단계는 자리를 가를 것이 없다.
+const STAGE_SINGLETON_SLOT = "-";
+
+/** 전문가는 축마다 그리고 재파견 라운드마다 다른 자리에 선다. */
+function probeSlot(round: number, probe: string): string {
+    return `${round}:${probe}`;
+}
+
+/** 원장에서 되살린 전문가 하나의 결과이며 모델을 다시 부르지 않는다. */
+function restoredProbeRun(stored: ProbeStageOutput): RecipeProbeRun {
+    return {
+        report: stored.report,
+        ledger: ProvenanceLedger.from(stored.ledger),
+        accounting: stored.accounting,
+        steps: [],
+    };
+}
+
 export async function runRecipeSurveyPhase(
   ctx: RecipeQueryContext,
   deps: RecipeToolDeps,
@@ -39,17 +66,26 @@ export async function runRecipeSurveyPhase(
   lease: AgentBudgetLease,
   segments: RecipeRunSegment[],
   availableTurns: number,
+  stages: RecipeStageResumePort | null = null,
 ): Promise<{ readonly plan: DispatchPlan; readonly modelUsed: string }> {
   const fallback = {
     plan: { probes: [] } as DispatchPlan,
     modelUsed: recipeModelName(ctx.input),
   };
   if (lease.maxTurns <= 0) return fallback;
+  const restored = await stages?.restore(
+    RECIPE_STAGE.survey,
+    STAGE_SINGLETON_SLOT,
+    dispatchPlanSchema,
+  );
+  // 앞선 시도가 이미 세운 계획이 있으면 조율자를 다시 부르지 않는다.
+  if (restored != null) return { plan: restored, modelUsed: recipeModelName(ctx.input) };
   try {
     const run = await withNodeTrajectory(segments, AGENT_NAME, "survey", () =>
       runRecipeSurvey(ctx, deps, availableTurns, lease),
     );
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
+    await stages?.record(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, run.data);
     segments.push(toRecipeRunSegment(run, "survey"));
     const chosen =
       run.data.probes.map(({ probe, weight }) => `${probe}:${weight}`).join(", ") || "no specialists";
@@ -73,6 +109,8 @@ export async function dispatchRecipeProbes(
   plan: DispatchPlan,
   coordinatorLedger: ProvenanceLedger,
   segments: RecipeRunSegment[],
+  stages: RecipeStageResumePort | null = null,
+  round = 0,
 ): Promise<ProbeReport[]> {
   const leases = budget.leaseMany(
     plan.probes.map(({ weight }) => weight),
@@ -80,15 +118,25 @@ export async function dispatchRecipeProbes(
   );
   const runs = await Promise.all(
     plan.probes.map((assignment, index) =>
-      withNodeTrajectory(segments, AGENT_NAME, "probe", () =>
-        runRecipeProbe(
+      withNodeTrajectory(segments, AGENT_NAME, "probe", async () => {
+        const slot = probeSlot(round, assignment.probe);
+        const restored = await stages?.restore(RECIPE_STAGE.probe, slot, probeStageSchema);
+        // 앞선 시도가 이미 끝낸 전문가는 그 보고와 장부를 그대로 쓴다.
+        if (restored != null) return restoredProbeRun(restored);
+        const run = await runRecipeProbe(
           ctx,
           deps,
           assignment,
           leases[index]!,
           plan.probes.filter((other) => other.probe !== assignment.probe),
-        ),
-      ),
+        );
+        await stages?.record(RECIPE_STAGE.probe, slot, {
+          report: run.report,
+          ledger: run.ledger.snapshot(),
+          accounting: run.accounting,
+        });
+        return run;
+      }),
     ),
   );
   return runs.map((run, index) => {

@@ -11,6 +11,7 @@ import {
 } from "@tracer-agent/platform";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
+import { AiJobStageOutputEntity } from "~agent-worker/config/ledger/ai.job.stage.output.entity.js";
 import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
 import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { createNotificationPublisher } from "~agent-worker/config/notification.js";
@@ -24,6 +25,8 @@ import { RecipeReaderAdapter } from "~agent-worker/domain/recipe/adapter/recipe.
 import { RecipeSearchAdapter } from "~agent-worker/domain/recipe/adapter/recipe.search.adapter.js";
 import { RecipeRepositoryAdapter } from "~agent-worker/domain/recipe/adapter/recipe.repository.adapter.js";
 import { RecipeAgentAdapter } from "~agent-worker/domain/recipe/adapter/recipe.agent.adapter.js";
+import { RecipeStageOutputAdapter } from "~agent-worker/domain/recipe/adapter/recipe.stage.output.adapter.js";
+import { RunRecipeStageUsecase } from "~agent-worker/domain/recipe/application/run.recipe.stage.usecase.js";
 import { ContractPromptSourceAdapter as RecipePromptSourceAdapter } from "~agent-worker/domain/recipe/adapter/contract.prompt.source.adapter.js";
 import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
 import { FailRecipeJobUsecase } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
@@ -58,6 +61,7 @@ import { TitleActivity } from "~agent-worker/domain/title/inbound/title.activity
 /** 이 워커가 소유한 잡 원장을 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
 const JOB_ENTITIES = [
     AiJobEntity,
+    AiJobStageOutputEntity,
     AiJobStepEntity,
     AgentRunObservationEntity,
 ] as const;
@@ -83,16 +87,24 @@ async function bootstrap(): Promise<void> {
     const recipeOutput = new RecipeOutputAdapter(tracer);
     const recipeNotification = new RecipeNotificationAdapter(publish);
     const recipePrompts = new RecipePromptSourceAdapter();
+    const recipeStageOutputs = new RecipeStageOutputAdapter(dataSource);
+    const recipeStages = new RunRecipeStageUsecase(recipeStageOutputs, clock);
     const recipeAgent = new RecipeAgentAdapter(claudeRunner, {
         tasks: recipeReader,
         events: recipeReader,
         rules: recipeReader,
         search: recipeSearch,
-    }, recipePrompts);
+    }, recipePrompts, recipeStages);
     const recipe = new RecipeActivity(
         new PrepareRecipeScanUsecase(recipeRepository, recipeAgent, recipeNotification, clock, recipePrompts),
         new ScanRecipeUsecase(recipeRepository, recipeAgent, clock, recipeIds),
-        new FinalizeRecipeScanUsecase(recipeRepository, recipeOutput, recipeNotification, clock),
+        new FinalizeRecipeScanUsecase(
+            recipeRepository,
+            recipeOutput,
+            recipeNotification,
+            clock,
+            recipeStageOutputs,
+        ),
         new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock),
     );
 

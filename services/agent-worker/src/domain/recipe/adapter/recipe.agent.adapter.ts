@@ -37,6 +37,7 @@ import type {
   RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
+import type { RecipeStageResumeSource } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
 import { RECIPE_SCAN_SPEC, type RecipeQueryContext } from "./recipe.sdk.query.js";
 import {
@@ -73,6 +74,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     private readonly runner: IQueryRunner<ClaudeQueryOptions>,
     private readonly deps: RecipeToolDeps,
     private readonly prompts: PromptSourcePort,
+    private readonly stages: RecipeStageResumeSource | null = null,
   ) {}
 
   requiresLocalApiKey(): boolean {
@@ -117,6 +119,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     const synthesisFloorLease = budget.reserve(MIN_SYNTHESIS_TURNS, 0);
 
     const segments: RunSegment[] = [];
+    const stages = this.stages?.forJob(input.jobId) ?? null;
     const { plan, modelUsed } = await runRecipeSurveyPhase(
       ctx,
       this.deps,
@@ -124,6 +127,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       surveyLease,
       segments,
       SURVEY_AVAILABLE_TURNS,
+      stages,
     );
 
     const coordinatorLedger = new ProvenanceLedger();
@@ -138,6 +142,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       plan,
       coordinatorLedger,
       segments,
+      stages,
     );
 
     let synthesis = await synthesizeRecipe(
@@ -172,6 +177,8 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
           redispatchPlan,
           coordinatorLedger,
           segments,
+          stages,
+          round + 1,
         )),
       );
       synthesis = await synthesizeRecipe(
