@@ -1,6 +1,7 @@
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import { Job } from "~agent-api/domain/job/model/job.model.js";
 import type {
+    JobLeaseOutcome,
     JobHistoryPage,
     JobHistoryQuery,
     JobRepositoryPort,
@@ -88,10 +89,44 @@ export class InMemoryJobRepository implements JobRepositoryPort {
         return Promise.resolve();
     }
 
+    private readonly leases = new Map<string, { owner: string; expiresAt: Date }>();
+
     transitionToCanceled(id: string, now: Date): Promise<boolean> {
         const stored = this.rows.get(id);
         if (stored === undefined || !stored.isCancelable()) return Promise.resolve(false);
         stored.cancel(now);
+        return Promise.resolve(true);
+    }
+
+    claimLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
+        const stored = this.rows.get(id);
+        if (stored === undefined) return Promise.resolve(false);
+        const held = this.leases.get(id);
+        if (held !== undefined && held.owner !== owner && held.expiresAt.getTime() > now.getTime()) {
+            return Promise.resolve(false);
+        }
+        this.leases.set(id, { owner, expiresAt });
+        return Promise.resolve(true);
+    }
+
+    renewLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
+        const held = this.leases.get(id);
+        if (held === undefined || held.owner !== owner || held.expiresAt.getTime() <= now.getTime()) {
+            return Promise.resolve(false);
+        }
+        this.leases.set(id, { owner, expiresAt });
+        return Promise.resolve(true);
+    }
+
+    settleWithLease(id: string, owner: string, _outcome: JobLeaseOutcome, _now: Date): Promise<boolean> {
+        if (this.leases.get(id)?.owner !== owner) return Promise.resolve(false);
+        this.leases.delete(id);
+        return Promise.resolve(true);
+    }
+
+    releaseLease(id: string, owner: string, _now: Date): Promise<boolean> {
+        if (this.leases.get(id)?.owner !== owner) return Promise.resolve(false);
+        this.leases.delete(id);
         return Promise.resolve(true);
     }
 }

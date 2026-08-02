@@ -10,6 +10,10 @@ import { RuleAnchorReaderAdapter } from "~agent-api/domain/job/adapter/rule.anch
 import { StructuredJobEventLogAdapter } from "~agent-api/domain/job/adapter/structured.job.event.log.adapter.js";
 import { TypeOrmJobRepository } from "~agent-api/domain/job/adapter/typeorm.job.repository.adapter.js";
 import { TypeOrmJobStepRepository } from "~agent-api/domain/job/adapter/typeorm.job.step.repository.adapter.js";
+import { ClaimRuleJobUseCase } from "~agent-api/domain/job/application/command/claim.rule.job.usecase.js";
+import { ReleaseRuleJobUseCase } from "~agent-api/domain/job/application/command/release.rule.job.usecase.js";
+import { RenewRuleJobLeaseUseCase } from "~agent-api/domain/job/application/command/renew.rule.job.lease.usecase.js";
+import { SettleRuleJobUseCase } from "~agent-api/domain/job/application/command/settle.rule.job.usecase.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
 import { EnqueueJobUseCase } from "~agent-api/domain/job/application/command/enqueue.job.usecase.js";
 import { IssueJobExecutionEnvelopeUseCase } from "~agent-api/domain/job/application/command/issue.job.execution.envelope.usecase.js";
@@ -40,6 +44,10 @@ export const jobFeature = {
     controllers: [JobQueryController, JobCommandController, JobInternalController],
     providers: [
         CancelJobUseCase,
+        ClaimRuleJobUseCase,
+        RenewRuleJobLeaseUseCase,
+        SettleRuleJobUseCase,
+        ReleaseRuleJobUseCase,
         EnqueueJobUseCase,
         IssueJobExecutionEnvelopeUseCase,
         GetJobStepsUseCase,

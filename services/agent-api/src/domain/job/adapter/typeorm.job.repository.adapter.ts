@@ -2,6 +2,7 @@ import type { QueryDeepPartialEntity, Repository } from "typeorm";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
 import type {
+    JobLeaseOutcome,
     JobHistoryPage,
     JobHistoryQuery,
     JobRepositoryPort,
@@ -81,6 +82,64 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
                 SELECT 1 FROM "agent_run_observations" observation
                 WHERE observation."execution_id" = "ai_jobs"."id"
             ))`, { pending: JOB_STATUS.pending })
+            .execute();
+        return (result.affected ?? 0) > 0;
+    }
+
+    async claimLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
+        const result = await this.repo
+            .createQueryBuilder()
+            .update()
+            .set({ status: JOB_STATUS.running, leaseOwner: owner, leaseExpiresAt: expiresAt, startedAt: now, updatedAt: now })
+            .where("id = :id", { id })
+            // 살아 있는 리스를 남이 쥐고 있으면 가져가지 못하고, 만료된 리스는 누구든 가져간다.
+            .andWhere("status IN (:...claimable)", { claimable: [JOB_STATUS.pending, JOB_STATUS.running] })
+            .andWhere("(lease_owner IS NULL OR lease_owner = :owner OR lease_expires_at IS NULL OR lease_expires_at <= :now)", { owner, now })
+            .execute();
+        return (result.affected ?? 0) > 0;
+    }
+
+    async renewLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
+        const result = await this.repo
+            .createQueryBuilder()
+            .update()
+            .set({ leaseExpiresAt: expiresAt, updatedAt: now })
+            .where("id = :id", { id })
+            .andWhere("status = :running", { running: JOB_STATUS.running })
+            .andWhere("lease_owner = :owner", { owner })
+            .andWhere("lease_expires_at > :now", { now })
+            .execute();
+        return (result.affected ?? 0) > 0;
+    }
+
+    async settleWithLease(id: string, owner: string, outcome: JobLeaseOutcome, now: Date): Promise<boolean> {
+        const result = await this.repo
+            .createQueryBuilder()
+            .update()
+            .set({
+                status: outcome.status,
+                ...(outcome.result !== undefined ? { result: outcome.result } : {}),
+                ...(outcome.error !== undefined ? { error: outcome.error } : {}),
+                leaseOwner: null,
+                leaseExpiresAt: null,
+                completedAt: now,
+                updatedAt: now,
+            } as QueryDeepPartialEntity<JobEntity>)
+            .where("id = :id", { id })
+            .andWhere("status = :running", { running: JOB_STATUS.running })
+            .andWhere("lease_owner = :owner", { owner })
+            .execute();
+        return (result.affected ?? 0) > 0;
+    }
+
+    async releaseLease(id: string, owner: string, now: Date): Promise<boolean> {
+        const result = await this.repo
+            .createQueryBuilder()
+            .update()
+            .set({ status: JOB_STATUS.pending, leaseOwner: null, leaseExpiresAt: null, startedAt: null, updatedAt: now })
+            .where("id = :id", { id })
+            .andWhere("status = :running", { running: JOB_STATUS.running })
+            .andWhere("lease_owner = :owner", { owner })
             .execute();
         return (result.affected ?? 0) > 0;
     }
