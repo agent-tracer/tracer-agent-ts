@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { In, LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import { CHAT_EXECUTION_STATUS } from "~agent-api/domain/chat/model/chat.const.js";
 import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
@@ -34,7 +35,10 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
 
     async listActive(): Promise<ChatExecution[]> {
         const rows = await this.repo.find({
-            where: { status: In([CHAT_EXECUTION_STATUS.queued, CHAT_EXECUTION_STATUS.running]) },
+            where: {
+                status: In([CHAT_EXECUTION_STATUS.queued, CHAT_EXECUTION_STATUS.running]),
+                requestedBackend: AGENT_BACKEND,
+            },
             order: { createdAt: "ASC", id: "ASC" },
         });
         return rows.map(toChatExecution);
@@ -54,6 +58,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo.update(
             {
                 status: CHAT_EXECUTION_STATUS.running,
+                requestedBackend: AGENT_BACKEND,
                 updatedAt: LessThan(idleBefore),
                 ...(threadId !== undefined ? { threadId } : {}),
             },

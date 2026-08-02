@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { describe, expect, it } from "vitest";
 import { ChatThread } from "~agent-api/domain/chat/model/chat.thread.model.js";
 import { FixedClock } from "~agent-api/domain/chat/port/__fakes__/fixed.clock.js";
@@ -54,12 +55,12 @@ describe("EnqueueChatTurnUseCase", () => {
         expect(dispatcher.started).toEqual([{ executionId: execution.id, threadId: "t1" }]);
     });
 
-    it("접수한 실행에 구현체를 적지 않는다", async () => {
+    it("접수한 실행에 자기 축을 적는다", async () => {
         const { useCase } = makeUseCase();
 
         const { execution } = await useCase.execute(TURN);
 
-        expect(execution.requestedBackend).toBeNull();
+        expect(execution.requestedBackend).toBe(AGENT_BACKEND);
     });
 
     it("같은 요청 식별자와 같은 입력이면 접수를 하나로 접는다", async () => {

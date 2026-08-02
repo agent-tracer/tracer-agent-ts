@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import {
     CHAT_EXECUTION_CLAIM,
@@ -21,7 +22,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
 
     async listQueuedByThread(threadId: string): Promise<ChatExecution[]> {
         const rows = await this.repo.find({
-            where: { threadId, status: CHAT_EXECUTION_STATUS.queued },
+            where: { threadId, status: CHAT_EXECUTION_STATUS.queued, requestedBackend: AGENT_BACKEND },
             order: { createdAt: "ASC", id: "ASC" },
         });
         return rows.map(toChatExecution);
@@ -32,6 +33,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo.update(
             {
                 status: CHAT_EXECUTION_STATUS.running,
+                requestedBackend: AGENT_BACKEND,
                 updatedAt: LessThan(idleBefore),
                 ...(threadId !== undefined ? { threadId } : {}),
             },

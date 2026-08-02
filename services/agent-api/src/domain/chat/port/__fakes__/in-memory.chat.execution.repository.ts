@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { CHAT_EXECUTION_STATUS } from "~agent-api/domain/chat/model/chat.const.js";
 import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import type { ChatExecutionRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
@@ -38,7 +39,9 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
     }
 
     listActive(): Promise<ChatExecution[]> {
-        return Promise.resolve([...this.rows.values()].filter(isActive).sort(compareOldest));
+        return Promise.resolve(
+            [...this.rows.values()].filter(isActive).filter(isOwnBackend).sort(compareOldest),
+        );
     }
 
     listByThread(threadId: string, limit?: number): Promise<ChatExecution[]> {
@@ -52,6 +55,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         let recovered = 0;
         for (const row of this.rows.values()) {
             if (row.status !== CHAT_EXECUTION_STATUS.running) continue;
+            if (!isOwnBackend(row)) continue;
             if (threadId !== undefined && row.threadId !== threadId) continue;
             if (row.updatedAt >= idleBefore) continue;
             row.recover(now);
@@ -110,6 +114,10 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
 function isActive(execution: ChatExecution): boolean {
     return execution.status === CHAT_EXECUTION_STATUS.queued
         || execution.status === CHAT_EXECUTION_STATUS.running;
+}
+
+function isOwnBackend(execution: ChatExecution): boolean {
+    return execution.requestedBackend === AGENT_BACKEND;
 }
 
 function compareOldest(left: ChatExecution, right: ChatExecution): number {

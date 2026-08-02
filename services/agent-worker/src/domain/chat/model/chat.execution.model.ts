@@ -26,7 +26,7 @@ export class ChatExecution {
 
     status!: ChatExecutionStatus;
 
-    /** 이 실행을 맡을 구현체를 게이트웨이가 골랐으면 그 이름이고 고르지 않았으면 비어 있다. */
+    /** 이 실행을 접수한 축이며 접수구가 자기 축을 그대로 적으므로 대기와 실행 중에는 비어 있지 않다. */
     requestedBackend!: string | null;
 
     model!: string | null;

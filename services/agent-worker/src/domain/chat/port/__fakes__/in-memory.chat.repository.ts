@@ -1,4 +1,4 @@
-import type { AgentRunObservation } from "@tracer-agent/llm";
+import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import {
     CHAT_EXECUTION_CLAIM,
     CHAT_EXECUTION_STATUS,
@@ -36,7 +36,10 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
 
     async listQueuedByThread(threadId: string): Promise<ChatExecution[]> {
         return [...this.rows.values()]
-            .filter((row) => row.threadId === threadId && row.status === CHAT_EXECUTION_STATUS.queued)
+            .filter((row) =>
+                row.threadId === threadId
+                && row.status === CHAT_EXECUTION_STATUS.queued
+                && row.requestedBackend === AGENT_BACKEND)
             .sort((left, right) => left.id.localeCompare(right.id));
     }
 
@@ -44,6 +47,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         let recovered = 0;
         for (const row of this.rows.values()) {
             if (row.status !== CHAT_EXECUTION_STATUS.running) continue;
+            if (row.requestedBackend !== AGENT_BACKEND) continue;
             if (threadId !== undefined && row.threadId !== threadId) continue;
             if (row.updatedAt.getTime() >= idleBefore.getTime()) continue;
             row.status = CHAT_EXECUTION_STATUS.queued;
