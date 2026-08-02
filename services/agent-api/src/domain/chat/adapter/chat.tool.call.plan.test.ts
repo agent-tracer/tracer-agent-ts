@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { chatToolCallPlan } from "./chat.tool.call.plan.js";
-import { CHAT_MUTATION_TOOLS } from "~agent-api/domain/chat/model/chat.tool.schema.js";
+import { CHAT_CONFIRM_TOOLS } from "~agent-api/domain/chat/model/chat.tool.schema.js";
 
 describe("승인 뒤 부를 자리", () => {
     it("확인 게이트가 필요한 도구를 빠짐없이 잇는다", () => {
-        expect(Object.keys(chatToolCallPlan).sort()).toEqual([...CHAT_MUTATION_TOOLS].sort());
+        expect(Object.keys(chatToolCallPlan).sort()).toEqual([...CHAT_CONFIRM_TOOLS].sort());
     });
 
     it("바꾼 자리만 실어 보내고 그 사실을 문장으로 남긴다", () => {

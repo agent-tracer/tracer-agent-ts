@@ -35,10 +35,20 @@ export interface ContractToolArg {
     readonly items?: ContractToolArgItems;
 }
 
+/** 도구가 모델에게 열리는 표면이며 확인을 받는지와 무엇을 읽는지를 이 한 값이 정한다. */
+export const TOOL_SURFACE = {
+    read: "read",
+    agentRead: "agentRead",
+    memory: "memory",
+    confirm: "confirm",
+} as const;
+
+export type ToolSurface = (typeof TOOL_SURFACE)[keyof typeof TOOL_SURFACE];
+
 /** 도구 하나가 갖는 설명과 인자이며 args의 선언 순서가 모델이 보는 순서다. */
 export interface ContractTool {
     readonly description: string;
-    readonly mutation?: boolean;
+    readonly surface?: ToolSurface;
     readonly args: Readonly<Record<string, ContractToolArg>>;
 }
 

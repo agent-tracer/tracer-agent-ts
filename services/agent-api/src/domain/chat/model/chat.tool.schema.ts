@@ -1,4 +1,5 @@
 import {
+    TOOL_SURFACE,
     contractToolDefinitions,
     contractToolShapes,
     type ContractToolFile,
@@ -16,7 +17,7 @@ export interface ChatToolBindings {
 /** 대화 도구 선언이며 확인 게이트와 응답 칸과 안내 문장을 함께 갖는다. */
 export interface ChatToolContract extends ContractToolFile {
     readonly responses: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
-    /** mutation 도구가 확인 대기 응답에 싣는 안내이며 두 구현체가 같은 문장을 모델에게 보인다. */
+    /** 확인을 받는 도구가 대기 응답에 싣는 안내이며 두 구현체가 같은 문장을 모델에게 보인다. */
     readonly proposalNote: string;
     readonly failures: ToolFailureTexts;
     readonly bindings: ChatToolBindings;
@@ -29,9 +30,9 @@ export const CHAT_TOOL_CONTRACT: ChatToolContract =
 /** 이 에이전트가 모델에게 여는 도구의 전체 이름이다. */
 export const CHAT_TOOLS: readonly string[] = Object.keys(CHAT_TOOL_CONTRACT.tools);
 
-/** 사용자에게 쓰기 확인 게이트를 세워야 하는 도구의 이름이다. */
-export const CHAT_MUTATION_TOOLS: readonly string[] = CHAT_TOOLS.filter(
-    (name) => CHAT_TOOL_CONTRACT.tools[name]?.mutation === true,
+/** 부르기 전에 사용자 확인을 받아야 하는 도구의 이름이다. */
+export const CHAT_CONFIRM_TOOLS: readonly string[] = CHAT_TOOLS.filter(
+    (name) => CHAT_TOOL_CONTRACT.tools[name]?.surface === TOOL_SURFACE.confirm,
 );
 
 /** 도구 이름별 설명이며 실행 봉투가 이 문장을 그대로 실어 보낸다. */

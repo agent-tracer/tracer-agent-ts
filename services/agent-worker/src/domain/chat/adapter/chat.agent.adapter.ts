@@ -29,7 +29,7 @@ import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.po
 import type { PromptSourcePort } from "~agent-worker/domain/chat/port/prompt.source.port.js";
 import { buildChatMemoryToolHandlers } from "./chat.memory.tools.js";
 import { buildChatReadToolHandlers } from "./chat.read.tools.js";
-import { chatAgentReadToolNames } from "./chat.tool.gate.js";
+import { chatAgentReadToolNames } from "./chat.tool.surface.js";
 import { ChatWriteClient, buildChatWriteToolHandlers } from "./chat.write.tools.js";
 
 export const CHAT_MCP_SERVER = `monitor-${CHAT_SPEC.name}`;

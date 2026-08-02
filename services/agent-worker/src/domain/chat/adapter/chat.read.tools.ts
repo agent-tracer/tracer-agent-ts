@@ -1,7 +1,7 @@
 import type { ToolHandlers } from "@tracer-agent/llm";
 import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import { parseChatToolArgs } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
-import { chatReadToolNames } from "./chat.tool.gate.js";
+import { chatReadToolNames } from "./chat.tool.surface.js";
 import { telemetered } from "./chat.tool.support.js";
 
 /** 한 사용자 범위로 묶인 도구 호출 한 건이다. */

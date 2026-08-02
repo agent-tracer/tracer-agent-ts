@@ -1,4 +1,5 @@
 import {
+    TOOL_SURFACE,
     contractToolDefinitions,
     contractToolShapes,
     type ContractToolFile,
@@ -23,9 +24,9 @@ export const CHAT_TOOL_CONTRACT: ChatToolContract = readAgentTools<ChatToolContr
 /** 이 에이전트가 모델에게 여는 도구의 전체 이름이다. */
 export const CHAT_TOOLS: readonly string[] = Object.keys(CHAT_TOOL_CONTRACT.tools);
 
-/** 사용자에게 쓰기 확인 게이트를 세워야 하는 도구의 이름이다. */
-export const CHAT_MUTATION_TOOLS: readonly string[] = CHAT_TOOLS.filter(
-    (name) => CHAT_TOOL_CONTRACT.tools[name]?.mutation === true,
+/** 부르기 전에 사용자 확인을 받아야 하는 도구의 이름이다. */
+export const CHAT_CONFIRM_TOOLS: readonly string[] = CHAT_TOOLS.filter(
+    (name) => CHAT_TOOL_CONTRACT.tools[name]?.surface === TOOL_SURFACE.confirm,
 );
 
 /** 도구 이름별 zod shape이며 핸들러가 같은 shape으로 인자를 파싱하고 좁힌다. */

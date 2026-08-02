@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from "@nes
 import { logInfo } from "@tracer-agent/platform";
 import { ChatPendingTool } from "~agent-api/domain/chat/model/chat.pending.tool.model.js";
 import {
-    CHAT_MUTATION_TOOLS,
+    CHAT_CONFIRM_TOOLS,
     CHAT_TOOL_CONTRACT,
     parseChatToolArgs,
 } from "~agent-api/domain/chat/model/chat.tool.schema.js";
@@ -21,7 +21,7 @@ import {
 } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { CHAT_CLOCK, type ClockPort } from "~agent-api/domain/chat/port/clock.port.js";
 
-const CONFIRMABLE_TOOLS = new Set<string>(CHAT_MUTATION_TOOLS);
+const CONFIRMABLE_TOOLS = new Set<string>(CHAT_CONFIRM_TOOLS);
 
 export interface ProposeToolInput {
     readonly userId: string;

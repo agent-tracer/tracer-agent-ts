@@ -1,7 +1,7 @@
 import type { ToolHandlers } from "@tracer-agent/llm";
 import { parseChatToolArgs } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
 import type { ChatTurnToolCall } from "~agent-worker/domain/chat/model/chat.turn.model.js";
-import { chatWriteToolNames } from "./chat.tool.gate.js";
+import { chatWriteToolNames } from "./chat.tool.surface.js";
 import { chatApiHeaders, telemetered, unwrapChatApiEnvelope } from "./chat.tool.support.js";
 
 const CHAT_THREADS_PATH = "/api/agent/chat/threads";

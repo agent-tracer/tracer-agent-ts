@@ -7,17 +7,10 @@ const CONTRACT_ROOT = path.resolve(
     "../../../contract",
 );
 
-/** 확인 게이트를 세우지 않고 곧바로 부르는 도구다. */
-export const TOOL_GATE_NONE = "none";
-
-/** 사용자의 승인을 받은 뒤에만 부르는 도구다. */
-export const TOOL_GATE_CONFIRM = "confirm";
-
 /** 도구 하나가 되읽거나 부르는 추적 API 한 자리이며 인자가 경로·쿼리·본문 중 어디로 가는지를 담는다. */
 export interface ToolBinding {
     readonly method: string;
     readonly path: string;
-    readonly gate: string;
     readonly pathArgs: readonly string[];
     readonly query: Readonly<Record<string, string>>;
     readonly body: Readonly<Record<string, string>>;

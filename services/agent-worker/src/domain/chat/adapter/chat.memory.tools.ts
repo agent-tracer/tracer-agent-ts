@@ -2,11 +2,11 @@ import type { ToolHandlers } from "@tracer-agent/llm";
 import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import { parseChatToolArgs } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
 import type { ChatTurnSink } from "~agent-worker/domain/chat/model/chat.turn.model.js";
-import { CHAT_MEMORY_TOOLS } from "./chat.tool.gate.js";
+import { chatRecallToolName } from "./chat.tool.surface.js";
 import type { ChatToolCallContext } from "./chat.read.tools.js";
 import { telemetered } from "./chat.tool.support.js";
 
-const [RECALL_FACTS] = CHAT_MEMORY_TOOLS;
+const RECALL_FACTS = chatRecallToolName();
 
 /** 한 턴에서 장기기억 도구가 어느 사용자에 매이고 어디로 갱신 통지를 흘리는지다. */
 export interface ChatMemoryToolContext extends ChatToolCallContext {

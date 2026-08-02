@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-    CHAT_MUTATION_TOOLS,
+    CHAT_CONFIRM_TOOLS,
     CHAT_TOOL_CONTRACT,
     CHAT_TOOLS,
     parseChatToolArgs,
@@ -13,8 +13,8 @@ describe("대화 도구 계약", () => {
     });
 
     it("확인 게이트가 필요한 도구만 쓰기로 가른다", () => {
-        expect(CHAT_MUTATION_TOOLS).toContain("update_task");
-        expect(CHAT_MUTATION_TOOLS).not.toContain("search_tasks");
+        expect(CHAT_CONFIRM_TOOLS).toContain("update_task");
+        expect(CHAT_CONFIRM_TOOLS).not.toContain("search_tasks");
     });
 
     it("필수 인자가 없으면 거절한다", () => {
