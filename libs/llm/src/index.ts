@@ -15,6 +15,7 @@ export * from "./observability/telemetry.attributes.js";
 export * from "./observability/telemetry.js";
 export * from "./observability/trace.environment.js";
 export * from "./observability/trajectory.js";
+export * from "./observability/trajectory.metrics.js";
 export * from "./orchestration/activity.guard.js";
 export * from "./pricing/llm.catalog.schema.js";
 export * from "./pricing/pricing.js";
