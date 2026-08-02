@@ -1,5 +1,6 @@
 import {
     estimateCostUsd,
+    resolveModelAlias,
     type AgentExecutionFailure,
     type AgentQueryUsage,
     type AgentRunSummary,
@@ -30,7 +31,7 @@ export function attemptRecordFromFailure(attempt: number, err: AgentExecutionFai
         attempt,
         status: JOB_ATTEMPT_STATUS.failed,
         subtype: err.errorSubtype,
-        model: err.actualModel,
+        model: err.actualModel === null ? null : resolveModelAlias(err.actualModel),
         costUsd: err.actualModel !== null ? estimateCostUsd(err.actualModel, err.usage) : null,
         durationMs: err.durationMs,
         usage: err.usage,

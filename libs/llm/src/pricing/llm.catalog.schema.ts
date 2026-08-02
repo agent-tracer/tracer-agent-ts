@@ -78,14 +78,17 @@ export function isPricedModel(model: string): boolean {
 }
 
 export function modelRate(model: string): ModelRate | null {
+    const alias = modelAlias(model);
+    return alias === null ? null : (loadLlmCatalog().models[alias] ?? null);
+}
+
+/** 프로바이더는 별칭으로 부른 요청에도 날짜가 붙은 구체 버전 이름으로 응답하므로 그 이름을 카탈로그의 별칭으로 되돌린다. */
+export function modelAlias(model: string): string | null {
     const models = loadLlmCatalog().models;
-    const exact = models[model];
-    if (exact !== undefined) return exact;
-    // 프로바이더는 별칭으로 부른 요청에도 날짜가 붙은 구체 버전 이름으로 응답할 수 있다.
+    if (models[model] !== undefined) return model;
     const prefixed = Object.keys(models).filter((id) => model.startsWith(`${id}-`));
     if (prefixed.length === 0) return null;
-    const longest = prefixed.reduce((left, right) => (right.length > left.length ? right : left));
-    return models[longest] ?? null;
+    return prefixed.reduce((left, right) => (right.length > left.length ? right : left));
 }
 
 /** 실행기는 자기 단가표를 갖지 않으므로 봉투에 실어 보낼 단가만 뽑아 준다. */
