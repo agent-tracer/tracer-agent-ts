@@ -13,6 +13,7 @@ import type { AgentQueryRequest, AgentQueryResult, IQueryRunner } from "~llm/run
 import { redactText } from "~llm/support/redaction.js";
 import { logWarn } from "@tracer-agent/platform";
 import { buildAgentEnv } from "./claude.env.js";
+import { ProcessErrorOutput } from "./claude.process.error.js";
 import { resolveClaudeExecutablePath } from "./claude.executable.js";
 import {
     dominantModel,
@@ -63,6 +64,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         let errorSubtype: string | null = null;
         let actualModel: string | null = null;
         let providerRequestId: string | null = null;
+        const stderr = new ProcessErrorOutput();
         const trajectory = new TrajectoryRecorder(this.nowMs);
         const toolNameById = new Map<string, string>();
 
@@ -140,6 +142,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(request.effort !== undefined ? { effort: request.effort } : {}),
                 ...(request.maxBudgetUsd !== undefined ? { maxBudgetUsd: request.maxBudgetUsd } : {}),
                 ...(options?.fallbackModel !== undefined ? { fallbackModel: options.fallbackModel } : {}),
+                stderr: (data) => stderr.append(data),
                 hooks: { PreToolUse: [{ hooks: [denyToolsWhenLanding] }] },
             },
         });
@@ -273,6 +276,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             await finishClaudeRunTree(runTree, resultText || collected, structuredOutput, errorSummary);
         }
 
+        stderr.report(request.label, request.jobId ?? null, errorSubtype);
         logAgentQuery(request.label, GEN_AI_PROVIDER.anthropic, request.model, result, request.jobId);
         return result;
     }
