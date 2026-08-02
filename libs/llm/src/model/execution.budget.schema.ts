@@ -1,0 +1,50 @@
+import { z } from "zod";
+import { readContractJson } from "~llm/support/contract.js";
+
+const reservationEntrySchema = z.object({
+    turns: z.number().int().min(0),
+    budgetShare: z.number().min(0).max(1),
+    reason: z.string().min(1),
+});
+
+const RESERVATION_STEPS = ["repair", "survey", "synthesisFloor"] as const;
+
+const reservationSchema = z.object({
+    meaning: z.string().min(1),
+    order: z.array(z.enum(RESERVATION_STEPS)).length(RESERVATION_STEPS.length),
+    repair: reservationEntrySchema,
+    survey: reservationEntrySchema,
+    synthesisFloor: reservationEntrySchema,
+});
+
+const executionBudgetSchema = z.object({
+    meaning: z.string().min(1),
+    reservation: reservationSchema,
+});
+
+export type ExecutionBudgetReservationEntry = z.infer<typeof reservationEntrySchema>;
+export type ExecutionBudgetReservation = z.infer<typeof reservationSchema>;
+export type ExecutionBudgetContract = z.infer<typeof executionBudgetSchema>;
+
+let cached: ExecutionBudgetContract | null = null;
+
+/** 예약 몫과 뗄 순서의 정본을 계약에서 읽어 검증한 결과를 돌려준다. */
+export function loadExecutionBudgetContract(): ExecutionBudgetContract {
+    if (cached === null) {
+        const parsed = executionBudgetSchema.parse(
+            readContractJson<unknown>("agent/shared/execution.budget.json"),
+        );
+        assertReservationOrder(parsed.reservation.order);
+        cached = parsed;
+    }
+    return cached;
+}
+
+// 뗄 순서가 이 값과 다르면 같은 비율이 다른 액수가 되어 recipe.agent.adapter.ts의 예약 호출 순서와 어긋난다.
+function assertReservationOrder(order: readonly (typeof RESERVATION_STEPS)[number][]): void {
+    const expected = RESERVATION_STEPS.join(",");
+    const actual = order.join(",");
+    if (actual !== expected) {
+        throw new Error(`execution.budget.json: reservation.order must be [${expected}], got [${actual}]`);
+    }
+}

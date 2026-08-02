@@ -1,4 +1,8 @@
-import { renderFailureText, type LlmToolDefinition } from "@tracer-agent/llm";
+import {
+    loadExecutionBudgetContract,
+    renderFailureText,
+    type LlmToolDefinition,
+} from "@tracer-agent/llm";
 import {
     MAX_PROBE_WEIGHT,
     MAX_VERDICT_CHARS,
@@ -7,16 +11,18 @@ import {
 } from "./recipe.dispatch.schema.js";
 import { RECIPE_SCAN_FAILURES, RECIPE_SCAN_TOOL, RECIPE_SCAN_TOOLS } from "./recipe.tool.schema.js";
 
+const { reservation } = loadExecutionBudgetContract();
+
 // 첫 실행이 예산을 거의 다 써도 수리가 도구를 쥔 채 출력을 낼 최소 여지는 남긴다.
-export const REPAIR_RESERVED_TURNS = 2;
-export const REPAIR_RESERVED_BUDGET_SHARE = 0.2;
+export const REPAIR_RESERVED_TURNS = reservation.repair.turns;
+export const REPAIR_RESERVED_BUDGET_SHARE = reservation.repair.budgetShare;
 
 // 계획을 세우는 데 한 턴을 예약해 두므로 나머지가 전문가와 종합의 몫이다.
-export const SURVEY_TURNS = 1;
-export const SURVEY_BUDGET_SHARE = 0.1;
+export const SURVEY_TURNS = reservation.survey.turns;
+export const SURVEY_BUDGET_SHARE = reservation.survey.budgetShare;
 
 /** 종합에 먼저 떼어 두는, 전문가에게 넘기지 않는 최소 턴이다. */
-export const MIN_SYNTHESIS_TURNS = 3;
+export const MIN_SYNTHESIS_TURNS = reservation.synthesisFloor.turns;
 
 /** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
 export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;

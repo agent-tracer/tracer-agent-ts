@@ -3,6 +3,7 @@ export * from "./model/agent.error.js";
 export * from "./model/agent.observation.js";
 export * from "./model/agent.usage.js";
 export * from "./model/deadline.js";
+export * from "./model/execution.budget.schema.js";
 export * from "./model/job.step.js";
 export * from "./model/prompt.resolution.js";
 export * from "./observability/agent.run.observation.js";
