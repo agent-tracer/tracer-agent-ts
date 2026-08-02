@@ -62,6 +62,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         let errorSummary: string | null = null;
         let errorSubtype: string | null = null;
         let actualModel: string | null = null;
+        let providerRequestId: string | null = null;
         const trajectory = new TrajectoryRecorder(this.nowMs);
         const toolNameById = new Map<string, string>();
 
@@ -148,6 +149,8 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     continue;
                 }
                 if (msg.type === "assistant") {
+                    // 공급자 식별자는 모델 호출 하나를 가리키므로 마지막 호출의 값이 이 시도를 대표한다.
+                    if (msg.request_id !== undefined) providerRequestId = msg.request_id;
                     let text = "";
                     const toolCalls: JobStepToolCall[] = [];
                     for (const block of msg.message.content) {
@@ -254,7 +257,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             errorSubtype,
             landed: landing,
             actualModel,
-            providerRequestId: null,
+            providerRequestId,
         };
 
         if (runTree) {

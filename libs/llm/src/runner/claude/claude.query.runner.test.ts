@@ -122,3 +122,66 @@ describe("모델 거절 판정", () => {
         expect(result.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTurnsExceeded);
     });
 });
+
+function assistant(requestId: string | undefined, text: string): unknown {
+    return {
+        type: "assistant",
+        message: { content: [{ type: "text", text }], usage: USAGE, stop_reason: null },
+        parent_tool_use_id: null,
+        uuid: "u-a",
+        session_id: "s-1",
+        ...(requestId !== undefined ? { request_id: requestId } : {}),
+    };
+}
+
+function done(): unknown {
+    return {
+        type: "result",
+        subtype: "success",
+        is_error: false,
+        duration_ms: 1,
+        duration_api_ms: 1,
+        num_turns: 1,
+        result: "",
+        total_cost_usd: 0,
+        usage: USAGE,
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "u-1",
+        session_id: "s-1",
+    };
+}
+
+describe("공급자 요청 식별자", () => {
+    it("모델 호출이 낸 값을 그대로 적는다", async () => {
+        queryMock.mockReturnValue(stream([assistant("req-1", "안녕"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.providerRequestId).toBe("req-1");
+    });
+
+    it("한 실행이 모델을 여러 번 부르면 마지막 호출의 값을 적는다", async () => {
+        queryMock.mockReturnValue(stream([assistant("req-1", "하나"), assistant("req-2", "둘"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.providerRequestId).toBe("req-2");
+    });
+
+    it("공급자가 값을 내지 않으면 비운다", async () => {
+        queryMock.mockReturnValue(stream([assistant(undefined, "안녕"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.providerRequestId).toBeNull();
+    });
+
+    it("세션 식별자를 그 자리에 채우지 않는다", async () => {
+        queryMock.mockReturnValue(stream([assistant(undefined, "안녕"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.providerRequestId).not.toBe("s-1");
+    });
+});
