@@ -105,7 +105,7 @@ async function bootstrap(): Promise<void> {
             clock,
             recipeStageOutputs,
         ),
-        new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock),
+        new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock, recipeStageOutputs),
     );
 
     const titleIds = new TitleUlidGenerator(clock);

@@ -2,6 +2,7 @@ import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
+import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 
 const ERROR_LIMIT = 1000;
 const SUMMARY_LIMIT = 240;
@@ -17,6 +18,7 @@ export class FailRecipeJobUsecase {
         private readonly repository: RecipeRepositoryPort,
         private readonly notification: RecipeNotificationPort,
         private readonly clock: IClock,
+        private readonly stageOutputs: RecipeStageOutputPort | null = null,
     ) {}
 
     async execute(input: FailRecipeJobInput): Promise<void> {
@@ -26,6 +28,8 @@ export class FailRecipeJobUsecase {
             this.clock.now(),
         );
         if (failed === null) return;
+        // 실패도 종결이라 그 잡은 다시 돌지 않으므로 단계 산출을 원장에 남기지 않는다.
+        await this.stageOutputs?.clear(input.jobId);
 
         await this.notification.jobUpdated(failed.userId, {
             jobId: failed.id,
