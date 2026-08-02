@@ -94,7 +94,7 @@ describe("모델 거절 판정", () => {
         expect(result.rawOutput).toBe("answer");
     });
 
-    it("공급자 서브타입은 여전히 기존 어휘로 정규화한다", async () => {
+    it("공급자 서브타입을 이 실행기의 오류 어휘로 정규화한다", async () => {
         queryMock.mockReturnValue(
             stream([
                 {
