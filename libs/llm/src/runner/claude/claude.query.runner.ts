@@ -130,7 +130,6 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(request.effort !== undefined ? { effort: request.effort } : {}),
                 ...(request.maxBudgetUsd !== undefined ? { maxBudgetUsd: request.maxBudgetUsd } : {}),
                 ...(options?.fallbackModel !== undefined ? { fallbackModel: options.fallbackModel } : {}),
-                ...(options?.agents !== undefined ? { agents: { ...options.agents } } : {}),
                 hooks: { PreToolUse: [{ hooks: [denyToolsWhenLanding] }] },
             },
         });
