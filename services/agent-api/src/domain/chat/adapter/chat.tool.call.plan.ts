@@ -27,6 +27,10 @@ export const chatToolCallPlan: Readonly<Record<string, ChatToolPlan>> = {
             `Updated task ${taskId}: ${changes.join(", ")}.`,
         );
     },
+    remember_fact: (args) => {
+        const key = req(args, "key");
+        return plain({ key, content: req(args, "content") }, `Remembered "${key}" about you.`);
+    },
     archive_task: (args) => plain({ taskId: req(args, "taskId") }, `Archived task ${req(args, "taskId")}.`),
     unarchive_task: (args) => plain({ taskId: req(args, "taskId") }, `Unarchived task ${req(args, "taskId")}.`),
     delete_task: (args) => plain({ taskId: req(args, "taskId") }, `Deleted task ${req(args, "taskId")}.`),
