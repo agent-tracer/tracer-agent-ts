@@ -1,7 +1,7 @@
 import { TOOL_BINDINGS, TOOL_GATE_CONFIRM, TOOL_GATE_NONE } from "@tracer-agent/tracer-client";
 
-/** 장기기억 도구는 게이트 없이 곧바로 부르되 원장이 에이전트 서비스에 있어 기점이 다르다. */
-export const CHAT_MEMORY_TOOLS = ["recall_facts", "remember_fact"] as const;
+/** 장기기억을 되읽는 도구는 게이트 없이 곧바로 부르되 원장이 에이전트 서비스에 있어 기점이 다르다. */
+export const CHAT_MEMORY_TOOLS = ["recall_facts"] as const;
 
 const MEMORY_TOOL_SET: ReadonlySet<string> = new Set(CHAT_MEMORY_TOOLS);
 
