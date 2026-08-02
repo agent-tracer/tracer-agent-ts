@@ -4,7 +4,11 @@ import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { AgentLanguageCases } from "~agent-worker/support/contract.js";
 import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
 import { normalizeOutputLanguage, OUTPUT_LANGUAGES } from "~agent-worker/support/output.language.js";
-import { buildChatSystemPrompt, CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY } from "./chat.prompt.js";
+import {
+    buildChatSystemPrompt,
+    CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
+    renderChatTurnContext,
+} from "./chat.prompt.js";
 
 const DECLARED = readAgentPrompt(AGENT.chat.id);
 const PROMPT = buildAgentPrompt(DECLARED);
@@ -33,7 +37,7 @@ function labelled(): AgentPrompt {
 
 describe("대화 시스템 프롬프트", () => {
     it("계약이 선언한 슬롯을 빠짐없이 쓴다", () => {
-        const rendered = buildChatSystemPrompt(labelled(), "auto");
+        const rendered = `${buildChatSystemPrompt(labelled())}\n${renderChatTurnContext(labelled(), "auto")}`;
         const used = [...rendered.matchAll(/<<([A-Za-z]+)>>/gu)].map((match) => match[1]);
 
         expect(used.sort()).toEqual(
@@ -60,7 +64,7 @@ describe("대화 프롬프트의 출력 언어", () => {
     it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
         for (const declared of LANGUAGE.cases) {
             const expected = variant(declared.expect.variant);
-            const rendered = buildChatSystemPrompt(PROMPT, normalizeOutputLanguage(declared.input.language));
+            const rendered = renderChatTurnContext(PROMPT, normalizeOutputLanguage(declared.input.language));
 
             expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
             expect(rendered, declared.expect.variant).toContain(expected);

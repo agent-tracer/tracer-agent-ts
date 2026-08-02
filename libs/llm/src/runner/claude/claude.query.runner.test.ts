@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 const queryMock = vi.fn<(...args: unknown[]) => AsyncGenerator<unknown>>();
 
+const SYSTEM_PROMPT_DYNAMIC_BOUNDARY = "<<<SYSTEM_PROMPT_DYNAMIC_BOUNDARY>>>";
+
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
     query: (...args: unknown[]): AsyncGenerator<unknown> => queryMock(...args),
+    SYSTEM_PROMPT_DYNAMIC_BOUNDARY,
 }));
 
 const { ClaudeQueryRunner } = await import("./claude.query.runner.js");
@@ -239,5 +242,33 @@ describe("실행 표면", () => {
 
         expect(passedOptions().settingSources).toEqual(["user"]);
         expect(passedOptions().skills).toBe("all");
+    });
+});
+
+function passedSystemPrompt(): unknown {
+    const [call] = queryMock.mock.calls;
+    const { options } = call![0] as { options: { systemPrompt: unknown } };
+    return options.systemPrompt;
+}
+
+describe("프롬프트 캐시 경계", () => {
+    it("턴별 맥락이 있으면 정적 접두부와 그 사이에 경계를 세운다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(
+            request({ systemPrompt: "정적 지침", dynamicSystemPrompt: "이번 턴 맥락" }),
+        );
+
+        expect(passedSystemPrompt()).toEqual(["정적 지침", SYSTEM_PROMPT_DYNAMIC_BOUNDARY, "이번 턴 맥락"]);
+    });
+
+    it("턴별 맥락이 없으면 지침 하나를 그대로 넘긴다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request({ systemPrompt: "정적 지침" }));
+
+        expect(passedSystemPrompt()).toBe("정적 지침");
     });
 });

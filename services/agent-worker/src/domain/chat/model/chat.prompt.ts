@@ -5,8 +5,8 @@ import type { ChatTurnMessage, ChatUserFact } from "./chat.turn.model.js";
 
 export const CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY = "chat.assistant.system";
 
-// 프롬프트 캐시는 접두사 일치라 시스템 프롬프트에 요청마다 바뀌는 값이 섞이면 매 요청 무효화된다.
-export function buildChatSystemPrompt(prompt: AgentPrompt, language: string): string {
+/** 턴마다 같은 지침만 담아 프롬프트 캐시의 접두사가 되며 바뀌는 값은 이 뒤에 붙는다. */
+export function buildChatSystemPrompt(prompt: AgentPrompt): string {
     const slot = (name: string): string => prompt.slot(CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY, name);
     return [
         SAFETY_POLICY,
@@ -23,27 +23,31 @@ export function buildChatSystemPrompt(prompt: AgentPrompt, language: string): st
         "",
         "Memory:",
         slot("memoryRule"),
-        "",
-        `Output language: ${prompt.languageDirective(language)}`,
     ].join("\n");
 }
 
-/** 러너가 단발이라 대화 전체를 한 프롬프트로 재생하며 마지막 사용자 메시지가 이번 턴의 질문이다. */
-export function renderChatPrompt(
-    messages: readonly ChatTurnMessage[],
+/** 턴마다 달라지는 언어와 요약과 기억이며 캐시 경계 뒤에 서서 접두사를 무효로 만들지 않는다. */
+export function renderChatTurnContext(
+    prompt: AgentPrompt,
+    language: string,
     summary?: string | null,
     facts?: readonly ChatUserFact[],
 ): string {
-    const lines: string[] = [];
+    const lines: string[] = [`Output language: ${prompt.languageDirective(language)}`];
     if (facts !== undefined && facts.length > 0) {
-        lines.push('<memory source="untrusted">');
+        lines.push("", '<memory source="untrusted">');
         for (const fact of facts) lines.push(`- ${fact.key}: ${fact.content}`);
-        lines.push("</memory>", "");
+        lines.push("</memory>");
     }
     if (summary !== undefined && summary !== null && summary.trim().length > 0) {
-        lines.push('<summary source="untrusted">', summary.trim(), "</summary>", "");
+        lines.push("", '<summary source="untrusted">', summary.trim(), "</summary>");
     }
-    lines.push('<history source="untrusted">');
+    return lines.join("\n");
+}
+
+/** 러너가 단발이라 대화 전체를 한 프롬프트로 재생하며 마지막 사용자 메시지가 이번 턴의 질문이다. */
+export function renderChatPrompt(messages: readonly ChatTurnMessage[]): string {
+    const lines = ['<history source="untrusted">'];
     for (const message of messages) lines.push(renderMessage(message));
     lines.push("</history>", "", "Answer the user's most recent message.");
     return lines.join("\n");

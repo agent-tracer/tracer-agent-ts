@@ -11,8 +11,7 @@ const LIMITS = featureLimits(CHAT_FEATURE);
 /** 두 구현체가 같은 명세를 읽고 서로 다른 방언으로 렌더링하는 대화 에이전트 정의다. */
 export const CHAT_SPEC = {
     name: AGENT.chat.id,
-    systemPrompt: (prompt: AgentPrompt, language: string): string =>
-        buildChatSystemPrompt(prompt, language),
+    systemPrompt: (prompt: AgentPrompt): string => buildChatSystemPrompt(prompt),
     tools: CHAT_TOOL_DEFINITIONS,
     toolNames: CHAT_TOOL_NAMES,
     failures: CHAT_TOOL_FAILURES,

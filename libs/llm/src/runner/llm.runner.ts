@@ -45,6 +45,8 @@ export interface AgentQueryRequest<ProviderOptions = undefined> {
     readonly label: string;
     readonly prompt: string;
     readonly systemPrompt: string;
+    /** 턴마다 달라지는 지시이며 실행기가 캐시 경계 뒤에 놓아 접두사를 무효로 만들지 않는다. */
+    readonly dynamicSystemPrompt?: string;
     readonly allowedTools: readonly string[];
     readonly jobId?: string;
     /** 관측 시스템 사이에서 같은 실행을 잇는 식별자이며 없는 값은 추측하거나 임시 생성하지 않는다. */

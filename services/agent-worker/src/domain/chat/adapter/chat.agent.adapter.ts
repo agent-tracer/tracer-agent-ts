@@ -15,6 +15,7 @@ import type { TracerApiClient } from "@tracer-agent/tracer-client";
 import {
     buildChatSystemPrompt,
     renderChatPrompt,
+    renderChatTurnContext,
 } from "~agent-worker/domain/chat/model/chat.prompt.js";
 import { selectFinalChatText } from "~agent-worker/domain/chat/model/chat.response.js";
 import { CHAT_TOOL_CONTRACT } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
@@ -77,14 +78,18 @@ export class ChatAgentAdapter implements ChatAgentPort {
         };
 
         const prompt = withMcpToolPrefix(
-            renderChatPrompt(input.messages, input.summary, input.facts),
+            renderChatPrompt(input.messages),
             CHAT_SPEC.toolNames,
             CHAT_MCP_SERVER,
         );
         const agentPrompt = await this.prompts.resolve(CHAT_SPEC.name);
-        const resolvedSystemPrompt = buildChatSystemPrompt(agentPrompt, input.language);
         const systemPrompt = withMcpToolPrefix(
-            resolvedSystemPrompt,
+            buildChatSystemPrompt(agentPrompt),
+            CHAT_SPEC.toolNames,
+            CHAT_MCP_SERVER,
+        );
+        const dynamicSystemPrompt = withMcpToolPrefix(
+            renderChatTurnContext(agentPrompt, input.language, input.summary, input.facts),
             CHAT_SPEC.toolNames,
             CHAT_MCP_SERVER,
         );
@@ -93,6 +98,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
             idempotencyKey: input.idempotencyKey,
             prompt,
             systemPrompt,
+            dynamicSystemPrompt,
             allowedTools: mcpToolNames(CHAT_MCP_SERVER, CHAT_SPEC.toolNames),
             model,
             maxTurns: CHAT_SPEC.limits.maxTurns,

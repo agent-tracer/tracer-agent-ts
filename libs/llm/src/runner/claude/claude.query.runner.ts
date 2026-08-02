@@ -1,4 +1,4 @@
-import { query, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
+import { query, SYSTEM_PROMPT_DYNAMIC_BOUNDARY, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
 import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import { createAgentDeadline, DeadlineExceededError } from "~llm/model/deadline.js";
@@ -96,14 +96,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             );
 
         const options = request.providerOptions;
-        const systemPrompt = options?.useClaudeCodePreset === true
-            ? {
-                type: "preset" as const,
-                preset: "claude_code" as const,
-                append: request.systemPrompt,
-                ...(options.excludeDynamicSections === true ? { excludeDynamicSections: true } : {}),
-            }
-            : request.systemPrompt;
+        const systemPrompt = buildSystemPrompt(request, options);
         const executablePath = resolveClaudeExecutablePath();
 
         const stream = query({
@@ -280,4 +273,22 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         logAgentQuery(request.label, GEN_AI_PROVIDER.anthropic, request.model, result, request.jobId);
         return result;
     }
+}
+
+/** 지침을 정적 접두부와 턴별 맥락으로 나누어 앞쪽만 프롬프트 캐시에 남게 한다. */
+function buildSystemPrompt(
+    request: AgentQueryRequest<ClaudeQueryOptions>,
+    options: ClaudeQueryOptions | undefined,
+): string | string[] | { type: "preset"; preset: "claude_code"; append: string; excludeDynamicSections?: boolean } {
+    const dynamic = request.dynamicSystemPrompt;
+    if (options?.useClaudeCodePreset === true) {
+        return {
+            type: "preset" as const,
+            preset: "claude_code" as const,
+            append: dynamic === undefined ? request.systemPrompt : `${request.systemPrompt}\n\n${dynamic}`,
+            ...(options.excludeDynamicSections === true ? { excludeDynamicSections: true } : {}),
+        };
+    }
+    if (dynamic === undefined) return request.systemPrompt;
+    return [request.systemPrompt, SYSTEM_PROMPT_DYNAMIC_BOUNDARY, dynamic];
 }
