@@ -169,6 +169,10 @@ tracer-agent-ts/
 
 규칙의 정본은 `architecture.manifest.mjs`와 이를 읽는 검사기입니다. 생성되는 path alias 파일은 `npm run check:paths`로 신선도를 확인합니다. 계약·DB 스키마·큐를 바꾸면 `contract` submodule과 적합성 케이스를 먼저 갱신합니다.
 
+## 에이전트 구현 문서
+
+노드의 실행 단계와 토폴로지, 노드 간 이동, 도구, 프롬프트, SDK 실행 경계, 워크플로 시각화는 [TypeScript 에이전트 실행 구조 문서](services/agent-worker/src/domain/README.md)에서 확인한다. 에이전트별 상세 내용은 [Chat](services/agent-worker/src/domain/chat/README.md), [Recipe](services/agent-worker/src/domain/recipe/README.md), [Cleanup](services/agent-worker/src/domain/cleanup/README.md), [Title](services/agent-worker/src/domain/title/README.md) 문서에 정리한다.
+
 ## 관련 저장소
 
 - [tracer-agent-contract](https://github.com/agent-tracer/tracer-agent-contract) — HTTP·wire·workflow·DB·prompt 계약
