@@ -16,7 +16,7 @@
     "@nestjs/core": "^11.1.18",
     "@nestjs/platform-express": "^11.1.18",
     "@opentelemetry/api": "^1.9.1",
-    "@temporalio/client": "^1.14.0",
+    "@temporalio/client": "^1.21.1",
     "@tracer-agent/llm": "*",
     "@tracer-agent/platform": "*",
     "@tracer-agent/tracer-client": "*",
