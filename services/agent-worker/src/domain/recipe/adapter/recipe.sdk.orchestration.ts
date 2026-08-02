@@ -1,10 +1,8 @@
-import type { JobStepPayload } from "@tracer-agent/llm";
 import type { StructuredQueryResult } from "@tracer-agent/llm";
 import type {
   AgentBudgetLease,
   ExecutionBudget,
 } from "~agent-worker/support/llm/agent.budget.js";
-import type { AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { buildRecipeUserPrompt } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
 import type {
   DispatchPlan,
@@ -13,6 +11,7 @@ import type {
 import type { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
 import {
+  RECIPE_SCAN_SPEC,
   recipeModelName,
   type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
@@ -22,12 +21,15 @@ import {
   runRecipeSynthesis,
   type RecipeSynthesisRun,
 } from "./recipe.sdk.investigate.js";
+import {
+  pushRouteSelected,
+  withNodeTrajectory,
+  type RecipeRunSegment,
+} from "./recipe.node.trace.js";
 
-export interface RecipeRunSegment {
-  readonly accounting: AgentCallAccounting;
-  readonly steps: readonly JobStepPayload[];
-  readonly nodeName: string;
-}
+export type { RecipeRunSegment };
+
+const AGENT_NAME = RECIPE_SCAN_SPEC.name;
 
 export async function runRecipeSurveyPhase(
   ctx: RecipeQueryContext,
@@ -42,9 +44,14 @@ export async function runRecipeSurveyPhase(
   };
   if (lease.maxTurns <= 0) return fallback;
   try {
-    const run = await runRecipeSurvey(ctx, availableTurns, lease);
+    const run = await withNodeTrajectory(segments, AGENT_NAME, "survey", () =>
+      runRecipeSurvey(ctx, availableTurns, lease),
+    );
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
     segments.push(toRecipeRunSegment(run, "survey"));
+    const chosen =
+      run.data.probes.map(({ probe, weight }) => `${probe}:${weight}`).join(", ") || "no specialists";
+    pushRouteSelected(segments, "survey", `survey -> ${chosen}`);
     return { plan: run.data, modelUsed: run.modelUsed };
   } catch (error) {
     const accounting = agentFailureAccounting(error);
@@ -71,7 +78,9 @@ export async function dispatchRecipeProbes(
   );
   const runs = await Promise.all(
     plan.probes.map((assignment, index) =>
-      runRecipeProbe(ctx, deps, assignment, leases[index]!),
+      withNodeTrajectory(segments, AGENT_NAME, "probe", () =>
+        runRecipeProbe(ctx, deps, assignment, leases[index]!),
+      ),
     ),
   );
   return runs.map((run, index) => {
@@ -108,13 +117,8 @@ export async function synthesizeRecipe(
     plan,
     reports,
   );
-  const run = await runRecipeSynthesis(
-    ctx,
-    deps,
-    coordinatorLedger,
-    prompt,
-    lease,
-    "investigate",
+  const run = await withNodeTrajectory(segments, AGENT_NAME, "investigate", () =>
+    runRecipeSynthesis(ctx, deps, coordinatorLedger, prompt, lease, "investigate"),
   );
   budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
   segments.push(toRecipeRunSegment(run, "investigate"));

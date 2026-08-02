@@ -46,6 +46,9 @@ import {
   type RecipeRunSegment,
 } from "./recipe.sdk.orchestration.js";
 import { buildRecipeOutput } from "./recipe.sdk.output.js";
+import { pushValidationFailed, withNodeTrajectory } from "./recipe.node.trace.js";
+
+const VALIDATE_NODE = "validate_candidate";
 
 export {
   RECIPE_COORDINATOR_TOOLS,
@@ -176,11 +179,12 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       );
     }
 
-    const errors = validateRecipeCandidates(
-      synthesis.data.recipes,
-      input.taskId,
-      coordinatorLedger.snapshot(),
+    const errors = await withNodeTrajectory(segments, AGENT.recipeScan.id, VALIDATE_NODE, () =>
+      Promise.resolve(
+        validateRecipeCandidates(synthesis.data.recipes, input.taskId, coordinatorLedger.snapshot()),
+      ),
     );
+    if (errors.length > 0) pushValidationFailed(segments, VALIDATE_NODE, errors.join("; "));
     if (errors.length === 0)
       return buildRecipeOutput(
         ctx,
@@ -216,13 +220,8 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         synthesis.data,
         errors,
       );
-      repaired = await runRecipeSynthesis(
-        ctx,
-        this.deps,
-        coordinatorLedger,
-        repairPrompt,
-        repairLease,
-        "repair",
+      repaired = await withNodeTrajectory(segments, AGENT.recipeScan.id, "repair", () =>
+        runRecipeSynthesis(ctx, this.deps, coordinatorLedger, repairPrompt, repairLease, "repair"),
       );
     } catch (error) {
       // 수리 호출이 예산을 소진하면 잡을 실패시키지 않고 빈 결과를 반환한다.
@@ -242,11 +241,12 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     });
     segments.push(toRecipeRunSegment(repaired, "repair"));
 
-    const remaining = validateRecipeCandidates(
-      repaired.data.recipes,
-      input.taskId,
-      coordinatorLedger.snapshot(),
+    const remaining = await withNodeTrajectory(segments, AGENT.recipeScan.id, VALIDATE_NODE, () =>
+      Promise.resolve(
+        validateRecipeCandidates(repaired.data.recipes, input.taskId, coordinatorLedger.snapshot()),
+      ),
     );
+    if (remaining.length > 0) pushValidationFailed(segments, VALIDATE_NODE, remaining.join("; "));
     return buildRecipeOutput(
       ctx,
       segments,
