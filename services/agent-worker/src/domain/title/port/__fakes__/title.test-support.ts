@@ -89,6 +89,7 @@ export function titleObservation(overrides: Partial<AgentRunObservation> = {}): 
         toolContractVersion: "v0.0.1",
         status: "succeeded",
         durationMs: 10,
+        ttftMs: null,
         usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 },
         costUsd: 0.01,
         landed: false,

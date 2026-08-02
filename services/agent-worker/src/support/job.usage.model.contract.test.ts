@@ -26,6 +26,7 @@ class FixedRunner implements IQueryRunner {
             landed: false,
             actualModel: this.actualModel,
             providerRequestId: null,
+            ttftMs: null,
         });
     }
 }

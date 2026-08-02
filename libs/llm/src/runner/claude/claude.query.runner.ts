@@ -64,6 +64,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         let errorSubtype: string | null = null;
         let actualModel: string | null = null;
         let providerRequestId: string | null = null;
+        let ttftMs: number | null = null;
         const stderr = new ProcessErrorOutput();
         const trajectory = new TrajectoryRecorder(this.nowMs);
         const toolNameById = new Map<string, string>();
@@ -207,6 +208,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     costUsd = msg.total_cost_usd;
                     usage = toUsage(msg.usage);
                     actualModel = dominantModel(msg.modelUsage);
+                    if (msg.subtype === "success") ttftMs = msg.ttft_ms ?? null;
                     if (msg.subtype === "success" && msg.stop_reason !== "refusal") {
                         resultText = msg.result;
                         structuredOutput = msg.structured_output ?? null;
@@ -263,6 +265,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             landed: landing,
             actualModel,
             providerRequestId,
+            ttftMs,
         };
 
         if (runTree) {

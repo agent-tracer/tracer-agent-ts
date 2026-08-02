@@ -16,6 +16,7 @@ const observation: AgentRunObservation = {
     toolContractVersion: "tools-v2",
     status: "succeeded",
     durationMs: 120,
+    ttftMs: null,
     usage: { inputTokens: 1, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 },
     costUsd: 0.01,
     landed: true,

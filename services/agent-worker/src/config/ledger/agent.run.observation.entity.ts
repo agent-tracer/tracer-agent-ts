@@ -42,6 +42,9 @@ export class AgentRunObservationEntity {
     @Column({ name: "duration_ms", type: "integer" })
     durationMs!: number;
 
+    @Column({ name: "ttft_ms", type: "integer", nullable: true })
+    ttftMs!: number | null;
+
     @Column({ type: "jsonb" })
     usage!: Record<string, unknown>;
 
@@ -85,6 +88,7 @@ export function toAgentRunObservationRow(
     row.toolContractVersion = observation.toolContractVersion;
     row.status = observation.status;
     row.durationMs = observation.durationMs;
+    row.ttftMs = observation.ttftMs;
     row.usage = { ...observation.usage };
     row.costUsd = observation.costUsd;
     row.landed = observation.landed;

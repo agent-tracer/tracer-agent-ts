@@ -137,7 +137,7 @@ function assistant(requestId: string | undefined, text: string): unknown {
     };
 }
 
-function done(): unknown {
+function done(overrides: Record<string, unknown> = {}): unknown {
     return {
         type: "result",
         subtype: "success",
@@ -152,8 +152,29 @@ function done(): unknown {
         permission_denials: [],
         uuid: "u-1",
         session_id: "s-1",
+        ...overrides,
     };
 }
+
+describe("첫 토큰까지의 시간", () => {
+    it("공급자가 잰 값을 그대로 관측에 싣는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done({ ttft_ms: 420 })]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.ttftMs).toBe(420);
+    });
+
+    it("재지 못한 실행은 0 이 아니라 비운다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.ttftMs).toBeNull();
+    });
+});
 
 describe("공급자 요청 식별자", () => {
     it("모델 호출이 낸 값을 그대로 적는다", async () => {

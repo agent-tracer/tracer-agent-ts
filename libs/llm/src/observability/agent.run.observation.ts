@@ -40,6 +40,7 @@ export function buildClaudeRunObservation(
         toolContractVersion: input.toolContractVersion,
         status,
         durationMs: result.durationMs,
+        ttftMs: result.ttftMs,
         usage,
         costUsd: result.costUsd,
         landed: result.landed,

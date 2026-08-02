@@ -220,6 +220,7 @@ export function cleanupObservation(overrides: Partial<AgentRunObservation> = {})
         toolContractVersion: "v0.0.1",
         status: "succeeded",
         durationMs: 1_200,
+        ttftMs: null,
         usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 },
         costUsd: 0.01,
         landed: false,

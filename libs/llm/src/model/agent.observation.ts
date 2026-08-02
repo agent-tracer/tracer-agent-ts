@@ -74,6 +74,8 @@ export interface AgentRunObservation extends AgentAttemptIdentity {
     readonly toolContractVersion: string;
     readonly status: AgentRunObservationStatus;
     readonly durationMs: number;
+    /** 첫 토큰이 도착하기까지의 밀리초이며 스트리밍으로 받지 않은 실행은 잴 자리가 없어 비운다. */
+    readonly ttftMs: number | null;
     readonly usage: AgentUsage;
     readonly costUsd: number | null;
     readonly landed: boolean;

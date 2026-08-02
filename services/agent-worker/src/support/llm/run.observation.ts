@@ -63,6 +63,7 @@ export function buildSuccessfulRunObservation(
             landed: input.landed,
             actualModel: input.modelActual,
             providerRequestId: null,
+            ttftMs: null,
         },
     );
 }
@@ -113,6 +114,7 @@ export function buildFailedRunObservation(input: FailedRunObservationInput): Age
             landed: false,
             actualModel,
             providerRequestId: input.failure.providerRequestId,
+            ttftMs: null,
         },
     );
 }

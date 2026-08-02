@@ -90,6 +90,8 @@ export interface AgentQueryResult {
     /** 공급자가 실제로 응답을 만든 모델이며 fallback으로 요청 모델과 달라질 수 있다. */
     readonly actualModel: string | null;
     readonly providerRequestId: string | null;
+    /** 첫 토큰이 도착하기까지의 밀리초이며 스트리밍으로 받지 않은 실행은 잴 자리가 없어 비운다. */
+    readonly ttftMs: number | null;
 }
 
 /** 프롬프트를 넣으면 구조화 출력을 내는 공급자 실행기다. */
