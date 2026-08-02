@@ -95,7 +95,7 @@ export function mapExecution(execution: ChatExecution): ChatExecutionDto {
         threadId: execution.threadId,
         userMessageId: execution.userMessageId,
         status: execution.status,
-        requestedBackend: execution.requestedImplementation,
+        requestedBackend: execution.requestedBackend,
         draftText: execution.draftText,
         draftSeq: execution.draftSeq,
         assistantMessageId: execution.assistantMessageId,

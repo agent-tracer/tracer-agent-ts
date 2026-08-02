@@ -99,7 +99,7 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.clientRequestId = row.clientRequestId;
     execution.inputHash = row.inputHash;
     execution.status = row.status;
-    execution.requestedImplementation = row.requestedBackend;
+    execution.requestedBackend = row.requestedBackend;
     execution.model = row.model;
     execution.language = row.language;
     execution.draftText = row.draftText;
@@ -129,7 +129,7 @@ export function toChatExecutionRow(execution: ChatExecution): ChatExecutionEntit
     row.clientRequestId = execution.clientRequestId;
     row.inputHash = execution.inputHash;
     row.status = execution.status;
-    row.requestedBackend = execution.requestedImplementation;
+    row.requestedBackend = execution.requestedBackend;
     row.model = execution.model;
     row.language = execution.language;
     row.draftText = execution.draftText;

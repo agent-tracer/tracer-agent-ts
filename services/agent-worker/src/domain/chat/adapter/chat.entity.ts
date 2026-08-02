@@ -146,7 +146,7 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.clientRequestId = row.clientRequestId;
     execution.inputHash = row.inputHash;
     execution.status = row.status;
-    execution.requestedImplementation = row.requestedBackend;
+    execution.requestedBackend = row.requestedBackend;
     execution.model = row.model;
     execution.language = row.language;
     execution.draftText = row.draftText;

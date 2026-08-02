@@ -34,7 +34,7 @@ export class ChatExecution {
     status!: ChatExecutionStatus;
 
     /** 이 실행을 맡을 구현체를 게이트웨이가 골랐으면 그 이름이고 고르지 않았으면 비어 있다. */
-    requestedImplementation!: string | null;
+    requestedBackend!: string | null;
 
     model!: string | null;
 
@@ -79,7 +79,7 @@ export class ChatExecution {
         execution.clientRequestId = input.clientRequestId;
         execution.inputHash = input.inputHash;
         execution.status = CHAT_EXECUTION_STATUS.queued;
-        execution.requestedImplementation = null;
+        execution.requestedBackend = null;
         execution.model = input.model;
         execution.language = input.language;
         execution.draftText = "";
