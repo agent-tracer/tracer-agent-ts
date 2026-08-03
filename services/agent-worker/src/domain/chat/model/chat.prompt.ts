@@ -1,5 +1,5 @@
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
-import { SAFETY_POLICY } from "~agent-worker/support/safety.policy.js";
+import { SAFETY_POLICY } from "~agent-worker/domain/chat/model/chat.safety.policy.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 import type { ChatTurnMessage, ChatUserFact } from "./chat.turn.model.js";
 

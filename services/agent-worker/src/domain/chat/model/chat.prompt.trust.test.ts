@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildAgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { readAgentPrompt } from "~agent-worker/support/contract.js";
-import { SAFETY_POLICY } from "~agent-worker/support/safety.policy.js";
+import { SAFETY_POLICY } from "~agent-worker/domain/chat/model/chat.safety.policy.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildChatSystemPrompt, renderChatPrompt, renderChatTurnContext } from "./chat.prompt.js";
 

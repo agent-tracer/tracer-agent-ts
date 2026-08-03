@@ -212,16 +212,16 @@ flowchart LR
 - 재시도와 repair에는 직전 출력과 검증 오류를 별도 입력으로 제공한다.
 - 대화에서는 history, summary, memory, tool result를 각각 신뢰 경계를 표시해 감싼다.
 
-## 공통 안전 정책 prompt
+## 대화의 안전 정책 prompt
 
-모든 에이전트의 system prompt 앞에는 코드가 소유하는 `SAFETY_POLICY`가 배치된다.
-계약이 아니라 `services/agent-worker/src/support/safety.policy.ts`가 이 문장을 갖는 것은
-데이터베이스가 쓴 조각이 정책을 덮지 못하게 하기 위해서다.
+Chat의 system prompt 앞에는 코드가 소유하는 `SAFETY_POLICY`가 배치된다.
+계약이 아니라 `services/agent-worker/src/domain/chat/model/chat.safety.policy.ts`가 이 문장을
+갖는 것은 데이터베이스가 쓴 조각이 정책을 덮지 못하게 하기 위해서다.
 
-**Python 구현의 `shared/safety_policy.py`와 바이트로 같은 문장이다.** 두 축이 같은 신뢰
+**Python 구현의 `chat/safety_policy.py`와 바이트로 같은 문장이다.** 두 축이 같은 신뢰
 경계를 모델에게 보이므로 축이 바뀌어도 무엇이 지시문이고 무엇이 데이터인지가 달라지지 않는다.
 
-전문은 `services/agent-worker/src/support/safety.policy.ts` 가 갖는다. 문서가 옮겨 적으면 두 벌이 되어 한쪽만 바뀐다.
+전문은 `services/agent-worker/src/domain/chat/model/chat.safety.policy.ts` 가 갖는다. 문서가 옮겨 적으면 두 벌이 되어 한쪽만 바뀐다.
 
 ## 에이전트별 출력 타입
 

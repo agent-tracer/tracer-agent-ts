@@ -93,7 +93,7 @@ flowchart TD
 - 답변·초안·도구 결과는 `redactText`를 거친 뒤 sink와 저장소로 전달한다.
 - Chat은 자유 텍스트 출력이므로 최종 텍스트 선택과 `chatStopReason` 계산이 도메인 후처리에 포함된다.
 
-`buildChatSystemPrompt`가 조립하는 정적 접두부이며 `<<슬롯>>` 자리에 계약 조각이 들어간다. 맨 앞의 `SAFETY_POLICY`는 상위 문서가 갖는다.
+`buildChatSystemPrompt`가 조립하는 정적 접두부이며 `<<슬롯>>` 자리에 계약 조각이 들어간다. 맨 앞의 `SAFETY_POLICY`는 `model/chat.safety.policy.ts`가 갖는다.
 
 슬롯의 본문은 계약이 소유하며 Python 구현이 읽는 것과 같은 template 이다.
 
