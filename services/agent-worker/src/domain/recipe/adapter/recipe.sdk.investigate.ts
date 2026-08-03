@@ -26,7 +26,7 @@ import {
 
 export type RecipeSynthesisRun = StructuredQueryResult<RecipeSynthesis>;
 
-/** 종합(조율자 단독 조사 포함)과 수리가 공유하는, 전체 도구와 합쳐진 장부로 도는 호출이다. */
+/** 종합(조율자 단독 조사 포함)과 수리가 공유하는, 전체 도구와 합쳐진 장부로 진행 중인 호출이다. */
 export function runRecipeSynthesis(
   ctx: RecipeQueryContext,
   deps: RecipeToolDeps,

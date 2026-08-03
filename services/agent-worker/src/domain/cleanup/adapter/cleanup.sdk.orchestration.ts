@@ -14,7 +14,7 @@ import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.inves
 
 const EMPTY_PLAN: TriagePlan = { inspect: [] };
 
-/** 선별이 후보 목록 도구만 쥐고 무엇을 열어볼지 정하며, 호출이 무너지면 아무도 열어보지 않는 빈 계획으로 대체한다. */
+/** 선별이 후보 목록 도구만 가지고 무엇을 조사할지 정하며, 호출이 실패하면 아무도 조회하지 않는 빈 계획으로 대체한다. */
 export async function runCleanupTriagePhase(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,
@@ -37,7 +37,7 @@ export async function runCleanupTriagePhase(
     }
 }
 
-/** 계획대로 후보를 병렬로 열어보고, 보고가 모이면 장부를 조율자 장부로 합친다. */
+/** 계획대로 후보를 병렬로 조회하고, 보고가 모이면 장부를 조율자 장부로 합친다. */
 export async function dispatchCleanupInspections(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

@@ -71,7 +71,7 @@ export function fillQuery(
     return query;
 }
 
-/** 도구 인자와 실행이 못박는 상수를 합친 요청 본문이며 주어지지 않은 인자는 싣지 않는다. */
+/** 도구 인자와 실행이 고정한 상수를 합친 요청 본문이며 주어지지 않은 인자는 싣지 않는다. */
 export function fillBody(
     binding: ToolBinding,
     args: Readonly<Record<string, unknown>>,

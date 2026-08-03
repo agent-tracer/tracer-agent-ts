@@ -34,7 +34,7 @@ export async function runStructuredQuery<T, ProviderOptions = undefined>(
         durationMs: result.durationMs,
     };
 
-    // 예산이나 턴이 소진돼도 land 훅이 받아낸 부분 출력이 스키마를 통과하면 성공으로 흘린다.
+    // 예산이나 턴이 소진돼도 land 훅이 받아낸 부분 출력이 스키마를 통과하면 성공으로 보낸다.
     const json = result.structuredOutput ?? (result.rawOutput ? parseJsonStrict(result.rawOutput) : null);
     const parsed = json !== null && json !== undefined ? schema.safeParse(json) : null;
     if (parsed?.success === true) {

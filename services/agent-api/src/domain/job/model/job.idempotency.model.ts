@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { JOB_KIND, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 
-/** 같은 멱등키의 두 접수가 같은 입력인지 가르는 칸이며 종류마다 이 순서로 적는다. */
+/** 같은 멱등키의 두 접수가 같은 입력인지 구분하는 칸이며 종류마다 이 순서로 적는다. */
 export const JOB_IDEMPOTENCY_KEYS = {
     [JOB_KIND.titleSuggestion]: ["taskId"],
     [JOB_KIND.recipeScan]: ["taskId", "userPrompt", "language", "trigger"],

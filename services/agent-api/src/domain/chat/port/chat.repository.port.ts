@@ -40,7 +40,7 @@ export interface ChatExecutionRepositoryPort {
     findLatestActiveByThread(threadId: string): Promise<ChatExecution | null>;
     listActive(): Promise<ChatExecution[]>;
     listByThread(threadId: string, limit?: number): Promise<ChatExecution[]>;
-    /** 갱신이 끊긴 running을 queued로 되돌리며, threadId를 주면 그 스레드만 훑는다. */
+    /** 갱신이 끊긴 running을 queued로 되돌리며, threadId를 주면 그 스레드만 조회하는다. */
     recoverStaleRunning(idleBefore: Date, now: Date, threadId?: string): Promise<number>;
     checkpointRunning(
         id: string,

@@ -34,7 +34,7 @@ export const MIN_SYNTHESIS_TURNS = reservation.synthesisFloor.turns;
 /** 조율자가 진전 없이 머무는 상한이다. */
 export const SURVEY_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.survey);
 
-/** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 도는 것을 막지 않는다. */
+/** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 진행 중인 것을 막지 않는다. */
 export const PROBE_WALL_CLOCK_CEILING_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.probe);
 
 /** 종합과 수리가 진전 없이 머무는 상한이다. */
@@ -46,14 +46,14 @@ export const PROBE_MIN_WALL_CLOCK_FRACTION = wallClock.probeMinFraction.value;
 /** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
 export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;
 
-/** 계획이 규모를 모른 채 서지 않도록 조율자가 요약 하나를 쥔다. */
+/** 계획이 규모를 모른 채 서지 않도록 조율자가 요약 하나를 가진다. */
 export const RECIPE_SURVEY_TOOLS: readonly RecipeScanToolName[] = RECIPE_TOOL_CONTRACT.orchestration.surveyTools;
 
 /** 조율자는 근거를 직접 모으지 않고 전문가가 합친 장부의 인용만 확인한다. */
 export const RECIPE_COORDINATOR_TOOLS: readonly RecipeScanToolName[] =
     RECIPE_TOOL_CONTRACT.orchestration.coordinatorTools;
 
-/** 전문가는 자기 근거 원천에 닿는 도구만 쥐고 어느 전문가든 쓰는 인용 확인만 모두에게 준다. */
+/** 전문가는 자기 근거 원천에 닿는 도구만 가지고 어느 전문가든 쓰는 인용 확인만 모두에게 준다. */
 export const RECIPE_PROBE_TOOL_NAMES: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>> =
     RECIPE_TOOL_CONTRACT.orchestration.roles;
 
@@ -63,7 +63,7 @@ export function probeToolNames(probe: RecipeProbeName): readonly RecipeScanToolN
 }
 
 
-/** 전문가 실행이 무너진 사유를 판정 상한 안으로 줄여 실패 보고로 강등한다. */
+/** 전문가 실행이 실패한 사유를 판정 상한 안으로 줄여 실패 보고로 낮춘다. */
 export function buildProbeFailureReport(probe: RecipeProbeName, error: unknown): ProbeReport {
     const summary = messageOf(error).trim() || "unknown error";
     return {

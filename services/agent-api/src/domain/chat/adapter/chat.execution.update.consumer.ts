@@ -4,7 +4,7 @@ import { CHAT_EXECUTION_UPDATES_TOPIC } from "~agent-api/config/chat.queue.const
 import { createKafkaConsumer, type KafkaClient, type KafkaConsumer } from "~agent-api/config/kafka.factory.js";
 import type { ChatExecutionEvents } from "./chat.execution.events.js";
 
-/** 각 replica가 같은 깨움을 받아 자기 프로세스의 열린 연결만 깨운다. */
+/** 각 replica가 같은 깨움을 받아 자기 프로세스의 열린 연결만 알린다. */
 export class ChatExecutionUpdateConsumer {
     private readonly consumer: KafkaConsumer;
 

@@ -33,7 +33,7 @@ export interface AgentStreamToolResult {
     readonly content: string;
 }
 
-/** 실행이 끝나기 전에 부분 산출을 흘려보내는 싱크이며 호출자가 넘길 때만 러너가 부분 메시지를 켠다. */
+/** 실행이 끝나기 전에 부분 산출을 전송하는 싱크이며 호출자가 넘길 때만 러너가 부분 메시지를 켠다. */
 export interface AgentStreamSink {
     /** 텍스트가 아직 없어도 모델이 무언가 내보내고 있음을 알리며 멈춤 감시가 이것을 진행으로 센다. */
     onProgress?(): void;
@@ -65,7 +65,7 @@ export interface AgentQueryRequest<ProviderOptions = undefined> {
     readonly providerOptions?: ProviderOptions;
     readonly effort?: AgentEffortLevel;
     readonly maxBudgetUsd?: number;
-    /** 있으면 러너가 부분 메시지를 켜고 실행 중 부분 산출을 이 싱크로 흘려보낸다. */
+    /** 있으면 러너가 부분 메시지를 켜고 실행 중 부분 산출을 이 싱크로 전송한다. */
     readonly stream?: AgentStreamSink;
 }
 
@@ -124,7 +124,7 @@ export interface AgentRunnerPort {
         agentId: string,
         input: Record<string, unknown>,
         schema: OutputSchema<T>,
-        /** attempt는 오케스트레이터가 세는 시도 번호이며 같은 시도의 재개와 새 시도를 가른다. */
+        /** attempt는 오케스트레이터가 세는 시도 번호이며 같은 시도의 재개와 새 시도를 구분한다. */
         opts: { deadlineMs: number; attempt: number; abortSignal?: AbortSignal },
     ): Promise<StructuredAgentResult<T>>;
 }

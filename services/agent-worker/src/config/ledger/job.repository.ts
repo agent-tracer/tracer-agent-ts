@@ -29,7 +29,7 @@ export class TypeOrmAiJobRepository {
     }
 }
 
-/** 활동 재시도 회차까지 갈라 남기는 잡 궤적 창구다. */
+/** 활동 재시도 회차까지 나뉘어 남기는 잡 궤적 창구다. */
 export class TypeOrmAiJobStepRepository {
     constructor(private readonly repo: Repository<AiJobStepEntity>) {}
 

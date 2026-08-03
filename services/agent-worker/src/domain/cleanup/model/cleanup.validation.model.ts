@@ -12,7 +12,7 @@ export interface CleanupValidationResult {
     readonly errors: readonly string[];
 }
 
-/** 보관 제안이 도구가 돌려준 후보와 이벤트만 인용하는지 검사하고 걸린 제안만 걷어낸다. */
+/** 보관 제안이 도구가 돌려준 후보와 이벤트만 인용하는지 검사하고 걸린 제안만 제거한다. */
 export function validateCleanupSuggestions(
     suggestions: readonly CleanupSuggestionPayload[],
     snapshot: CleanupProvenanceSnapshot,

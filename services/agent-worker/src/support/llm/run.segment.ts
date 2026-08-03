@@ -18,7 +18,7 @@ export const AGENT_NODE = {
 
 export type AgentNodeName = (typeof AGENT_NODE)[keyof typeof AGENT_NODE];
 
-/** 호출 하나나 궤적 사건 하나가 남긴 조각이며 병합 후 이 이름이 각 스텝의 노드로 새겨진다. */
+/** 호출 하나나 궤적 사건 하나가 남긴 조각이며 병합 후 이 이름이 각 스텝의 노드로 기록된다. */
 export interface RunSegment {
     readonly accounting: AgentCallAccounting;
     readonly steps: readonly JobStepPayload[];
@@ -79,7 +79,7 @@ export function pushValidationFailed(segments: RunSegment[], nodeName: string, c
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
 }
 
-/** 노드 하나를 감싸 진입과 완료와 실패를 궤적에 남기며, 무너지면 실패를 남긴 뒤 그대로 다시 던진다. */
+/** 노드 하나를 감싸 진입과 완료와 실패를 궤적에 남기며, 실패하면 실패를 남긴 뒤 그대로 다시 던진다. */
 export async function withNodeTrajectory<T>(
     segments: RunSegment[],
     agentName: string,

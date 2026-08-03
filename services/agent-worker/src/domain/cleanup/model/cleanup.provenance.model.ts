@@ -3,7 +3,7 @@ import type { CleanupSlimEvent } from "./cleanup.event.model.js";
 
 export interface CleanupProvenanceSnapshot {
     readonly candidatesById: Readonly<Record<string, CleanupCandidate>>;
-    /** get_task_events로 실제로 열어본 태스크만 키를 가지며 이벤트가 하나도 없으면 빈 배열이다. */
+    /** get_task_events로 실제로 조회한 태스크만 키를 가지며 이벤트가 하나도 없으면 빈 배열이다. */
     readonly eventIdsByTask: Readonly<Record<string, readonly string[]>>;
 }
 
@@ -23,7 +23,7 @@ export class CleanupProvenanceLedger {
         this.eventIdsByTask.set(taskId, ids);
     }
 
-    /** 조율자와 후보별 조사의 장부를 하나로 합칠 때, 다른 장부가 모은 것을 이 장부로 흡수한다. */
+    /** 조율자와 후보별 조사의 장부를 하나로 합칠 때, 다른 장부가 모은 것을 이 장부로 병합한다. */
     mergeFrom(other: CleanupProvenanceLedger): void {
         const seen = other.snapshot();
         for (const candidate of Object.values(seen.candidatesById)) this.candidatesById.set(candidate.id, candidate);

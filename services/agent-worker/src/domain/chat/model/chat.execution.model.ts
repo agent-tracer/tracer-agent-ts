@@ -1,7 +1,7 @@
 import type { AgentQueryUsage } from "@tracer-agent/llm";
 import type { ChatExecutionStatus, ChatStopReason } from "./chat.const.js";
 
-/** 한 시도가 태운 모델과 지출이며 종결이 이 값을 실행 원장에 새긴다. */
+/** 한 시도가 실행한 모델과 지출이며 종결이 이 값을 실행 원장에 기록한다. */
 export interface ChatExecutionSpend {
     readonly modelUsed: string;
     readonly costUsd: number | null;

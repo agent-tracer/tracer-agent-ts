@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { ChatExecutionUpdateSubscriberPort } from "~agent-api/domain/chat/port/chat.execution.update.port.js";
 
-/** 이 프로세스가 든 열린 연결을 실행 식별자로 묶어 깨운다. */
+/** 이 프로세스가 든 열린 연결을 실행 식별자로 묶어 알린다. */
 @Injectable()
 export class ChatExecutionEvents implements ChatExecutionUpdateSubscriberPort {
     private readonly listeners = new Map<string, Set<() => void>>();

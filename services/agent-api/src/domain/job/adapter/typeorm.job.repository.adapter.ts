@@ -92,7 +92,7 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
             .update()
             .set({ status: JOB_STATUS.running, leaseOwner: owner, leaseExpiresAt: expiresAt, startedAt: now, updatedAt: now })
             .where("id = :id", { id })
-            // 살아 있는 리스를 남이 쥐고 있으면 가져가지 못하고, 만료된 리스는 누구든 가져간다.
+            // 살아 있는 리스를 남이 가지고 있으면 가져가지 못하고, 만료된 리스는 누구든 가져간다.
             .andWhere("status IN (:...claimable)", { claimable: [JOB_STATUS.pending, JOB_STATUS.running] })
             .andWhere("(lease_owner IS NULL OR lease_owner = :owner OR lease_expires_at IS NULL OR lease_expires_at <= :now)", { owner, now })
             .execute();

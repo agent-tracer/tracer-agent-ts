@@ -7,7 +7,7 @@ export interface GeneratedCleanupSuggestion {
     readonly rationale: string;
 }
 
-/** 후보 목록에 없는 태스크 인용과 같은 태스크의 중복 제안을 걷어낸다. */
+/** 후보 목록에 없는 태스크 인용과 같은 태스크의 중복 제안을 제거한다. */
 export function assembleCleanupSuggestions(
     suggestions: readonly CleanupSuggestionPayload[],
     candidates: readonly CleanupCandidate[],

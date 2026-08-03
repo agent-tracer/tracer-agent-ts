@@ -17,7 +17,7 @@ export interface CleanupTriageRun {
     readonly ledger: CleanupProvenanceLedger;
 }
 
-/** 선별이 후보 목록 도구만 쥐고 무엇을 열어볼지 정하게 하며, 노출한 후보를 자기 장부에 남긴다. */
+/** 선별이 후보 목록 도구만 가지고 무엇을 조사할지 정하게 하며, 노출한 후보를 자기 장부에 남긴다. */
 export async function runCleanupTriage(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

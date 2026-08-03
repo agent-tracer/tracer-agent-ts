@@ -1,7 +1,7 @@
 import { taskQueueName } from "~agent-api/support/task.queue.js";
 import { taskQueuePrefix } from "~agent-api/config/task.queue.js";
 
-/** 잡 워크플로와 짧은 액티비티가 도는 큐이며 접수와 워커가 함께 쓴다. */
+/** 잡 워크플로와 짧은 액티비티가 진행 중인 큐이며 접수와 워커가 함께 쓴다. */
 export const JOB_TASK_QUEUE = taskQueueName(taskQueuePrefix(), "jobs");
 
 /** 잡 종류마다 접수가 기동하는 워크플로의 이름이며 로컬 실행 종류는 값을 갖지 않는다. */

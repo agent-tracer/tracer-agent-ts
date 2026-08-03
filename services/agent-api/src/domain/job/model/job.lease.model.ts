@@ -1,6 +1,6 @@
 import { readContractJson } from "~agent-api/support/contract.js";
 
-/** 리스를 쥔 실행기와 그 수명이며 실행기가 이 값으로 계속 쥐고 있는지 판정한다. */
+/** 리스를 쥔 실행기와 그 수명이며 실행기가 이 값으로 계속 가지고 있는지 판정한다. */
 export interface JobLease {
     readonly held: boolean;
     readonly leaseOwner: string | null;

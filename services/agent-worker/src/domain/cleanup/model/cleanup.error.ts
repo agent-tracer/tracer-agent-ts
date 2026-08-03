@@ -28,7 +28,7 @@ const NON_RETRYABLE_ERRORS = [
     MissingApiKeyError, JobNotFoundError, JobAlreadySettledError,
 ] as const;
 
-/** 재시도가 상태를 바꾸지 못하는 실패를 가른다. */
+/** 재시도가 상태를 바꾸지 못하는 실패를 구분한다. */
 export function isNonRetryableCleanupError(err: unknown): boolean {
     if (NON_RETRYABLE_ERRORS.some((type) => err instanceof type)) return true;
     return err instanceof AgentExecutionFailure && isNonRetryableSubtype(err.errorSubtype);

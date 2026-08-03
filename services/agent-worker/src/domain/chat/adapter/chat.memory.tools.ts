@@ -8,7 +8,7 @@ import { telemetered } from "./chat.tool.support.js";
 
 const RECALL_FACTS = chatRecallToolName();
 
-/** 한 턴에서 장기기억 도구가 어느 사용자에 매이고 어디로 갱신 통지를 흘리는지다. */
+/** 한 턴에서 장기기억 도구가 어느 사용자에 매이고 어디로 갱신 통지를 보내는지다. */
 export interface ChatMemoryToolContext extends ChatToolCallContext {
     readonly sink: ChatTurnSink;
 }

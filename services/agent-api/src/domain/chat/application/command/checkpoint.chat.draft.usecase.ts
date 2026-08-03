@@ -18,7 +18,7 @@ export interface ChatDraftCheckpointInput {
     readonly text: string;
 }
 
-/** 실행기가 프로세스 밖에서 보낸 누적 draft를 정본에 반영하고 열린 연결을 깨운다. */
+/** 실행기가 프로세스 밖에서 보낸 누적 draft를 정본에 반영하고 열린 연결에 알린다. */
 @Injectable()
 export class CheckpointChatDraftUseCase {
     constructor(
@@ -35,7 +35,7 @@ export class CheckpointChatDraftUseCase {
         if (!execution.acceptsDraftToken(this.draftTokens.hash(input.token))) {
             throw new ForbiddenException("Chat draft callback is not authorized");
         }
-        // 재시도가 붙인 시도 번호를 실행기가 알 길이 없으므로, 살아 있는 시도는 정본이 정한다.
+        // 재시도가 붙인 시도 번호를 실행기가 알 길이 없으므로, 살아 있는 시진행 중인 정본이 정한다.
         const stored = await this.executions.checkpointRunning(
             input.executionId,
             execution.attempt,

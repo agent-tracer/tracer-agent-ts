@@ -4,7 +4,7 @@ const TOP_TOOLS = 12;
 const TOP_FILES = 12;
 const TOP_COMMANDS = 12;
 
-/** 셸을 실제로 돌린 도구의 이름이며 값은 수집 어휘가 소유한다. */
+/** 셸을 실제로 실행한 도구의 이름이며 값은 수집 어휘가 소유한다. */
 const TERMINAL_TOOL_NAMES: ReadonlySet<string> = new Set(["Bash", "BashOutput"]);
 
 /** 요약이 보는 태스크의 순수 표현이다. */
@@ -46,7 +46,7 @@ export interface TaskSummary {
     readonly topCommands: readonly { readonly command: string; readonly count: number }[];
 }
 
-/** 셸을 돌린 이벤트인지 보며 도구 이름이 없으면 명령으로 세지 않는다. */
+/** 셸을 실행한 이벤트인지 보며 도구 이름이 없으면 명령으로 세지 않는다. */
 export function isTerminalCommandEvent(event: TaskSummaryEvent): boolean {
     if (event.toolName === undefined) return false;
     if (TERMINAL_TOOL_NAMES.has(event.toolName)) return true;

@@ -64,7 +64,7 @@ export const CLEANUP_MAX_EVIDENCE_EVENT_IDS = contractLimit(
     "maxEvidenceEventIds",
 );
 
-/** 조율자가 후보를 다시 열어보게 할 수 있는 라운드 수이며 무한 반복을 이 값으로 막는다. */
+/** 조율자가 후보를 다시 조회하게 할 수 있는 라운드 수이며 무한 반복을 이 값으로 막는다. */
 export const MAX_REDISPATCH_ROUNDS = contractLimit(CLEANUP_TOOL_CONTRACT, "maxRedispatchRounds");
 
 /** 후보 하나에 배정할 수 있는 검토 몫의 상한이다. */

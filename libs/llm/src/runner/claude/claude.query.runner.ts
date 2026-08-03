@@ -79,7 +79,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             }
         }
 
-        // 이미 태운 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산을 감당하는지로 다음 호출 가능 여부를 예측한다.
+        // 이미 실행한 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산을 감당하는지로 다음 호출 가능 여부를 예측한다.
         let runningCostUsd = 0;
         let peakCallCostUsd = 0;
         let landing = false;
@@ -111,7 +111,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(options?.cwd !== undefined ? { cwd: options.cwd } : {}),
                 ...(options?.mcpServers !== undefined ? { mcpServers: options.mcpServers } : {}),
                 model: request.model,
-                // 자동 승인 목록은 권한 모드를 제약하지 않으므로 모드와 거절 목록이 함께 표면을 잠근다.
+                // 자동 승인 목록은 권한 모드를 제약하지 않으므로 모드와 거절 목록이 함께 표면을 고정한다.
                 allowedTools: [...permissions.allowedTools],
                 disallowedTools: [...permissions.disallowedTools],
                 tools: [...(options?.builtInTools ?? [])],
@@ -146,7 +146,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         const sink = request.stream;
         try {
             for await (const msg of stream) {
-                // 부분 메시지가 켜졌을 때만 나오며 어시스턴트 텍스트 조각을 도착하는 대로 흘려보낸다.
+                // 부분 메시지가 켜졌을 때만 나오며 어시스턴트 텍스트 조각을 도착하는 대로 전송한다.
                 if (msg.type === "stream_event") {
                     if (sink !== undefined) {
                         // 사고 블록과 도구 인자 스트리밍은 텍스트를 안 내지만 실행이 나아가고 있다는 신호다.
@@ -227,7 +227,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                         resultText = msg.result;
                         structuredOutput = msg.structured_output ?? null;
                     } else if (msg.subtype === "success") {
-                        // 안전 분류기가 거절해도 결과는 success 모양으로 오므로 stop_reason으로 가른다.
+                        // 안전 분류기가 거절해도 결과는 success 모양으로 오므로 stop_reason으로 구분한다.
                         errorSubtype = PROVIDER_ERROR_SUBTYPE.refusal;
                         errorSummary = "model refused the request";
                     } else {

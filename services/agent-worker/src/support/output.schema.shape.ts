@@ -84,7 +84,7 @@ function shapeOf(root: Node, schema: unknown): OutputSchemaShape {
     return shape;
 }
 
-/** 생성기마다 다른 서술과 길이 제약을 걷어 내고 칸 이름과 반드시 실리는지와 열거값만 남긴다. */
+/** 생성기마다 다른 서술과 길이 제약을 제거하고 칸 이름과 반드시 실리는지와 열거값만 남긴다. */
 export function outputSchemaShape(schema: unknown): OutputSchemaShape {
     return shapeOf(isNode(schema) ? schema : {}, schema);
 }

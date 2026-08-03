@@ -12,7 +12,7 @@ import { runCleanupQuery, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./
 
 export type CleanupDecisionRun = StructuredQueryResult<CleanupDecision>;
 
-/** 결정과 수리가 공유하는, 검토 전문가가 합친 장부만 쥐고 도구 없이 도는 호출이다. */
+/** 결정과 수리가 공유하는, 검토 전문가가 합친 장부만 가지고 도구 없이 진행 중인 호출이다. */
 export function runCleanupDecision(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

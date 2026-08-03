@@ -22,7 +22,7 @@ import type {
 export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryPort {
     readonly rows = new Map<string, ChatExecution>();
 
-    /** 스레드의 running 자리를 이미 다른 실행이 쥐고 있는 상태를 만든다. */
+    /** 스레드의 running 자리를 이미 다른 실행이 가지고 있는 상태를 만든다. */
     threadBusy = false;
 
     add(execution: ChatExecution): ChatExecution {

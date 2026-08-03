@@ -143,7 +143,7 @@ function observedTerminalCondition(observedStatus: string): string {
     return `(status = :settled OR (status = :running AND ${observedBy(observedStatus)}))`;
 }
 
-/** 종결로 옮기는 길은 따를 관측이 하나도 없을 때에도 접는다. */
+/** 종결로 옮기는 길은 따를 관측이 하나도 없을 때에도 줄인다. */
 function terminalCondition(observedStatus: string): string {
     return `(status = :settled OR (status = :running AND (${observedBy(observedStatus)} OR NOT EXISTS (
         SELECT 1 FROM agent_run_observations observation

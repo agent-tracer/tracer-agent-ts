@@ -7,7 +7,7 @@ export interface JobExecutionLimits {
     readonly maxOutputTokens: number;
 }
 
-/** 실행기가 잡 한 시도를 태우는 데 필요한 카탈로그 값과 자격 전부다. */
+/** 실행기가 잡 한 시도를 실행하는 데 필요한 카탈로그 값과 자격 전부다. */
 export interface JobExecutionEnvelope {
     readonly model: string;
     readonly fallbackModel: string | null;

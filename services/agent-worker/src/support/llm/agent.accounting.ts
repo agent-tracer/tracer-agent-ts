@@ -37,7 +37,7 @@ function mergeUsage(values: readonly (AgentQueryUsage | null)[]): AgentQueryUsag
     );
 }
 
-// 무너진 호출의 실제 지출은 알 수 없으므로 settle()의 null 처리가 예약해 준 몫을 전부 쓴 것으로
+// 실패한 호출의 실제 지출은 알 수 없으므로 settle()의 null 처리가 예약해 준 몫을 전부 쓴 것으로
 // 보수적으로 간주하도록 costUsd와 numTurns를 비워 둔다.
 export function agentFailureAccounting(error: unknown): AgentCallAccounting {
     return {

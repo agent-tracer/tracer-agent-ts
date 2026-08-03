@@ -11,7 +11,7 @@ import {
     TypeOrmChatThreadRepository,
 } from "./typeorm.chat.repository.adapter.js";
 
-/** 종결이 관측과 원장과 메시지와 궤적을 한 트랜잭션으로 새긴다. */
+/** 종결이 관측과 원장과 메시지와 궤적을 한 트랜잭션으로 기록한다. */
 export class ChatTransactionAdapter implements ChatTransactionPort {
     constructor(private readonly dataSource: DataSource) {}
 

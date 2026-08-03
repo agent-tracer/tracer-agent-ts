@@ -2,7 +2,7 @@ import type { ScanAnchorFacts } from "~agent-api/domain/job/model/scan.anchor.co
 
 export const SCAN_ANCHOR_READER = Symbol("ScanAnchorReader");
 
-/** 스캔이 근거를 캘 태스크 하나이며 자격 판정에 쓰는 세 값을 든다. */
+/** 스캔이 근거를 수집할 태스크 하나이며 자격 판정에 쓰는 세 값을 든다. */
 export interface ScanAnchor extends ScanAnchorFacts {
     readonly id: string;
 }

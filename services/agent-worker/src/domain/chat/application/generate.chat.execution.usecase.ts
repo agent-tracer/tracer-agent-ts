@@ -80,7 +80,7 @@ export class GenerateChatExecutionUsecase {
         }
     }
 
-    /** 벽시계가 아니라 진행이 끊긴 것을 보고 끊으므로 느리지만 일하는 턴은 살아남는다. */
+    /** 벽시계가 아니라 진행이 끊긴 것을 보고 끊으므로 느리지만 일하는 턴은 유지된다. */
     private watchForStall(watch: ChatStallWatch, stall: AbortController, parent: AbortSignal): () => void {
         const onParentAbort = (): void => stall.abort(parent.reason);
         if (parent.aborted) stall.abort(parent.reason);

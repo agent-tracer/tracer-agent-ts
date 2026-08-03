@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/** 하나의 실행이 자기 사용자 범위 안에서만 API를 부르도록 실행에 매인 자격이며, 저장소 없이 서명만으로 검증하고 발급 시점에 수명을 못박는다. */
+/** 하나의 실행이 자기 사용자 범위 안에서만 API를 부르도록 실행에 매인 자격이며, 저장소 없이 서명만으로 검증하고 발급 시점에 수명을 고정한다. */
 export interface ExecutionScope {
     readonly userId: string;
     readonly executionId: string;
@@ -48,7 +48,7 @@ export function looksLikeExecutionScopeToken(candidate: string): boolean {
     return candidate.startsWith(`${EXECUTION_SCOPE_TOKEN_PREFIX}.`);
 }
 
-/** 서명과 수명이 모두 맞을 때만 실행 범위를 내주므로, 이 값이 자기신고 헤더를 이긴다. */
+/** 서명과 수명이 모두 맞을 때만 실행 범위를 내주므로, 이 값이 자기신고 헤더를 우선한다. */
 export function verifyExecutionScopeToken(token: string, now: Date = new Date()): ExecutionScope | null {
     const secret = resolveSecret();
     if (secret === null) return null;

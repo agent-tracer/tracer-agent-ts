@@ -4,7 +4,7 @@ import { DiscoveryService, MetadataScanner } from "@nestjs/core";
 import { joinRoutePath, type ServedRoute } from "~agent-api/domain/health/model/served.route.model.js";
 import type { ServedSurfacePort } from "~agent-api/domain/health/port/served.surface.port.js";
 
-/** 손으로 적은 목록이 라우팅과 갈라지지 않도록 등록된 컨트롤러의 라우팅 표를 그대로 읽는다. */
+/** 손으로 적은 목록이 라우팅과 달라지지 않도록 등록된 컨트롤러의 라우팅 표를 그대로 읽는다. */
 @Injectable()
 export class NestServedSurfaceAdapter implements ServedSurfacePort {
     constructor(

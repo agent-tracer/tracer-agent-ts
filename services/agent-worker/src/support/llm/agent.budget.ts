@@ -23,7 +23,7 @@ interface ReservedBudget {
 
 const EMPTY_RESERVED_BUDGET: ReservedBudget = { turns: 0, usd: 0 };
 
-/** 실행 하나의 잔여 예산을 쥐고 호출마다 몫을 떼어 주며 실제 지출로 잔량을 줄인다. */
+/** 실행 하나의 잔여 예산을 가지고 호출마다 몫을 떼어 주며 실제 지출로 잔량을 줄인다. */
 export class ExecutionBudget {
     private remainingBudgetUsd: number | undefined;
     private remainingTurns: number;
@@ -35,7 +35,7 @@ export class ExecutionBudget {
         this.remainingTurns = totals.maxTurns;
     }
 
-    /** 요청한 턴과 비용 잔량을 모두 감당할 수 있는지 알린다. */
+    /** 요청한 턴과 비용 잔량을 모두 처리할 수 있는지 알린다. */
     hasRemainingCapacity(requiredTurns = 1): boolean {
         return (
             this.remainingTurns >= requiredTurns
@@ -130,7 +130,7 @@ export class ExecutionBudget {
     }
 }
 
-/** 예약한 몫과 잔량에서 뜬 몫을 하나로 더해 떼어 둔 바닥에 나머지를 얹어 준다. */
+/** 예약한 몫과 잔량에서 뜬 몫을 하나로 더해 떼어 둔 바닥에 나머지를 올려 준다. */
 export function combineLeases(leases: readonly AgentBudgetLease[]): AgentBudgetLease {
     return {
         maxTurns: leases.reduce((sum, lease) => sum + lease.maxTurns, 0),

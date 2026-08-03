@@ -13,7 +13,7 @@ export type JobKind = (typeof JOB_KIND)[keyof typeof JOB_KIND];
 
 export const JOB_KINDS: readonly JobKind[] = Object.values(JOB_KIND);
 
-/** 잡 하나를 실제로 태우는 주체이며 워크플로가 도는 것과 플러그인이 궤적을 넘기는 것을 가른다. */
+/** 잡 하나를 실제로 실행하는 주체이며 워크플로가 진행 중인 것과 플러그인이 궤적을 넘기는 것을 구분한다. */
 export const JOB_EXECUTOR = {
     [JOB_KIND.titleSuggestion]: "temporal",
     [JOB_KIND.recipeScan]: "temporal",
@@ -23,7 +23,7 @@ export const JOB_EXECUTOR = {
 
 export type JobExecutor = (typeof JOB_EXECUTOR)[JobKind];
 
-/** 워크플로가 태우는 잡 종류이며 실행 봉투는 이 셋에만 발급된다. */
+/** 워크플로가 실행하는 잡 종류이며 실행 봉투는 이 셋에만 발급된다. */
 export const WORKFLOW_JOB_KINDS = [
     JOB_KIND.titleSuggestion,
     JOB_KIND.recipeScan,

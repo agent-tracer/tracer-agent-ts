@@ -102,7 +102,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
             ctx, this.deps, batch, budget, decisionFloorLease, reports, coordinatorLedger, input, segments,
         );
 
-        // 조율자가 아직 판정 못 한 후보를 지목하면 남은 예산 안에서 후보를 한 번 더 열어보고 다시 결정한다.
+        // 조율자가 아직 판정 못 한 후보를 지목하면 남은 예산 안에서 후보를 한 번 더 조회하고 다시 결정한다.
         for (
             let round = 0;
             round < MAX_REDISPATCH_ROUNDS
@@ -128,7 +128,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const checked = validateCleanupSuggestions(decision.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
         if (checked.errors.length === 0) return buildCleanupOutput(ctx, segments, checked.valid, decision.modelUsed);
 
-        // 예약된 몫마저 바닥나 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 착지한다.
+        // 예약된 몫마저 소진되 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
 
         const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
@@ -137,7 +137,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         try {
             repaired = await runCleanupDecision(ctx, this.deps, batch, coordinatorLedger, repairPrompt, repairLease, AGENT_NODE.repair);
         } catch (error) {
-            // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 착지한다.
+            // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 종료한다.
             if (isBudgetExhaustedFailure(error)) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
             throw error;
         }

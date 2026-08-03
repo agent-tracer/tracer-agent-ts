@@ -44,7 +44,7 @@ export function recordRedispatchRounds(agent: string, rounds: number): void {
     redispatchRounds.record(rounds, { agent });
 }
 
-/** 결정론 검증이 산출을 거절한 실행이며 repaired 가 그 뒤 수리가 살렸는지를 가른다. */
+/** 결정론 검증이 산출을 거절한 실행이며 repaired 가 그 뒤 수리가 살렸는지를 구분한다. */
 export function recordValidationFailure(agent: string, repaired: boolean): void {
     validationFailure.add(1, { agent, repaired });
 }

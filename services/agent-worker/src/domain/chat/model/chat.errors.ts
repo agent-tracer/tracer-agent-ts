@@ -20,7 +20,7 @@ export class ChatTurnStalledError extends DomainError {
     }
 }
 
-/** 스레드의 running 자리를 다른 실행이 쥐고 있어 이번 실행을 아직 시작할 수 없다. */
+/** 스레드의 running 자리를 다른 실행이 가지고 있어 이번 실행을 아직 시작할 수 없다. */
 export class ChatThreadBusyError extends DomainError {
     readonly httpStatus = 409;
     readonly code = "chat.thread-busy";

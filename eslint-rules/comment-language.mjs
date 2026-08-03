@@ -10,6 +10,16 @@ const KOREAN = /[가-힣]/;
 // 소수점과 코드 식별자를 빼려고 한글로 끝나는 마침표만 센다.
 const KOREAN_SENTENCE_END = /[가-힣][)\]"'`»】]*\.(?=\s|$)/g;
 const MAX_SENTENCES = 1;
+
+// 커밋과 같은 어휘를 주석에도 강제하며 은유와 의인화 대신 코드가 하는 일을 적는다.
+const FIGURATIVE = [
+  ["걷어내", "제거한다"], ["가른", "구분한다"], ["캔다", "수집한다"], ["잠근", "고정한다"],
+  ["죽인", "중단한다"], ["이긴", "우선한다"], ["돈다", "실행한다"], ["집는", "가져간다"],
+  ["흘린", "전송한다"], ["붙는", "연결된다"], ["바닥나", "소진된다"], ["혼자", "단독으로"],
+  ["태우", "실행한다"], ["쥐고", "가지고"], ["무너지", "실패한다"], ["착지", "종료한다"],
+  ["강등", "낮춘다"], ["열어본", "조회한다"], ["훑는", "조회한다"], ["깨운", "알린다"],
+  ["못박", "고정한다"], ["완주", "끝까지 실행한다"], ["견준", "비교한다"],
+];
 const MIN_ENGLISH_WORDS = 4;
 
 export const commentLanguage = {
@@ -65,6 +75,14 @@ export const commentLanguage = {
             context.report({ node: comment, message: "주석에 결정 문서 번호를 인용하지 않는다" });
             continue;
           }
+          const figurative = FIGURATIVE.find(([word]) => text.includes(word));
+          if (figurative) {
+            context.report({
+              node: comment,
+              message: `은유와 구어 대신 코드가 하는 일을 적는다: ${figurative[0]} → ${figurative[1]}`,
+            });
+          }
+
           if (EXTERNAL_LINK.test(text)) {
             context.report({ node: comment, message: "주석에 외부 링크를 달지 않는다" });
             continue;

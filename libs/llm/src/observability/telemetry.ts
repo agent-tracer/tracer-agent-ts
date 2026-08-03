@@ -171,7 +171,7 @@ function recordSpanError(span: Span, err: unknown): void {
     span.setStatus({ code: SpanStatusCode.ERROR, message: messageOf(err) });
 }
 
-// 실행 실패의 이름은 전부 같으므로 라벨은 서브타입으로 가른다.
+// 실행 실패의 이름은 전부 같으므로 라벨은 서브타입으로 구분한다.
 function errorTypeOf(err: unknown): string {
     if (err instanceof AgentExecutionFailure) return err.errorSubtype ?? err.code;
     return err instanceof Error ? err.name : "_OTHER";

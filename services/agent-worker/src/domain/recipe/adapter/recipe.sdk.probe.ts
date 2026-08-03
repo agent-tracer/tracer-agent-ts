@@ -39,7 +39,7 @@ export interface RecipeProbeRun {
   readonly steps: readonly JobStepPayload[];
 }
 
-/** 맡은 질문 하나를 자기 도구와 자기 장부로 조사하는 전문가를 실행하며, 무너져도 예외 대신 실패 보고로 강등해 다른 전문가의 성과를 지킨다. */
+/** 맡은 질문 하나를 자기 도구와 자기 장부로 조사하는 전문가를 실행하며, 실패해도 예외 대신 실패 보고로 하향해 다른 전문가의 성과를 지킨다. */
 export async function runRecipeProbe(
   ctx: RecipeQueryContext,
   deps: RecipeToolDeps,

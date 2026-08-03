@@ -22,7 +22,7 @@ export interface CleanupInspectRun {
     readonly steps: readonly JobStepPayload[];
 }
 
-/** 맡은 후보 하나를 이벤트 도구만으로 조사하며, 무너져도 예외 대신 실패 보고로 강등해 다른 후보의 조사를 지킨다. */
+/** 맡은 후보 하나를 이벤트 도구만으로 조사하며, 실패해도 예외 대신 실패 보고로 하향해 다른 후보의 조사를 지킨다. */
 export async function runCleanupInspect(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

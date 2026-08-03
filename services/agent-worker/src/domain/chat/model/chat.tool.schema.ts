@@ -39,7 +39,7 @@ export const CHAT_TOOL_DEFINITIONS: readonly LlmToolDefinition[] =
 
 export const CHAT_TOOL_NAMES: readonly string[] = [...CHAT_TOOLS];
 
-/** 대화에는 rationale 필드가 없어 다른 에이전트와 문구가 갈라지므로 계약이 몫을 따로 갖는다. */
+/** 대화에는 rationale 필드가 없어 다른 에이전트와 문구가 나뉘어지므로 계약이 몫을 따로 갖는다. */
 export const CHAT_TOOL_FAILURES: ToolFailureTexts = CHAT_TOOL_CONTRACT.failures;
 
 /** 도구 이름에 맞는 계약 shape로 원본 인자를 파싱하며 모델이 낸 값의 타입을 좁힌다. */

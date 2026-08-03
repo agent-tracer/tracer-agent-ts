@@ -59,7 +59,7 @@ export async function createTemporalWorker(options: TemporalWorkerOptions): Prom
                 },
             }
             : {
-                // 최대 15분인 생성 활동이 짧은 활동의 슬롯을 굶기지 않도록 낮은 동시성으로 돈다.
+                // 최대 15분인 생성 활동이 짧은 활동의 슬롯을 굶기지 않도록 낮은 동시성으로 실행한다.
                 maxConcurrentActivityTaskExecutions: options.generateMaxConcurrentActivities ?? 6,
                 // 배포가 진행 중인 언어 모델 호출을 즉시 중단해 유료 결과를 버리지 않도록 유예를 준다.
                 shutdownGraceTime: "5 minutes",

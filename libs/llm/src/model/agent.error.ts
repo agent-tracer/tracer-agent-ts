@@ -4,7 +4,7 @@ import type { AgentRunObservation } from "./agent.observation.js";
 import type { AgentQueryUsage } from "./agent.usage.js";
 import type { JobStepPayload } from "./job.step.js";
 
-/** 재시도해도 같은 자리에서 끝나는 실패인지와, 예약 몫까지 다 써 실패 대신 빈 결과로 착지시킬 실패인지다. */
+/** 재시도해도 같은 자리에서 끝나는 실패인지와, 예약 몫까지 다 써 실패 대신 빈 결과로 종료시킬 실패인지다. */
 export interface ErrorSubtypeClass {
     readonly retryable: boolean;
     readonly landsEmpty: boolean;
@@ -51,7 +51,7 @@ export const AGENT_ERROR_SUBTYPE = {
 
 export type AgentErrorSubtype = (typeof AGENT_ERROR_SUBTYPE)[keyof typeof AGENT_ERROR_SUBTYPE];
 
-// 공급자가 붙여 온 이름을 그대로 통과시키는 값이라 이 실행기는 내지 않고 판정만 빌린다.
+// 공급자가 붙여 온 이름을 그대로 통과시키는 값이라 이 실행기는 내지 않고 판정만 받은다.
 export const PROVIDER_ERROR_SUBTYPE = {
     authentication: "authentication_error",
     permission: "permission_error",
@@ -69,7 +69,7 @@ export type ProviderErrorSubtype = (typeof PROVIDER_ERROR_SUBTYPE)[keyof typeof 
 
 export type AgentJobErrorCode = "AGENT_FAILED" | "OUTPUT_NOT_JSON" | "OUTPUT_SCHEMA_INVALID";
 
-/** 실패한 시도가 이미 청구한 비용과 궤적과 실제 모델을 그대로 위로 흘려보낸다. */
+/** 실패한 시도가 이미 청구한 비용과 궤적과 실제 모델을 그대로 위로 전송한다. */
 export interface AgentFailureDetail {
     readonly errorSubtype: string | null;
     readonly usage: AgentQueryUsage | null;
@@ -114,7 +114,7 @@ const ERROR_SUBTYPE_CONTRACT = loadErrorSubtypeContract();
 
 const CLASSIFIED_SUBTYPES = flattenErrorSubtypeClasses(ERROR_SUBTYPE_CONTRACT);
 
-// 표에 없는 공급자 값은 판정을 내린 적이 없다는 뜻이라 재시도로 떨어뜨린다.
+// 표에 없는 공급자 값은 판정을 내린 적이 없다는 뜻이라 재시도로 낮춘다.
 const NON_RETRYABLE_SUBTYPES: ReadonlySet<string> = new Set(
     [
         ...CLASSIFIED_SUBTYPES,
@@ -135,7 +135,7 @@ const BUDGET_EXHAUSTED_SUBTYPES: ReadonlySet<string> = new Set(
     CLASSIFIED_SUBTYPES.filter((verdict) => verdict.landsEmpty).map((verdict) => verdict.subtype),
 );
 
-/** 예약된 몫까지 다 써 실패가 아니라 그때까지의 산출로 착지시켜야 하는 중단인지 본다. */
+/** 예약된 몫까지 다 써 실패가 아니라 그때까지의 산출로 종료시켜야 하는 중단인지 본다. */
 export function isBudgetExhaustedSubtype(subtype: string | null): boolean {
     return subtype !== null && BUDGET_EXHAUSTED_SUBTYPES.has(subtype);
 }

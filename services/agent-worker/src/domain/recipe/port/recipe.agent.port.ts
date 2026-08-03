@@ -14,7 +14,7 @@ export interface GenerateRecipeCandidatesInput {
     readonly userId: string;
     readonly taskId: string;
     readonly language: OutputLanguage;
-    /** 오케스트레이터가 세는 시도 번호이며 같은 시도의 재개와 새 시도를 가른다. */
+    /** 오케스트레이터가 세는 시도 번호이며 같은 시도의 재개와 새 시도를 구분한다. */
     readonly attempt: number;
     readonly apiKey?: string;
     readonly model?: string;

@@ -49,7 +49,7 @@ export class ProvenanceLedger {
         this.recipeRevs.set(recipeId, rev);
     }
 
-    /** 전문가별 장부를 조율자 장부로 합칠 때 다른 장부가 모은 것을 이 장부로 흡수한다. */
+    /** 전문가별 장부를 조율자 장부로 합칠 때 다른 장부가 모은 것을 이 장부로 병합한다. */
     mergeFrom(other: ProvenanceLedger): void {
         const seen = other.snapshot();
         for (const [taskId, ids] of Object.entries(seen.eventIdsByTask)) {

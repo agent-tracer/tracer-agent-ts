@@ -20,7 +20,7 @@ export const inspectAssignmentSchema = z.object({
     weight: z.number().int().min(1).max(MAX_INSPECT_WEIGHT),
 });
 
-// 계획이 비면(inspect: []) 아무도 후보를 열어보지 않으므로 조율자에게 갈 보고가 없고, 근거 없는 제안은
+// 계획이 비면(inspect: []) 아무도 후보를 조회하지 않으므로 조율자에게 갈 보고가 없고, 근거 없는 제안은
 // 검증에서 전부 걸리므로 그 실행은 빈 제안으로 끝난다.
 export const triagePlanSchema = z.object({
     inspect: z.array(inspectAssignmentSchema).max(CLEANUP_MAX_SUGGESTIONS).default([]),

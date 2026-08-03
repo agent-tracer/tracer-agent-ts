@@ -63,7 +63,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
         };
         const model = input.model?.trim() || CHAT_SPEC.limits.defaultModel;
 
-        // SDK 스트림은 동기 콜백이라 역압력을 상류로 전할 수 없어 통지를 기다리지 않고 흘려보낸다.
+        // SDK 스트림은 동기 콜백이라 역압력을 상류로 전할 수 없어 통지를 기다리지 않고 전송한다.
         const runnerStream: AgentStreamSink = {
             onProgress: () => sink.onProgress?.(),
             onAssistantDelta: (text) => {

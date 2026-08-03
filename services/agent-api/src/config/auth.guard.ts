@@ -25,7 +25,7 @@ export class AuthGuard implements CanActivate {
             return true;
         }
         const request = context.switchToHttp().getRequest<Request>();
-        // 실행 범위 토큰을 들고 온 요청은 인증 강제 여부와 무관하게 그 토큰이 자기신고 헤더를 이긴다.
+        // 실행 범위 토큰을 들고 온 요청은 인증 강제 여부와 무관하게 그 토큰이 자기신고 헤더를 우선한다.
         const scopedUserId = this.resolveExecutionScope(request);
         if (scopedUserId !== null) {
             request.headers[MONITOR_USER_HEADER] = scopedUserId;

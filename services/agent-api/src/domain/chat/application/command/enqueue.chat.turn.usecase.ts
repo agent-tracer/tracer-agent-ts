@@ -45,7 +45,7 @@ interface AcceptedChatTurn {
     readonly execution: ChatExecution;
 }
 
-/** 대화 턴 하나를 접수해 사용자 메시지와 실행 행을 한 커밋으로 적고 워크플로를 깨운다. */
+/** 대화 턴 하나를 접수해 사용자 메시지와 실행 행을 한 커밋으로 적고 워크플로를 알린다. */
 @Injectable()
 export class EnqueueChatTurnUseCase {
     constructor(
@@ -96,7 +96,7 @@ export class EnqueueChatTurnUseCase {
         );
         if (existing !== null) return this.existing(tx.chatMessages, existing, inputHash);
 
-        // 진행 중인 턴이 남아 있으면 두 실행이 같은 스레드를 나눠 집어 순서가 뒤집힌다.
+        // 진행 중인 턴이 남아 있으면 두 실행이 같은 스레드를 나눠 나누어 순서가 역전된다.
         const active = await tx.chatExecutions.findLatestActiveByThread(input.threadId);
         if (active !== null) throw new ChatActiveTurnConflictError();
 

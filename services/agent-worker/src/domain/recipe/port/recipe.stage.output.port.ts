@@ -1,6 +1,6 @@
 import type { StructuredSchema } from "@tracer-agent/llm";
 
-/** 잡 하나가 나뉘어 도는 단계이며 산출을 원장에 적는 자리를 이 이름이 가른다. */
+/** 잡 하나가 나뉘어 실행되는 단계이며 산출을 원장에 적는 자리를 이 이름이 구분한다. */
 export const RECIPE_STAGE = {
     survey: "survey",
     probe: "probe",
@@ -17,7 +17,7 @@ export interface RecipeStageOutputPort {
     clear(jobId: string): Promise<void>;
 }
 
-/** 조사 단계가 앞선 시도의 산출을 이어받는 자리이며 없으면 그 실행은 매번 처음부터 돈다. */
+/** 조사 단계가 앞선 시도의 산출을 이어받는 자리이며 없으면 그 실행은 매번 처음부터 실행한다. */
 export interface RecipeStageResumePort {
     restore<T>(stage: RecipeStage, slot: string, schema: StructuredSchema<T>): Promise<T | null>;
     record(stage: RecipeStage, slot: string, payload: unknown): Promise<void>;

@@ -19,7 +19,7 @@ export interface GenerateCleanupSuggestionsInput {
     /** 서버 조회가 상한에 걸려 이 배치가 후보 전체를 담지 못했는지 여부다. */
     readonly truncated: boolean;
     readonly maxSuggestions: number;
-    /** 오케스트레이터가 세는 시도 번호이며, 같은 시도의 재개와 새 시도를 가른다. */
+    /** 오케스트레이터가 세는 시도 번호이며, 같은 시도의 재개와 새 시도를 구분한다. */
     readonly attempt: number;
     readonly apiKey?: string;
     readonly model?: string;

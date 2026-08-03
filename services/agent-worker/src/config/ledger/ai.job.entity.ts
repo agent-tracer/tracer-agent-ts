@@ -71,7 +71,7 @@ export class AiJobEntity {
     leaseExpiresAt!: Date | null;
 
     start(now: Date): void {
-        // 활동 재시도로 인한 재진입은 시도 횟수만 늘리는 멱등 처리로 흡수한다.
+        // 활동 재시도로 인한 재진입은 시도 횟수만 늘리는 멱등 처리로 병합한다.
         if (this.status === JOB_STATUS.running) {
             this.attempts += 1;
             this.updatedAt = now;

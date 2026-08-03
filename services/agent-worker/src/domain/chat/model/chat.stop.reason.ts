@@ -15,7 +15,7 @@ export interface TurnStopSignals {
     readonly landed: boolean;
 }
 
-/** 자유 텍스트를 내는 대화는 그때까지 쓴 답변이 곧 결론이라 착지로 적힌 중단을 실패로 접지 않는다. */
+/** 자유 텍스트를 내는 대화는 그때까지 쓴 답변이 곧 결론이라 종료로 적힌 중단을 실패로 접지 않는다. */
 export function chatStopReason(signals: TurnStopSignals): ChatStopReason {
     if (signals.errorSubtype !== null) {
         const named = BY_SUBTYPE[signals.errorSubtype];

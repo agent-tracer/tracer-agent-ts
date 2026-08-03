@@ -323,7 +323,7 @@ function assistantFrom(model: string): unknown {
 }
 
 describe("예산 착지 판정", () => {
-    // 이 예산은 opus 두 호출은 감당하지 못하고 haiku 두 호출은 감당한다.
+    // 이 예산은 opus 두 호출은 감당하지 못하고 haiku 두 호출은 처리한다.
     const BUDGET_USD = 3e-5;
 
     it("요청보다 비싼 모델이 응답하면 그 모델의 단가로 착지한다", async () => {

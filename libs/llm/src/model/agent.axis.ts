@@ -1,4 +1,4 @@
-/** 실행 하나를 태운 구현체를 가리키는 축이며 값의 목록은 계약의 AgentAxis 가 소유한다. */
+/** 실행 하나를 실행한 구현체를 가리키는 축이며 값의 목록은 계약의 AgentAxis 가 소유한다. */
 export const AGENT_AXIS = {
     ts: "ts",
     python: "python",

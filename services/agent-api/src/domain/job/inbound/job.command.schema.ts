@@ -7,7 +7,7 @@ import {
     type JobKind,
 } from "~agent-api/domain/job/model/job.const.js";
 
-// 잡 입력이 워크플로 인자로 그대로 흘러가므로 종류마다 허용 필드를 못박는다.
+// 잡 입력이 워크플로 인자로 그대로 흘러가므로 종류마다 허용 필드를 고정한다.
 
 const taskIdSchema = z.string().trim().min(1).max(64);
 

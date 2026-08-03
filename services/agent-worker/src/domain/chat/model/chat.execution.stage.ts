@@ -12,7 +12,7 @@ export interface PreparedChatExecution {
 
 export interface GeneratedChatExecution {
     readonly executionId: string;
-    /** 궤적을 시도별로 갈라 남기므로 재시도한 실행도 앞 시도의 궤적을 잃지 않는다. */
+    /** 궤적을 시도별로 나뉘어 남기므로 재시도한 실행도 앞 시도의 궤적을 잃지 않는다. */
     readonly attempt: number;
     readonly result: ChatTurnResult;
 }

@@ -90,7 +90,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
             maxTurns: limits.maxTurns,
         });
 
-        // 수리 몫을 먼저 떼어 두어 첫 실행이 예산을 다 쓰더라도 수리가 도구를 쥐고 출력을 낼 수 있다.
+        // 수리 몫을 먼저 떼어 두어 첫 실행이 예산을 다 쓰더라도 수리가 도구를 가지고 출력을 낼 수 있다.
         const repairLease = budget.reserve(REPAIR_RESERVED_TURNS, REPAIR_RESERVED_BUDGET_SHARE);
 
         const firstLease = budget.lease(1);
@@ -101,7 +101,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const errors = validateTitleSuggestions(first.data.suggestions, input.context.title);
         if (errors.length === 0) return toOutput(input, runs, first.data.suggestions);
 
-        // 예약된 몫마저 바닥나 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 착지한다.
+        // 예약된 몫마저 소진되 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) return toOutput(input, runs, []);
 
         // 제목이 제약을 어기면 오류를 모델에게 돌려주고 예약해 둔 몫으로 한 번만 다시 받는다.
@@ -115,7 +115,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
                 systemPrompt,
             );
         } catch (error) {
-            // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 착지한다.
+            // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 종료한다.
             if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, []);
             throw error;
         }

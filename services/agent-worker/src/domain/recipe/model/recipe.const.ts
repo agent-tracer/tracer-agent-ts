@@ -23,7 +23,7 @@ export const RECIPE_SETTING_KEY = {
 /** 후보를 낸 주체이며 값은 산출물 창구의 어휘가 소유한다. */
 export const RECIPE_AUTHOR_AGENT = "agent";
 
-/** 스캔이 근거를 캘 수 있는 앵커의 자격이며 값은 계약이 소유한다. */
+/** 스캔이 근거를 수집할 수 있는 앵커의 자격이며 값은 계약이 소유한다. */
 export interface RecipeAnchorContract {
     readonly requires: {
         readonly origin: { readonly excludes: readonly string[] };

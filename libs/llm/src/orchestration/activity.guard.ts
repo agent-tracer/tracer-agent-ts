@@ -2,7 +2,7 @@ import { ApplicationFailure, Context } from "@temporalio/activity";
 import { errorMessage, logError, logInfo, logWarn } from "@tracer-agent/platform";
 import { AgentExecutionFailure } from "~llm/model/agent.error.js";
 
-/** 같은 봉투로 다시 태워도 같은 자리에서 끝날 실패인지를, 그 실패를 아는 도메인이 판정한다. */
+/** 같은 봉투로 다시 실행해도 같은 자리에서 끝날 실패인지를, 그 실패를 아는 도메인이 판정한다. */
 export type NonRetryableVerdict = (error: Error) => boolean;
 
 export interface ActivityGuardScope {
@@ -12,7 +12,7 @@ export interface ActivityGuardScope {
     readonly isNonRetryable: NonRetryableVerdict;
 }
 
-/** 재시도의 소유자는 오케스트레이션 엔진 하나이므로 활동은 판정과 대기 시간만 얹어 실패를 올린다. */
+/** 재시도의 소유자는 오케스트레이션 엔진 하나이므로 활동은 판정과 대기 시간만 올려 실패를 올린다. */
 export async function guardActivity<T>(scope: ActivityGuardScope, run: () => Promise<T>): Promise<T> {
     const { activity, jobId } = scope;
     const attempt = Context.current().info.attempt;

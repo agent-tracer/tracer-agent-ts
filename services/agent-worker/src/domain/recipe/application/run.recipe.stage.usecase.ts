@@ -27,7 +27,7 @@ export class RunRecipeStageUsecase {
         return parsed.success ? parsed.data : null;
     }
 
-    /** 이 시도가 낸 산출을 적어 다음 시도가 이 단계를 다시 태우지 않게 한다. */
+    /** 이 시도가 낸 산출을 적어 다음 시도가 이 단계를 다시 실행하지 않게 한다. */
     async record(jobId: string, stage: RecipeStage, slot: string, payload: unknown): Promise<void> {
         await this.outputs.save(jobId, stage, slot, payload, this.clock.now());
     }
