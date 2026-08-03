@@ -6,7 +6,7 @@ import type {
     GenerateCleanupSuggestionsOutput,
     CleanupAgentPort,
 } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
-import type { CleanupIdGeneratorPort } from "~agent-worker/domain/cleanup/port/cleanup.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
@@ -67,7 +67,7 @@ export class CapturingCleanupNotification implements JobNotificationPort {
     }
 }
 
-export class SequentialCleanupIdGenerator implements CleanupIdGeneratorPort {
+export class SequentialCleanupIdGenerator implements IdGeneratorPort {
     private position = 0;
 
     constructor(private readonly prefix = "cleanup-id") {}

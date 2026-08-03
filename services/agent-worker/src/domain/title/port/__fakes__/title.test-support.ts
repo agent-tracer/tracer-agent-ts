@@ -2,7 +2,7 @@ import { AGENT_BACKEND, type AgentRunObservation } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import type { TitleContext } from "~agent-worker/domain/title/model/title.context.model.js";
 import type { GenerateTitleSuggestionsOutput } from "~agent-worker/domain/title/port/title.agent.port.js";
-import type { TitleIdGeneratorPort } from "~agent-worker/domain/title/port/title.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     TitleFailedAttempt,
@@ -55,7 +55,7 @@ export class CapturingTitleNotification implements JobNotificationPort {
     }
 }
 
-export class SequentialTitleIdGenerator implements TitleIdGeneratorPort {
+export class SequentialTitleIdGenerator implements IdGeneratorPort {
     private seq = 0;
 
     next(): string {

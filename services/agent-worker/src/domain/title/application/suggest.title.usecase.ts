@@ -13,7 +13,7 @@ import type {
 import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.spec.js";
 import { validateTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
-import type { TitleIdGeneratorPort } from "~agent-worker/domain/title/port/title.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
 
 /** 에이전트를 한 번 실행해 제목 후보를 만들고 시도 이력을 남긴다. */
@@ -22,7 +22,7 @@ export class SuggestTitleUsecase {
         private readonly repository: TitleRepositoryPort,
         private readonly agent: TitleAgentPort,
         private readonly clock: IClock,
-        private readonly ids: TitleIdGeneratorPort,
+        private readonly ids: IdGeneratorPort,
     ) {}
 
     async execute(

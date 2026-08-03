@@ -20,7 +20,7 @@ import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import { assembleRecipeCandidates, type GeneratedRecipeCandidate } from "../model/recipe.candidate.model.js";
 import { RECIPE_FEATURE, RECIPE_SETTING_KEY } from "../model/recipe.const.js";
 import type { RecipeAgentPort } from "../port/recipe.agent.port.js";
-import type { RecipeIdGeneratorPort } from "../port/recipe.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
 
 export interface RecipeScanPrep {
@@ -46,7 +46,7 @@ export class ScanRecipeUsecase {
         private readonly repository: RecipeRepositoryPort,
         private readonly agent: RecipeAgentPort,
         private readonly clock: IClock,
-        private readonly ids: RecipeIdGeneratorPort,
+        private readonly ids: IdGeneratorPort,
     ) {}
 
     async execute(prep: RecipeScanPrep, run: AgentAttemptRun): Promise<RecipeScanGenerateOutput> {

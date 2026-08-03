@@ -21,7 +21,7 @@ import { assembleCleanupSuggestions, type GeneratedCleanupSuggestion } from "../
 import { CLEANUP_FEATURE, CLEANUP_SETTING_KEY } from "../model/cleanup.const.js";
 import type { CleanupCandidate } from "../model/cleanup.candidate.model.js";
 import type { CleanupAgentPort } from "../port/cleanup.agent.port.js";
-import type { CleanupIdGeneratorPort } from "../port/cleanup.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
 
 export interface TaskCleanupPrep {
@@ -49,7 +49,7 @@ export class SuggestCleanupUsecase {
         private readonly repository: CleanupRepositoryPort,
         private readonly agent: CleanupAgentPort,
         private readonly clock: IClock,
-        private readonly ids: CleanupIdGeneratorPort,
+        private readonly ids: IdGeneratorPort,
     ) {}
 
     async execute(prep: TaskCleanupPrep, run: AgentAttemptRun): Promise<TaskCleanupGenerateOutput> {

@@ -6,7 +6,7 @@ import type {
     GenerateRecipeCandidatesOutput,
     RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
-import type { RecipeIdGeneratorPort } from "~agent-worker/domain/recipe/port/recipe.id.generator.port.js";
+import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     RecipeCandidateBatch,
@@ -68,7 +68,7 @@ export class CapturingRecipeNotification implements JobNotificationPort {
     }
 }
 
-export class SequentialRecipeIdGenerator implements RecipeIdGeneratorPort {
+export class SequentialRecipeIdGenerator implements IdGeneratorPort {
     private position = 0;
 
     constructor(private readonly prefix = "recipe-id") {}

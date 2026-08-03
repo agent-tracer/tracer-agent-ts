@@ -29,7 +29,7 @@ import { RecipeStageOutputAdapter } from "~agent-worker/domain/recipe/adapter/re
 import { RunRecipeStageUsecase } from "~agent-worker/domain/recipe/application/run.recipe.stage.usecase.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { ContractPromptSource } from "~agent-worker/support/contract.prompt.source.js";
-import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
+import { UlidGenerator } from "~agent-worker/support/ulid.generator.js";
 import { FailRecipeJobUsecase } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
 import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/application/finalize.recipe.scan.usecase.js";
 import { PrepareRecipeScanUsecase } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
@@ -39,7 +39,6 @@ import { CleanupOutputAdapter } from "~agent-worker/domain/cleanup/adapter/clean
 import { CleanupReaderAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.reader.adapter.js";
 import { CleanupRepositoryAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.repository.adapter.js";
 import { CleanupSdkAgentAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.sdk.agent.adapter.js";
-import { CleanupUlidGenerator } from "~agent-worker/domain/cleanup/adapter/cleanup.ulid.generator.js";
 import { FailCleanupJobUsecase } from "~agent-worker/domain/cleanup/application/fail.cleanup.job.usecase.js";
 import { FinalizeTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/finalize.task.cleanup.usecase.js";
 import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/prepare.task.cleanup.usecase.js";
@@ -50,7 +49,6 @@ import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/titl
 import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
 import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
 
-import { TitleUlidGenerator } from "~agent-worker/domain/title/adapter/title.ulid.generator.js";
 import { FailTitleJobUsecase } from "~agent-worker/domain/title/application/fail.title.job.usecase.js";
 import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/application/finalize.title.suggestion.usecase.js";
 import { PrepareTitleSuggestionUsecase } from "~agent-worker/domain/title/application/prepare.title.suggestion.usecase.js";
@@ -79,7 +77,7 @@ async function bootstrap(): Promise<void> {
     const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
     const tracer = new TracerApiWindow(resolveTracerApiUrl());
 
-    const recipeIds = new RecipeUlidGenerator();
+    const recipeIds = new UlidGenerator();
     const recipeReader = new RecipeReaderAdapter(tracer);
     const recipeSearch = new RecipeSearchAdapter(tracer);
     const recipeRepository = new RecipeRepositoryAdapter(dataSource, tracer);
@@ -107,7 +105,7 @@ async function bootstrap(): Promise<void> {
         new FailRecipeJobUsecase(recipeRepository, recipeNotification, clock, recipeStageOutputs),
     );
 
-    const titleIds = new TitleUlidGenerator(clock);
+    const titleIds = new UlidGenerator(clock);
     const titleReader = new TitleEventReaderAdapter(tracer);
     const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
     const titleNotification = new JobNotification(publish);
@@ -120,7 +118,7 @@ async function bootstrap(): Promise<void> {
         new FailTitleJobUsecase(titleRepository, titleNotification, clock),
     );
 
-    const cleanupIds = new CleanupUlidGenerator();
+    const cleanupIds = new UlidGenerator();
     const cleanupReader = new CleanupReaderAdapter(tracer);
     const cleanupRepository = new CleanupRepositoryAdapter(dataSource, tracer);
     const cleanupOutput = new CleanupOutputAdapter(tracer);
