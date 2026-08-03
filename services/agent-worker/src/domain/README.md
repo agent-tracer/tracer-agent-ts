@@ -261,4 +261,6 @@ Recipe·title·cleanup 잡은 모두 준비 → 생성 → 정산 구조를 사�
 | Temporal 실패 판정 | `libs/llm/src/orchestration/activity.guard.ts` |
 | 워크플로 등록 | `services/agent-worker/src/workflows.ts`, `chat.workflows.ts` |
 | worker 진입점 | `services/agent-worker/src/chat.main.ts`, `jobs.main.ts`, `generate.main.ts` |
-| 계약 prompt 연결 | `services/agent-worker/src/support/agent.prompt.ts` |
+| 계약 prompt 연결 | `services/agent-worker/src/support/agent.prompt.ts`, `contract.prompt.source.ts` |
+| 궤적 노드 이름과 기록 | `services/agent-worker/src/support/llm/run.segment.ts` |
+| 잡 알림과 식별자 생성 | `services/agent-worker/src/support/job.notification.ts`, `ulid.generator.ts` |
