@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { InvariantViolationError } from "@tracer-agent/platform";
 import {
@@ -5,6 +6,17 @@ import {
     type ChatExecutionStatus,
     type ChatStopReason,
 } from "~agent-api/domain/chat/model/chat.const.js";
+
+export interface ChatExecutionFollowUpInput {
+    readonly id: string;
+    readonly userId: string;
+    readonly threadId: string;
+    readonly confirmationId: string;
+    readonly replayAnchorMessageId: string;
+    readonly model: string | null;
+    readonly language: string | null;
+    readonly now: Date;
+}
 
 export interface ChatExecutionCreateInput {
     readonly id: string;
@@ -16,6 +28,13 @@ export interface ChatExecutionCreateInput {
     readonly model: string | null;
     readonly language: string | null;
     readonly now: Date;
+}
+
+const FOLLOW_UP_REQUEST_PREFIX = "confirmation:";
+
+/** 확인 하나가 낳는 턴의 접수 식별자이며 같은 확인이면 언제 불러도 같은 값이다. */
+export function followUpClientRequestId(confirmationId: string): string {
+    return `${FOLLOW_UP_REQUEST_PREFIX}${confirmationId}`;
 }
 
 /** 대화 턴 하나의 수명이며 접수부터 종결까지의 상태와 누적 답변과 지출을 든다. */
@@ -99,6 +118,21 @@ export class ChatExecution {
         execution.startedAt = null;
         execution.completedAt = null;
         return execution;
+    }
+
+    /** 해소된 확인 하나가 낳는 턴이며, 같은 확인은 접수 식별자가 같아 실행이 하나로 접힌다. */
+    static createFollowUp(input: ChatExecutionFollowUpInput): ChatExecution {
+        return ChatExecution.create({
+            id: input.id,
+            userId: input.userId,
+            threadId: input.threadId,
+            replayAnchorMessageId: input.replayAnchorMessageId,
+            clientRequestId: followUpClientRequestId(input.confirmationId),
+            inputHash: createHash("sha256").update(input.confirmationId).digest("hex"),
+            model: input.model,
+            language: input.language,
+            now: input.now,
+        });
     }
 
     recover(now: Date): void {

@@ -1,7 +1,13 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { logInfo } from "@tracer-agent/platform";
 import { CHAT_MESSAGE_ROLE } from "~agent-api/domain/chat/model/chat.const.js";
+import { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import { ChatMessage } from "~agent-api/domain/chat/model/chat.message.model.js";
+import { mapExecution, type ChatExecutionDto } from "~agent-api/domain/chat/model/chat.model.js";
+import {
+    CHAT_EXECUTION_DISPATCHER,
+    type ChatExecutionDispatcherPort,
+} from "~agent-api/domain/chat/port/chat.execution.dispatcher.port.js";
 import {
     CHAT_EXECUTION_UPDATE_PUBLISHER,
     type ChatExecutionUpdatePublisherPort,
@@ -42,6 +48,8 @@ export interface ConfirmToolResult {
     readonly toolName: string;
     readonly status: string;
     readonly result: string;
+    /** 승인이 세운 후속 턴이며 거절이거나 스레드가 이미 바쁘면 비어 있다. */
+    readonly execution: ChatExecutionDto | null;
 }
 
 /** 대기 중인 쓰기 도구 하나를 승인이나 거절로 해소하고, 승인이면 실제로 실행해 결과를 대화에 남긴다. */
@@ -64,6 +72,8 @@ export class ConfirmToolUseCase {
         private readonly executions: ChatExecutionRepositoryPort,
         @Inject(CHAT_EXECUTION_UPDATE_PUBLISHER)
         private readonly events: ChatExecutionUpdatePublisherPort,
+        @Inject(CHAT_EXECUTION_DISPATCHER)
+        private readonly dispatcher: ChatExecutionDispatcherPort,
     ) {}
 
     async execute(input: ConfirmToolInput): Promise<ConfirmToolResult> {
@@ -83,7 +93,8 @@ export class ConfirmToolUseCase {
             await this.appendToolMessage(input.threadId, pending.id, content, now);
             await this.announce(input.threadId);
             logInfo({ msg: "chat.tool.rejected", threadId: input.threadId, userId: input.userId, confirmationId: pending.id, toolName: pending.toolName });
-            return { confirmationId: pending.id, toolName: pending.toolName, status: pending.status, result: content };
+            // 하지 말라고 이미 답한 자리라 이어 말할 턴을 세우지 않는다.
+            return { confirmationId: pending.id, toolName: pending.toolName, status: pending.status, result: content, execution: null };
         }
 
         const executor = this.executors[pending.toolName];
@@ -92,10 +103,41 @@ export class ConfirmToolUseCase {
         const result = await executor(input.userId, pending.args);
         pending.approve(now);
         await this.pendingTools.resolve(pending);
-        await this.appendToolMessage(input.threadId, pending.id, result, now);
+        const anchorMessageId = await this.appendToolMessage(input.threadId, pending.id, result, now);
+        const execution = await this.followUp(input, anchorMessageId, now);
         await this.announce(input.threadId);
         logInfo({ msg: "chat.tool.confirmed", threadId: input.threadId, userId: input.userId, confirmationId: pending.id, toolName: pending.toolName });
-        return { confirmationId: pending.id, toolName: pending.toolName, status: pending.status, result };
+        return {
+            confirmationId: pending.id,
+            toolName: pending.toolName,
+            status: pending.status,
+            result,
+            execution: execution === null ? null : mapExecution(execution),
+        };
+    }
+
+    /** 실행한 결과를 모델이 읽고 이어 말하도록 그 결과를 앵커로 삼는 턴을 세운다. */
+    private async followUp(
+        input: ConfirmToolInput,
+        anchorMessageId: string,
+        now: Date,
+    ): Promise<ChatExecution | null> {
+        // 이미 도는 턴이 있으면 그 턴이 결과를 이력으로 읽으므로 줄을 하나 더 세우지 않는다.
+        if ((await this.executions.findLatestActiveByThread(input.threadId)) !== null) return null;
+        const [previous] = await this.executions.listByThread(input.threadId, 1);
+        const execution = ChatExecution.createFollowUp({
+            id: this.ids.next(),
+            userId: input.userId,
+            threadId: input.threadId,
+            confirmationId: input.confirmationId,
+            replayAnchorMessageId: anchorMessageId,
+            model: previous?.model ?? null,
+            language: previous?.language ?? null,
+            now,
+        });
+        await this.executions.insert(execution);
+        await this.dispatcher.start(execution.id, execution.threadId);
+        return execution;
     }
 
     /** 확인 대기는 스레드 것이므로 지금 열려 있는 실행 채널에 실어 다른 탭과 replica가 해소를 본다. */
@@ -104,7 +146,7 @@ export class ConfirmToolUseCase {
         if (active !== null) this.events.publish(active.id);
     }
 
-    private async appendToolMessage(threadId: string, toolCallId: string, content: string, now: Date): Promise<void> {
+    private async appendToolMessage(threadId: string, toolCallId: string, content: string, now: Date): Promise<string> {
         const message = ChatMessage.create({
             id: this.ids.next(),
             threadId,
@@ -114,5 +156,6 @@ export class ConfirmToolUseCase {
             now,
         });
         await this.messages.append(message);
+        return message.id;
     }
 }

@@ -45,11 +45,20 @@ export function renderChatTurnContext(
     return lines.join("\n");
 }
 
-/** 러너가 단발이라 대화 전체를 한 프롬프트로 재생하며 마지막 사용자 메시지가 이번 턴의 질문이다. */
+const ANSWER_DIRECTIVE = "Answer the user's most recent message.";
+
+/** 이력이 도구 결과로 끝나면 사용자는 승인만 했으므로 답할 발화가 없고 보고할 결과가 있다. */
+const REPORT_DIRECTIVE =
+    "The user approved the action above and it has now run. "
+    + "Tell them what it did, grounded in that result, and do not propose it again.";
+
+/** 러너가 단발이라 대화 전체를 한 프롬프트로 재생하며 이력의 마지막 줄이 이번 턴의 과제다. */
 export function renderChatPrompt(messages: readonly ChatTurnMessage[]): string {
     const lines = ['<history source="untrusted">'];
     for (const message of messages) lines.push(renderMessage(message));
-    lines.push("</history>", "", "Answer the user's most recent message.");
+    const last = messages.at(-1);
+    const directive = last?.role === CHAT_MESSAGE_ROLE.tool ? REPORT_DIRECTIVE : ANSWER_DIRECTIVE;
+    lines.push("</history>", "", directive);
     return lines.join("\n");
 }
 

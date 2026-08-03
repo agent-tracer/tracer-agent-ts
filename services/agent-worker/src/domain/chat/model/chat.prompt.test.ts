@@ -7,6 +7,7 @@ import { normalizeOutputLanguage, OUTPUT_LANGUAGES } from "~agent-worker/support
 import {
     buildChatSystemPrompt,
     CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY,
+    renderChatPrompt,
     renderChatTurnContext,
 } from "./chat.prompt.js";
 
@@ -69,6 +70,24 @@ describe("대화 프롬프트의 출력 언어", () => {
             expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
             expect(rendered, declared.expect.variant).toContain(expected);
         }
+    });
+});
+
+describe("대화 프롬프트가 이번 턴에 내리는 지시", () => {
+    it("사용자 발화로 끝나면 그 발화에 답하라고 한다", () => {
+        const prompt = renderChatPrompt([{ role: "user", content: "보관된 잡을 정리해 줘" }]);
+
+        expect(prompt.endsWith("Answer the user's most recent message.")).toBe(true);
+    });
+
+    it("도구 결과로 끝나면 실행한 결과를 알리라고 한다", () => {
+        const prompt = renderChatPrompt([
+            { role: "user", content: "보관된 잡을 정리해 줘" },
+            { role: "tool", content: "Archived task task-1." },
+        ]);
+
+        expect(prompt).toContain("The user approved the action above and it has now run.");
+        expect(prompt).not.toContain("Answer the user's most recent message.");
     });
 });
 
