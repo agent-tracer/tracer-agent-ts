@@ -1,14 +1,14 @@
+import { attemptedRepair, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
 import type { GenerateCleanupSuggestionsInput, GenerateCleanupSuggestionsOutput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import { mergeAgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { buildSuccessfulRunObservation } from "~agent-worker/support/llm/run.observation.js";
 import { cleanupModelName, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
-import type { CleanupRunSegment } from "./cleanup.sdk.orchestration.js";
 
 export function buildCleanupOutput(
     ctx: CleanupQueryContext,
-    segments: readonly CleanupRunSegment[],
+    segments: readonly RunSegment[],
     suggestions: readonly CleanupSuggestionPayload[],
     modelUsed: string,
 ): GenerateCleanupSuggestionsOutput {
@@ -38,7 +38,7 @@ export function buildCleanupOutput(
             usage: accounting.usage,
             steps,
             landed: false,
-            repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
+            repairAttempted: attemptedRepair(segments),
             validationPassed: true,
         }),
     };

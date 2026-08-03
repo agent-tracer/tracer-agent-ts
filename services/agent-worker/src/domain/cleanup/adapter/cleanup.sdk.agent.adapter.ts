@@ -1,3 +1,4 @@
+import { AGENT_NODE, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import {
     AGENT_BACKEND,
     isBudgetExhaustedFailure,
@@ -35,9 +36,7 @@ import {
     decideCleanup,
     dispatchCleanupInspections,
     runCleanupTriagePhase,
-    toCleanupRunSegment,
-    type CleanupRunSegment,
-} from "./cleanup.sdk.orchestration.js";
+    toRunSegment,} from "./cleanup.sdk.orchestration.js";
 import { buildCleanupOutput } from "./cleanup.sdk.output.js";
 
 export {
@@ -88,7 +87,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const triageLease = budget.reserve(TRIAGE_TURNS, TRIAGE_BUDGET_SHARE);
         const decisionFloorLease = budget.reserve(MIN_DECISION_TURNS, 0);
 
-        const segments: CleanupRunSegment[] = [];
+        const segments: RunSegment[] = [];
         const { plan, ledger: triageLedger } = await runCleanupTriagePhase(
             ctx, this.deps, batch, budget, triageLease, segments,
         );
@@ -136,14 +135,14 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const repairPrompt = buildCleanupRepairPrompt(ctx.prompt, decisionPrompt, decision.data, checked.errors);
         let repaired: CleanupDecisionRun;
         try {
-            repaired = await runCleanupDecision(ctx, this.deps, batch, coordinatorLedger, repairPrompt, repairLease, "repair");
+            repaired = await runCleanupDecision(ctx, this.deps, batch, coordinatorLedger, repairPrompt, repairLease, AGENT_NODE.repair);
         } catch (error) {
             // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 착지한다.
             if (isBudgetExhaustedFailure(error)) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
-        segments.push(toCleanupRunSegment(repaired, "repair"));
+        segments.push(toRunSegment(repaired, AGENT_NODE.repair));
 
         const rechecked = validateCleanupSuggestions(repaired.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
         return buildCleanupOutput(ctx, segments, rechecked.valid, repaired.modelUsed);

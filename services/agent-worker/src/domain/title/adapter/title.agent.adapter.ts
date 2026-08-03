@@ -1,3 +1,4 @@
+import { AGENT_NODE, attemptedRepair } from "~agent-worker/support/llm/run.segment.js";
 import {
     AGENT_BACKEND,
     buildMcpToolServer,
@@ -95,7 +96,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const firstLease = budget.lease(1);
         const first = await this.runOnce(input, handlers, basePrompt, firstLease, systemPrompt);
         budget.settle(firstLease, { costUsd: first.costUsd, numTurns: first.numTurns });
-        const runs: RunSegment[] = [{ run: first, nodeName: "investigate" }];
+        const runs: RunSegment[] = [{ run: first, nodeName: AGENT_NODE.investigate }];
 
         const errors = validateTitleSuggestions(first.data.suggestions, input.context.title);
         if (errors.length === 0) return toOutput(input, runs, first.data.suggestions);
@@ -119,7 +120,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
-        runs.push({ run: repaired, nodeName: "repair" });
+        runs.push({ run: repaired, nodeName: AGENT_NODE.repair });
 
         const remaining = validateTitleSuggestions(repaired.data.suggestions, input.context.title);
         return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : []);
@@ -207,7 +208,7 @@ function toOutput(
             usage: accounting.usage,
             steps,
             landed: runs.some(({ run }) => run.landed),
-            repairAttempted: runs.some(({ nodeName }) => nodeName === "repair"),
+            repairAttempted: attemptedRepair(runs),
             validationPassed: true,
         }),
     };

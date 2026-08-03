@@ -48,11 +48,15 @@ import {
   dispatchRecipeProbes,
   runRecipeSurveyPhase,
   synthesizeRecipe,
-  toRecipeRunSegment,
-  type RecipeRunSegment,
+  toRunSegment,
 } from "./recipe.sdk.orchestration.js";
 import { buildRecipeOutput } from "./recipe.sdk.output.js";
-import { pushValidationFailed, withNodeTrajectory } from "./recipe.node.trace.js";
+import {
+  AGENT_NODE,
+  pushValidationFailed,
+  withNodeTrajectory,
+  type RunSegment,
+} from "~agent-worker/support/llm/run.segment.js";
 
 const VALIDATE_NODE = "validate_candidate";
 
@@ -66,7 +70,6 @@ export {
 const SURVEY_AVAILABLE_TURNS =
   RECIPE_SCAN_SPEC.limits.maxTurns - REPAIR_RESERVED_TURNS - SURVEY_TURNS;
 
-type RunSegment = RecipeRunSegment;
 
 /** Claude Agent SDK 방언으로 recipe 명세를 렌더링해, 계획 → 팬아웃 → 종합 → 검증 → 수리로 실행한다. */
 export class RecipeAgentAdapter implements RecipeAgentPort {
@@ -237,8 +240,8 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         synthesis.data,
         errors,
       );
-      repaired = await withNodeTrajectory(segments, AGENT.recipeScan.id, "repair", () =>
-        runRecipeSynthesis(ctx, this.deps, coordinatorLedger, repairPrompt, repairLease, "repair"),
+      repaired = await withNodeTrajectory(segments, AGENT.recipeScan.id, AGENT_NODE.repair, () =>
+        runRecipeSynthesis(ctx, this.deps, coordinatorLedger, repairPrompt, repairLease, AGENT_NODE.repair),
       );
     } catch (error) {
       // 수리 호출이 예산을 소진하면 잡을 실패시키지 않고 빈 결과를 반환한다.
@@ -256,7 +259,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       costUsd: repaired.costUsd,
       numTurns: repaired.numTurns,
     });
-    segments.push(toRecipeRunSegment(repaired, "repair"));
+    segments.push(toRunSegment(repaired, AGENT_NODE.repair));
 
     const remaining = await withNodeTrajectory(segments, AGENT.recipeScan.id, VALIDATE_NODE, () =>
       Promise.resolve(

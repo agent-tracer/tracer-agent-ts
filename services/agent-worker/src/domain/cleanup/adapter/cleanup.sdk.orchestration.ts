@@ -1,6 +1,6 @@
-import type { JobStepPayload, StructuredQueryResult } from "@tracer-agent/llm";
+import type { StructuredQueryResult } from "@tracer-agent/llm";
 import type { AgentBudgetLease, ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
-import type { AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
+import { AGENT_NODE, fanOutNode, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import { buildCleanupUserPrompt } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import type { InspectReport, TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
@@ -13,12 +13,6 @@ import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.inves
 
 const EMPTY_PLAN: TriagePlan = { inspect: [] };
 
-export interface CleanupRunSegment {
-    readonly accounting: AgentCallAccounting;
-    readonly steps: readonly JobStepPayload[];
-    readonly nodeName: string;
-}
-
 /** 선별이 후보 목록 도구만 쥐고 무엇을 열어볼지 정하며, 호출이 무너지면 아무도 열어보지 않는 빈 계획으로 대체한다. */
 export async function runCleanupTriagePhase(
     ctx: CleanupQueryContext,
@@ -26,18 +20,18 @@ export async function runCleanupTriagePhase(
     batch: CleanupToolBatch,
     budget: ExecutionBudget,
     lease: AgentBudgetLease,
-    segments: CleanupRunSegment[],
+    segments: RunSegment[],
 ): Promise<{ readonly plan: TriagePlan; readonly ledger: CleanupProvenanceLedger }> {
     if (lease.maxTurns <= 0) return { plan: EMPTY_PLAN, ledger: new CleanupProvenanceLedger() };
     try {
         const { result, ledger } = await runCleanupTriage(ctx, deps, batch, lease);
         budget.settle(lease, { costUsd: result.costUsd, numTurns: result.numTurns });
-        segments.push(toCleanupRunSegment(result, "triage"));
+        segments.push(toRunSegment(result, AGENT_NODE.triage));
         return { plan: result.data, ledger };
     } catch (error) {
         const accounting = agentFailureAccounting(error);
         budget.settle(lease, { costUsd: accounting.costUsd, numTurns: accounting.numTurns });
-        segments.push({ accounting, steps: [], nodeName: "triage" });
+        segments.push({ accounting, steps: [], nodeName: AGENT_NODE.triage });
         return { plan: EMPTY_PLAN, ledger: new CleanupProvenanceLedger() };
     }
 }
@@ -50,7 +44,7 @@ export async function dispatchCleanupInspections(
     budget: ExecutionBudget,
     plan: TriagePlan,
     coordinatorLedger: CleanupProvenanceLedger,
-    segments: CleanupRunSegment[],
+    segments: RunSegment[],
 ): Promise<InspectReport[]> {
     const candidateIds = new Set(batch.candidates.map((candidate) => candidate.id));
     const assignments = plan.inspect.filter((assignment) => candidateIds.has(assignment.taskId));
@@ -64,7 +58,7 @@ export async function dispatchCleanupInspections(
         budget.settle(leases[index]!, { costUsd: run.accounting.costUsd, numTurns: run.accounting.numTurns });
         coordinatorLedger.mergeFrom(run.ledger);
         reports.push(run.report);
-        segments.push({ accounting: run.accounting, steps: run.steps, nodeName: `inspect:${run.report.taskId}` });
+        segments.push({ accounting: run.accounting, steps: run.steps, nodeName: fanOutNode(AGENT_NODE.inspect, run.report.taskId) });
     });
     return reports;
 }
@@ -79,17 +73,17 @@ export async function decideCleanup(
     reports: readonly InspectReport[],
     coordinatorLedger: CleanupProvenanceLedger,
     input: GenerateCleanupSuggestionsInput,
-    segments: CleanupRunSegment[],
+    segments: RunSegment[],
 ): Promise<CleanupDecisionRun> {
     const lease = budget.combine([floorLease, budget.lease(1)]);
     const prompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
-    const run = await runCleanupDecision(ctx, deps, batch, coordinatorLedger, prompt, lease, "investigate");
+    const run = await runCleanupDecision(ctx, deps, batch, coordinatorLedger, prompt, lease, AGENT_NODE.investigate);
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
-    segments.push(toCleanupRunSegment(run, "investigate"));
+    segments.push(toRunSegment(run, AGENT_NODE.investigate));
     return run;
 }
 
-export function toCleanupRunSegment(run: StructuredQueryResult<unknown>, nodeName: string): CleanupRunSegment {
+export function toRunSegment(run: StructuredQueryResult<unknown>, nodeName: string): RunSegment {
     return {
         accounting: { durationMs: run.durationMs, costUsd: run.costUsd, numTurns: run.numTurns, usage: run.usage },
         steps: run.steps,

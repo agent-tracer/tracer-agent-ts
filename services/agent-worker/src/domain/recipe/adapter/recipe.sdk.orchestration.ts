@@ -1,4 +1,11 @@
 import type { StructuredQueryResult } from "@tracer-agent/llm";
+import {
+  AGENT_NODE,
+  fanOutNode,
+  pushRouteSelected,
+  withNodeTrajectory,
+  type RunSegment,
+} from "~agent-worker/support/llm/run.segment.js";
 import type {
   AgentBudgetLease,
   ExecutionBudget,
@@ -31,14 +38,6 @@ import {
   type RecipeSynthesisRun,
 } from "./recipe.sdk.investigate.js";
 import { recordProbeExhaustion } from "~agent-worker/support/llm/execution.metrics.js";
-import {
-  pushRouteSelected,
-  withNodeTrajectory,
-  type RecipeRunSegment,
-} from "./recipe.node.trace.js";
-
-export type { RecipeRunSegment };
-
 const AGENT_NAME = RECIPE_SCAN_SPEC.name;
 
 // 한 실행에 한 번뿐인 단계는 자리를 가를 것이 없다.
@@ -64,7 +63,7 @@ export async function runRecipeSurveyPhase(
   deps: RecipeToolDeps,
   budget: ExecutionBudget,
   lease: AgentBudgetLease,
-  segments: RecipeRunSegment[],
+  segments: RunSegment[],
   availableTurns: number,
   stages: RecipeStageResumePort | null = null,
 ): Promise<{ readonly plan: DispatchPlan; readonly modelUsed: string }> {
@@ -81,15 +80,15 @@ export async function runRecipeSurveyPhase(
   // 앞선 시도가 이미 세운 계획이 있으면 조율자를 다시 부르지 않는다.
   if (restored != null) return { plan: restored, modelUsed: recipeModelName(ctx.input) };
   try {
-    const run = await withNodeTrajectory(segments, AGENT_NAME, "survey", () =>
+    const run = await withNodeTrajectory(segments, AGENT_NAME, AGENT_NODE.survey, () =>
       runRecipeSurvey(ctx, deps, availableTurns, lease),
     );
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
     await stages?.record(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, run.data);
-    segments.push(toRecipeRunSegment(run, "survey"));
+    segments.push(toRunSegment(run, AGENT_NODE.survey));
     const chosen =
       run.data.probes.map(({ probe, weight }) => `${probe}:${weight}`).join(", ") || "no specialists";
-    pushRouteSelected(segments, "survey", `survey -> ${chosen}`);
+    pushRouteSelected(segments, AGENT_NODE.survey, `survey -> ${chosen}`);
     return { plan: run.data, modelUsed: run.modelUsed };
   } catch (error) {
     const accounting = agentFailureAccounting(error);
@@ -97,7 +96,7 @@ export async function runRecipeSurveyPhase(
       costUsd: accounting.costUsd,
       numTurns: accounting.numTurns,
     });
-    segments.push({ accounting, steps: [], nodeName: "survey" });
+    segments.push({ accounting, steps: [], nodeName: AGENT_NODE.survey });
     return fallback;
   }
 }
@@ -108,7 +107,7 @@ export async function dispatchRecipeProbes(
   budget: ExecutionBudget,
   plan: DispatchPlan,
   coordinatorLedger: ProvenanceLedger,
-  segments: RecipeRunSegment[],
+  segments: RunSegment[],
   stages: RecipeStageResumePort | null = null,
   round = 0,
 ): Promise<ProbeReport[]> {
@@ -150,7 +149,7 @@ export async function dispatchRecipeProbes(
     segments.push({
       accounting: run.accounting,
       steps: run.steps,
-      nodeName: `probe:${run.report.probe}`,
+      nodeName: fanOutNode(AGENT_NODE.probe, run.report.probe),
     });
     return run.report;
   });
@@ -164,7 +163,7 @@ export async function synthesizeRecipe(
   plan: DispatchPlan,
   reports: readonly ProbeReport[],
   coordinatorLedger: ProvenanceLedger,
-  segments: RecipeRunSegment[],
+  segments: RunSegment[],
 ): Promise<RecipeSynthesisRun> {
   const lease = budget.combine([floorLease, budget.lease(1)]);
   const prompt = buildRecipeUserPrompt(
@@ -175,18 +174,18 @@ export async function synthesizeRecipe(
     plan,
     reports,
   );
-  const run = await withNodeTrajectory(segments, AGENT_NAME, "investigate", () =>
-    runRecipeSynthesis(ctx, deps, coordinatorLedger, prompt, lease, "investigate"),
+  const run = await withNodeTrajectory(segments, AGENT_NAME, AGENT_NODE.investigate, () =>
+    runRecipeSynthesis(ctx, deps, coordinatorLedger, prompt, lease, AGENT_NODE.investigate),
   );
   budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
-  segments.push(toRecipeRunSegment(run, "investigate"));
+  segments.push(toRunSegment(run, AGENT_NODE.investigate));
   return run;
 }
 
-export function toRecipeRunSegment(
+export function toRunSegment(
   run: StructuredQueryResult<unknown>,
   nodeName: string,
-): RecipeRunSegment {
+): RunSegment {
   return {
     accounting: {
       durationMs: run.durationMs,

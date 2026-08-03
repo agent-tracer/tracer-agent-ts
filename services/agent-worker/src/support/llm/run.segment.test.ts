@@ -4,12 +4,12 @@ import {
     pushRouteSelected,
     pushValidationFailed,
     withNodeTrajectory,
-    type RecipeRunSegment,
-} from "./recipe.node.trace.js";
+    type RunSegment,
+} from "./run.segment.js";
 
 const NODE_NAMES = ["survey", "probe", "investigate", "repair", "validate_candidate"] as const;
 
-function eventKinds(segments: readonly RecipeRunSegment[], nodeName: string): readonly (string | undefined)[] {
+function eventKinds(segments: readonly RunSegment[], nodeName: string): readonly (string | undefined)[] {
     return segments
         .flatMap((segment) => segment.steps)
         .filter((step) => step.nodeName === nodeName)
@@ -18,7 +18,7 @@ function eventKinds(segments: readonly RecipeRunSegment[], nodeName: string): re
 
 describe("오케스트레이션 노드 궤적", () => {
     it.each(NODE_NAMES)("%s 노드가 성공하면 진입과 완료를 궤적에 남긴다", async (nodeName) => {
-        const segments: RecipeRunSegment[] = [];
+        const segments: RunSegment[] = [];
 
         const result = await withNodeTrajectory(segments, "recipe-scan", nodeName, () =>
             Promise.resolve("done"),
@@ -32,7 +32,7 @@ describe("오케스트레이션 노드 궤적", () => {
     });
 
     it.each(NODE_NAMES)("%s 노드가 무너지면 진입과 실패를 남기고 다시 던진다", async (nodeName) => {
-        const segments: RecipeRunSegment[] = [];
+        const segments: RunSegment[] = [];
         const failure = new Error("boom");
 
         await expect(
@@ -46,7 +46,7 @@ describe("오케스트레이션 노드 궤적", () => {
     });
 
     it("조율자가 고른 경로를 route.selected로 남긴다", () => {
-        const segments: RecipeRunSegment[] = [];
+        const segments: RunSegment[] = [];
 
         pushRouteSelected(segments, "survey", "survey -> timeline:2");
 
@@ -54,7 +54,7 @@ describe("오케스트레이션 노드 궤적", () => {
     });
 
     it("검증이 걸어낸 사유를 validation.failed로 남긴다", () => {
-        const segments: RecipeRunSegment[] = [];
+        const segments: RunSegment[] = [];
 
         pushValidationFailed(segments, "validate_candidate", "citation missing");
 

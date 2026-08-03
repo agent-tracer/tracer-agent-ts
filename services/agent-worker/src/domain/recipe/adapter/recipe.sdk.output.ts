@@ -1,3 +1,4 @@
+import { attemptedRepair, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
 import type { GenerateRecipeCandidatesOutput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
@@ -9,11 +10,10 @@ import {
     recipeModelName,
   type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
-import type { RecipeRunSegment } from "./recipe.sdk.orchestration.js";
 
 export function buildRecipeOutput(
   ctx: RecipeQueryContext,
-  segments: readonly RecipeRunSegment[],
+  segments: readonly RunSegment[],
   recipes: readonly RecipeCandidatePayload[],
   modelUsed: string,
   ledger: ProvenanceLedger,
@@ -52,7 +52,7 @@ export function buildRecipeOutput(
       usage: accounting.usage,
       steps,
       landed: false,
-      repairAttempted: segments.some(({ nodeName }) => nodeName === "repair"),
+      repairAttempted: attemptedRepair(segments),
       validationPassed: true,
     }),
   };
