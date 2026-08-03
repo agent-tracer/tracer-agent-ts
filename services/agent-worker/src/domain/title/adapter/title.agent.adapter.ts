@@ -31,7 +31,7 @@ import type {
     TitleAgentPort,
 } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleEventReaderPort } from "~agent-worker/domain/title/port/title.event.reader.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { buildTitleToolHandlers } from "./title.tools.js";
 
 const MCP_SERVER = `monitor-${TITLE_SUGGESTION_SPEC.name}`;

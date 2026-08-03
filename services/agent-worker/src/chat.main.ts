@@ -14,7 +14,8 @@ import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { CHAT_EXECUTION_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { resolveAgentApiUrl, resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { ChatAgentAdapter } from "~agent-worker/domain/chat/adapter/chat.agent.adapter.js";
-import { ContractPromptSourceAdapter } from "~agent-worker/domain/chat/adapter/contract.prompt.source.adapter.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
+import { ContractPromptSource } from "~agent-worker/support/contract.prompt.source.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import {
     ChatExecutionEntity,
@@ -86,7 +87,7 @@ async function bootstrap(): Promise<void> {
         tracerApi,
         memoryApi,
         agentApiBaseUrl,
-        new ContractPromptSourceAdapter(),
+        new ContractPromptSource(AGENT.chat.id),
     );
     const summarizer = new ChatSummarizerAdapter(new ClaudeQueryRunner(isLocal, isLocal));
     const scheduler = new ChatScheduler();

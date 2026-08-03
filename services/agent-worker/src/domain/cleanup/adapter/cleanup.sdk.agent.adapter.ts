@@ -28,7 +28,7 @@ import type {
     GenerateCleanupSuggestionsInput,
     GenerateCleanupSuggestionsOutput,
 } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import { TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.investigate.js";

@@ -15,7 +15,7 @@ import type {
     TitleSuggestionPrep,
 } from "~agent-worker/domain/title/model/title.job.model.js";
 import { resolveTitlePromptPin } from "~agent-worker/domain/title/model/title.prompt.js";
-import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleNotificationPort } from "~agent-worker/domain/title/port/title.notification.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";

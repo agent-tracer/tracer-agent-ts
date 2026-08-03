@@ -36,7 +36,7 @@ import type {
   GenerateRecipeCandidatesOutput,
   RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeStageResumeSource } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
 import { RECIPE_SCAN_SPEC, type RecipeQueryContext } from "./recipe.sdk.query.js";

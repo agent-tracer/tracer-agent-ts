@@ -27,7 +27,8 @@ import { RecipeRepositoryAdapter } from "~agent-worker/domain/recipe/adapter/rec
 import { RecipeAgentAdapter } from "~agent-worker/domain/recipe/adapter/recipe.agent.adapter.js";
 import { RecipeStageOutputAdapter } from "~agent-worker/domain/recipe/adapter/recipe.stage.output.adapter.js";
 import { RunRecipeStageUsecase } from "~agent-worker/domain/recipe/application/run.recipe.stage.usecase.js";
-import { ContractPromptSourceAdapter as RecipePromptSourceAdapter } from "~agent-worker/domain/recipe/adapter/contract.prompt.source.adapter.js";
+import { AGENT } from "~agent-worker/support/agent.const.js";
+import { ContractPromptSource } from "~agent-worker/support/contract.prompt.source.js";
 import { RecipeUlidGenerator } from "~agent-worker/domain/recipe/adapter/recipe.ulid.generator.js";
 import { FailRecipeJobUsecase } from "~agent-worker/domain/recipe/application/fail.recipe.job.usecase.js";
 import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/application/finalize.recipe.scan.usecase.js";
@@ -43,14 +44,14 @@ import { CleanupUlidGenerator } from "~agent-worker/domain/cleanup/adapter/clean
 import { FailCleanupJobUsecase } from "~agent-worker/domain/cleanup/application/fail.cleanup.job.usecase.js";
 import { FinalizeTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/finalize.task.cleanup.usecase.js";
 import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/application/prepare.task.cleanup.usecase.js";
-import { ContractPromptSourceAdapter as CleanupPromptSourceAdapter } from "~agent-worker/domain/cleanup/adapter/contract.prompt.source.adapter.js";
+
 import { SuggestCleanupUsecase } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { CleanupActivity } from "~agent-worker/domain/cleanup/inbound/cleanup.activity.js";
 import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/title.notification.adapter.js";
 import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/title.event.reader.adapter.js";
 import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
 import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
-import { ContractPromptSourceAdapter as TitlePromptSourceAdapter } from "~agent-worker/domain/title/adapter/contract.prompt.source.adapter.js";
+
 import { TitleUlidGenerator } from "~agent-worker/domain/title/adapter/title.ulid.generator.js";
 import { FailTitleJobUsecase } from "~agent-worker/domain/title/application/fail.title.job.usecase.js";
 import { FinalizeTitleSuggestionUsecase } from "~agent-worker/domain/title/application/finalize.title.suggestion.usecase.js";
@@ -86,7 +87,7 @@ async function bootstrap(): Promise<void> {
     const recipeRepository = new RecipeRepositoryAdapter(dataSource, tracer);
     const recipeOutput = new RecipeOutputAdapter(tracer);
     const recipeNotification = new RecipeNotificationAdapter(publish);
-    const recipePrompts = new RecipePromptSourceAdapter();
+    const recipePrompts = new ContractPromptSource(AGENT.recipeScan.id);
     const recipeStageOutputs = new RecipeStageOutputAdapter(dataSource);
     const recipeStages = new RunRecipeStageUsecase(recipeStageOutputs, clock);
     const recipeAgent = new RecipeAgentAdapter(claudeRunner, {
@@ -112,7 +113,7 @@ async function bootstrap(): Promise<void> {
     const titleReader = new TitleEventReaderAdapter(tracer);
     const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
     const titleNotification = new TitleNotificationAdapter(publish);
-    const titlePrompts = new TitlePromptSourceAdapter();
+    const titlePrompts = new ContractPromptSource(AGENT.titleSuggestion.id);
     const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader, titlePrompts);
     const title = new TitleActivity(
         new PrepareTitleSuggestionUsecase(titleRepository, titleAgent, titleNotification, clock, titlePrompts),
@@ -126,7 +127,7 @@ async function bootstrap(): Promise<void> {
     const cleanupRepository = new CleanupRepositoryAdapter(dataSource, tracer);
     const cleanupOutput = new CleanupOutputAdapter(tracer);
     const cleanupNotification = new CleanupNotificationAdapter(publish);
-    const cleanupPrompts = new CleanupPromptSourceAdapter();
+    const cleanupPrompts = new ContractPromptSource(AGENT.taskCleanup.id);
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
         tasks: cleanupReader,
         events: cleanupReader,

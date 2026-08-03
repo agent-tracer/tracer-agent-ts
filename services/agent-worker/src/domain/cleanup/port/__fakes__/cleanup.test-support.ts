@@ -7,7 +7,7 @@ import type {
     CleanupAgentPort,
 } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import type { CleanupIdGeneratorPort } from "~agent-worker/domain/cleanup/port/cleanup.id.generator.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";

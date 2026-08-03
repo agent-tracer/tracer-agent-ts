@@ -7,7 +7,7 @@ import { buildCleanupCandidates, type CleanupCandidate } from "../model/cleanup.
 import { CLEANUP_SETTING_KEY } from "../model/cleanup.const.js";
 import { JobAlreadySettledError, JobNotFoundError, MissingApiKeyError } from "../model/cleanup.error.js";
 import { resolveCleanupPromptPin } from "../model/cleanup.prompt.js";
-import type { PromptSourcePort } from "~agent-worker/domain/cleanup/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { CleanupAgentPort } from "../port/cleanup.agent.port.js";
 import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";

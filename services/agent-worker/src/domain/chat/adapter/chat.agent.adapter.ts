@@ -27,7 +27,7 @@ import type {
     ChatTurnSink,
 } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/chat/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { buildChatMemoryToolHandlers } from "./chat.memory.tools.js";
 import { buildChatReadToolHandlers } from "./chat.read.tools.js";
 import { chatAgentReadToolNames } from "./chat.tool.surface.js";

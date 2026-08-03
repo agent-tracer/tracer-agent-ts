@@ -12,7 +12,7 @@ import {
     TaskNotScannableError,
 } from "../model/recipe.error.js";
 import { resolveRecipePromptPin } from "../model/recipe.prompt.js";
-import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeAgentPort } from "../port/recipe.agent.port.js";
 import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";

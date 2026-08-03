@@ -11,7 +11,7 @@ import type {
     TitleSuggestionCommit,
     TitleTaskContext,
 } from "~agent-worker/domain/title/port/title.repository.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/title/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";

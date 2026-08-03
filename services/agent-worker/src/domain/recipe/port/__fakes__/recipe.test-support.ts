@@ -19,7 +19,7 @@ import type {
     RecipeRepositoryPort,
     RecipeScanCommit,
 } from "~agent-worker/domain/recipe/port/recipe.repository.port.js";
-import type { PromptSourcePort } from "~agent-worker/domain/recipe/port/prompt.source.port.js";
+import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeToolContract } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
