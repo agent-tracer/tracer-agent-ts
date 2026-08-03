@@ -22,7 +22,7 @@ export interface ChatThreadDto {
 export interface ChatExecutionDto {
     readonly id: string;
     readonly threadId: string;
-    readonly userMessageId: string;
+    readonly replayAnchorMessageId: string;
     readonly status: ChatExecutionStatus;
     readonly requestedBackend: string | null;
     readonly draftText: string;
@@ -93,7 +93,7 @@ export function mapExecution(execution: ChatExecution): ChatExecutionDto {
     return {
         id: execution.id,
         threadId: execution.threadId,
-        userMessageId: execution.userMessageId,
+        replayAnchorMessageId: execution.replayAnchorMessageId,
         status: execution.status,
         requestedBackend: execution.requestedBackend,
         draftText: execution.draftText,

@@ -112,7 +112,7 @@ export class EnqueueChatTurnUseCase {
             id: this.ids.next(),
             userId: input.userId,
             threadId: input.threadId,
-            userMessageId: message.id,
+            replayAnchorMessageId: message.id,
             clientRequestId: input.clientRequestId,
             inputHash,
             model: input.model ?? null,
@@ -143,7 +143,7 @@ export class EnqueueChatTurnUseCase {
         inputHash: string,
     ): Promise<AcceptedChatTurn> {
         if (execution.inputHash !== inputHash) throw new ChatExecutionIdempotencyConflictError();
-        const message = await messages.findById(execution.userMessageId);
+        const message = await messages.findById(execution.replayAnchorMessageId);
         if (message === null) throw new Error("Chat execution user message is missing");
         return { message, execution };
     }

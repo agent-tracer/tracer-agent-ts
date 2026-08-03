@@ -26,7 +26,7 @@ const PREPARED = {
     executionId: "exec-1",
     threadId: "thread-1",
     userId: "user-1",
-    userMessageId: "message-1",
+    replayAnchorMessageId: "message-1",
     language: "auto",
 };
 

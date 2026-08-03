@@ -18,7 +18,7 @@ function makeUseCase(): { useCase: WatchChatExecutionUseCase; updates: Recording
         id: "e1",
         userId: "local",
         threadId: "t1",
-        userMessageId: "m1",
+        replayAnchorMessageId: "m1",
         clientRequestId: "r1",
         inputHash: "h",
         model: null,

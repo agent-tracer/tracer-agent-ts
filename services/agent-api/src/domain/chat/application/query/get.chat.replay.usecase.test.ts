@@ -24,7 +24,7 @@ function makeUseCase(): GetChatReplayUseCase {
         id: "e1",
         userId: "local",
         threadId: "t1",
-        userMessageId: "m3",
+        replayAnchorMessageId: "m3",
         clientRequestId: "r1",
         inputHash: "h",
         model: null,

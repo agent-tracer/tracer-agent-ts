@@ -10,7 +10,7 @@ export interface ChatExecutionCreateInput {
     readonly id: string;
     readonly userId: string;
     readonly threadId: string;
-    readonly userMessageId: string;
+    readonly replayAnchorMessageId: string;
     readonly clientRequestId: string;
     readonly inputHash: string;
     readonly model: string | null;
@@ -26,7 +26,7 @@ export class ChatExecution {
 
     threadId!: string;
 
-    userMessageId!: string;
+    replayAnchorMessageId!: string;
 
     clientRequestId!: string;
 
@@ -76,7 +76,7 @@ export class ChatExecution {
         execution.id = input.id;
         execution.userId = input.userId;
         execution.threadId = input.threadId;
-        execution.userMessageId = input.userMessageId;
+        execution.replayAnchorMessageId = input.replayAnchorMessageId;
         execution.clientRequestId = input.clientRequestId;
         execution.inputHash = input.inputHash;
         execution.status = CHAT_EXECUTION_STATUS.queued;

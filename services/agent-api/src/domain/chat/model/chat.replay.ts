@@ -6,23 +6,23 @@ import { toChatTurnMessage, type ChatTurnMessage } from "~agent-api/domain/chat/
 /** 이번 턴이 모델에게 되돌려 줄 이력을 만드는 유일한 규칙이며, 창 자르기와 도구 호출 짝 맞추기를 함께 소유한다. */
 export function buildChatReplay(
     messages: readonly ChatMessage[],
-    userMessageId: string,
+    replayAnchorMessageId: string,
     summary: string | null,
 ): readonly ChatTurnMessage[] {
     const window = selectReplayMessages(
-        untilUserMessage(messages, userMessageId),
+        untilAnchor(messages, replayAnchorMessageId),
         summary !== null && summary.trim().length > 0,
     );
     const paired = pairedCallIds(window);
     return window.flatMap((message) => replayMessage(message, paired));
 }
 
-/** 이번 턴의 사용자 메시지까지가 이력이며, 그 뒤 행은 이 턴이 만들 것이라 아직 이력이 아니다. */
-function untilUserMessage(
+/** 앵커 메시지까지가 이력이며, 그 뒤 행은 이 턴이 만들 것이라 아직 이력이 아니다. */
+function untilAnchor(
     messages: readonly ChatMessage[],
-    userMessageId: string,
+    replayAnchorMessageId: string,
 ): readonly ChatMessage[] {
-    const index = messages.findIndex((message) => message.id === userMessageId);
+    const index = messages.findIndex((message) => message.id === replayAnchorMessageId);
     if (index < 0) throw new Error("Chat replay message not found");
     return messages.slice(0, index + 1);
 }

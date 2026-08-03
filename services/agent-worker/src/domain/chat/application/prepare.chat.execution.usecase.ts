@@ -43,7 +43,7 @@ export class PrepareChatExecutionUsecase {
             executionId,
             threadId: execution.threadId,
             userId: execution.userId,
-            userMessageId: execution.userMessageId,
+            replayAnchorMessageId: execution.replayAnchorMessageId,
             language: execution.language ?? CHAT_LANGUAGE.auto,
             ...(execution.model !== null ? { model: execution.model } : {}),
         };

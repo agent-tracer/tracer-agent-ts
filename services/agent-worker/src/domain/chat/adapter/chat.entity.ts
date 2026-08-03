@@ -18,8 +18,8 @@ export class ChatExecutionEntity {
     @Column({ name: "thread_id", type: "text" })
     threadId!: string;
 
-    @Column({ name: "user_message_id", type: "text" })
-    userMessageId!: string;
+    @Column({ name: "replay_anchor_message_id", type: "text" })
+    replayAnchorMessageId!: string;
 
     @Column({ name: "client_request_id", type: "text" })
     clientRequestId!: string;
@@ -142,7 +142,7 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.id = row.id;
     execution.userId = row.userId;
     execution.threadId = row.threadId;
-    execution.userMessageId = row.userMessageId;
+    execution.replayAnchorMessageId = row.replayAnchorMessageId;
     execution.clientRequestId = row.clientRequestId;
     execution.inputHash = row.inputHash;
     execution.status = row.status;

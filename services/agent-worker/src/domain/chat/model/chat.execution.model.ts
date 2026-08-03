@@ -18,7 +18,7 @@ export class ChatExecution {
 
     threadId!: string;
 
-    userMessageId!: string;
+    replayAnchorMessageId!: string;
 
     clientRequestId!: string;
 

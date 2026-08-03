@@ -62,6 +62,7 @@ const CREATE_TABLE = /CREATE TABLE IF NOT EXISTS\s+"(\w+)"\s*\(([\s\S]*?)\n\);/g
 const COLUMN_LINE = /^\s*"(\w+)"\s+\S/;
 const ADD_COLUMN = /ALTER TABLE\s+"(\w+)"\s+ADD COLUMN IF NOT EXISTS\s+"(\w+)"/g;
 const DROP_COLUMN = /ALTER TABLE\s+"(\w+)"\s+DROP COLUMN IF EXISTS\s+"(\w+)"/g;
+const RENAME_COLUMN = /ALTER TABLE\s+"(\w+)"\s+RENAME COLUMN\s+"(\w+)"\s+TO\s+"(\w+)"/g;
 
 /** 계약의 마이그레이션을 파일 이름 순서대로 적용했을 때 남는 표와 칸을 낸다. */
 export function readContractTables(): ReadonlyMap<string, ReadonlySet<string>> {
@@ -78,6 +79,10 @@ export function readContractTables(): ReadonlyMap<string, ReadonlySet<string>> {
         }
         for (const [, table, column] of sql.matchAll(ADD_COLUMN)) tables.get(table!)?.add(column!);
         for (const [, table, column] of sql.matchAll(DROP_COLUMN)) tables.get(table!)?.delete(column!);
+        for (const [, table, from, to] of sql.matchAll(RENAME_COLUMN)) {
+            const columns = tables.get(table!);
+            if (columns?.delete(from!) === true) columns.add(to!);
+        }
     }
     return tables;
 }

@@ -72,7 +72,7 @@ function seedRow(caseRow: Record<string, unknown>): Record<string, unknown> {
     const id = String(caseRow["id"]);
     const row: Record<string, unknown> = {
         id,
-        userMessageId: `message-${id}`,
+        replayAnchorMessageId: `message-${id}`,
         clientRequestId: `request-${id}`,
         inputHash: `hash-${id}`,
         status: "queued",

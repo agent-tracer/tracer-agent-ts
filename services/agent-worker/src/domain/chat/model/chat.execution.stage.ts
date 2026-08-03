@@ -4,8 +4,8 @@ export interface PreparedChatExecution {
     readonly executionId: string;
     readonly threadId: string;
     readonly userId: string;
-    /** 이번 턴의 사용자 메시지이며 재생 창을 여기까지로 자른다. */
-    readonly userMessageId: string;
+    /** 이번 턴의 재생 창을 여기까지로 자르는 메시지다. */
+    readonly replayAnchorMessageId: string;
     readonly language: string;
     readonly model?: string;
 }

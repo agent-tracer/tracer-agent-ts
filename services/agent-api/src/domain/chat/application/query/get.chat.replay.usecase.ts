@@ -48,7 +48,7 @@ export class GetChatReplayUseCase {
         ]);
         if (thread === null || !thread.isOwnedBy(userId)) throw new NotFoundException("Thread not found");
         return {
-            messages: buildChatReplay(rows, execution.userMessageId, thread.summary),
+            messages: buildChatReplay(rows, execution.replayAnchorMessageId, thread.summary),
             summary: thread.summary,
             facts: facts.map(({ key, content }) => ({ key, content })),
         };
