@@ -21,7 +21,7 @@ describe("TracerApiClient", () => {
     it("계약이 선언한 방법과 경로로 부른다", async () => {
         const { client, sent } = clientWith(200, { ok: true, data: { reevaluated: 3 } });
 
-        const data = await client.call({ toolName: "approve_rule", userId: "local", args: { ruleId: "r1" } });
+        const data = await client.call({ toolName: "propose_rule_write", userId: "local", args: { action: "approve", ruleId: "r1" } });
 
         expect(sent[0]!.url).toBe("http://tracer-api:3902/api/v1/rules/r1/approve");
         expect(sent[0]!.init.method).toBe("POST");

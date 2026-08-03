@@ -8,23 +8,24 @@ describe("승인 뒤 부를 자리", () => {
     });
 
     it("바꾼 자리만 실어 보내고 그 사실을 문장으로 남긴다", () => {
-        const call = chatToolCallPlan["update_task"]!({ taskId: "t1", title: "제목" });
+        const call = chatToolCallPlan["propose_task_write"]!({ action: "update", taskId: "t1", title: "제목" });
 
-        expect(call.args).toEqual({ taskId: "t1", title: "제목" });
+        expect(call.args).toEqual({ action: "update", taskId: "t1", title: "제목" });
         expect(call.describe(null)).toBe(`Updated task t1: title="제목".`);
     });
 
     it("바꿀 것이 없는 갱신을 거절한다", () => {
-        expect(() => chatToolCallPlan["update_task"]!({ taskId: "t1" }))
-            .toThrow("update_task needs title or status");
+        expect(() => chatToolCallPlan["propose_task_write"]!({ action: "update", taskId: "t1" }))
+            .toThrow("update needs title or status");
     });
 
     it("필수 인자가 없으면 거절한다", () => {
-        expect(() => chatToolCallPlan["archive_task"]!({})).toThrow("taskId is required");
+        expect(() => chatToolCallPlan["propose_task_write"]!({ action: "archive" })).toThrow("taskId is required");
     });
 
     it("객체로 온 기대를 그대로 실어 보낸다", () => {
-        const call = chatToolCallPlan["create_rule"]!({
+        const call = chatToolCallPlan["propose_rule_write"]!({
+            action: "create",
             taskId: "t1",
             anchorEventId: "e1",
             name: "규칙",
@@ -35,23 +36,24 @@ describe("승인 뒤 부를 자리", () => {
     });
 
     it("객체가 아닌 기대를 거절한다", () => {
-        expect(() => chatToolCallPlan["create_rule"]!({
+        expect(() => chatToolCallPlan["propose_rule_write"]!({
+            action: "create",
             taskId: "t1", anchorEventId: "e1", name: "규칙", expectation: "그냥 문장",
         })).toThrow("expectation must be a JSON object");
     });
 
     it("태그 목록을 배열로 받고 빈 이름을 걸러 낸다", () => {
-        expect(chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: ["a", "", "b"] }).args["tagIds"])
+        expect(chatToolCallPlan["propose_tag_write"]!({ action: "assign", taskId: "t1", tagIds: ["a", "", "b"] }).args["tagIds"])
             .toEqual(["a", "b"]);
     });
 
     it("배열이 아닌 태그 목록을 거절한다", () => {
-        expect(() => chatToolCallPlan["set_task_tags"]!({ taskId: "t1", tagIds: "a, b" }))
+        expect(() => chatToolCallPlan["propose_tag_write"]!({ action: "assign", taskId: "t1", tagIds: "a, b" }))
             .toThrow("tagIds must be a JSON array");
     });
 
     it("응답에 실린 수를 문장에 옮긴다", () => {
-        expect(chatToolCallPlan["approve_rule"]!({ ruleId: "r1" }).describe({ reevaluated: 3 }))
+        expect(chatToolCallPlan["propose_rule_write"]!({ action: "approve", ruleId: "r1" }).describe({ reevaluated: 3 }))
             .toBe("Approved rule r1 and reevaluated 3 event(s).");
     });
 

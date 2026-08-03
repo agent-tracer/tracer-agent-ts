@@ -19,27 +19,60 @@ export interface ToolBinding {
 
 interface ChatBindingSection {
     readonly bindings: Readonly<Record<string, ToolBinding>>;
+    readonly actionBindings: Readonly<Record<string, Readonly<Record<string, ToolBinding>>>>;
 }
 
 interface ChatToolFile {
     readonly bindings: ChatBindingSection;
 }
 
-function readBindings(): Readonly<Record<string, ToolBinding>> {
+function readSection(): ChatBindingSection {
     const declared = JSON.parse(
         readFileSync(path.join(CONTRACT_ROOT, "agent/chat/tool.json"), "utf8"),
     ) as ChatToolFile;
-    return declared.bindings.bindings;
+    return declared.bindings;
 }
 
-/** 도구 이름을 그 도구가 부르는 추적 API 한 자리에 잇는 표이며 값은 계약이 소유한다. */
-export const TOOL_BINDINGS: Readonly<Record<string, ToolBinding>> = readBindings();
+const SECTION = readSection();
 
-/** 도구 이름에 맞는 자리를 내며 계약에 없는 이름이면 거절한다. */
-export function toolBinding(toolName: string): ToolBinding {
+/** 도구 이름을 그 도구가 부르는 추적 API 한 자리에 잇는 표이며 값은 계약이 소유한다. */
+export const TOOL_BINDINGS: Readonly<Record<string, ToolBinding>> = SECTION.bindings;
+
+/** action 을 받는 도구가 그 action 마다 갖는 자리이며 값은 계약이 소유한다. */
+export const TOOL_ACTION_BINDINGS: Readonly<
+    Record<string, Readonly<Record<string, ToolBinding>>>
+> = SECTION.actionBindings;
+
+/** 이 도구가 action 으로 자리를 가르는지 알린다. */
+export function takesAction(toolName: string): boolean {
+    return TOOL_ACTION_BINDINGS[toolName] !== undefined;
+}
+
+/** 도구 이름과 인자에 맞는 자리를 내며 계약에 없는 이름이나 action 이면 거절한다. */
+export function toolBinding(
+    toolName: string,
+    args: Readonly<Record<string, unknown>> = {},
+): ToolBinding {
+    const actions = TOOL_ACTION_BINDINGS[toolName];
+    if (actions !== undefined) {
+        const action = args["action"];
+        if (typeof action !== "string") throw new Error(`${toolName} needs an action`);
+        const chosen = actions[action];
+        if (chosen === undefined) throw new Error(`${toolName} has no ${action} action`);
+        return chosen;
+    }
     const binding = TOOL_BINDINGS[toolName];
     if (binding === undefined) throw new Error(`${toolName} is not a contract tool`);
     return binding;
+}
+
+/** 이 도구의 호출이 어느 상류로 나가는지만 보는 자리이며 action 사이에서 상류는 갈리지 않는다. */
+export function toolUpstreamPath(toolName: string): string {
+    const actions = TOOL_ACTION_BINDINGS[toolName];
+    if (actions === undefined) return toolBinding(toolName).path;
+    const [first] = Object.values(actions);
+    if (first === undefined) throw new Error(`${toolName} declares no action`);
+    return first.path;
 }
 
 /** 경로와 쿼리에 실리는 인자는 스칼라뿐이며 그 밖의 값은 실을 자리가 없다. */

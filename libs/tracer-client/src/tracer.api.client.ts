@@ -18,7 +18,7 @@ export class TracerApiClient {
     }
 
     call(call: TracerApiCall): Promise<unknown> {
-        const binding = toolBinding(call.toolName);
+        const binding = toolBinding(call.toolName, call.args);
         const body = binding.method === "GET" ? null : fillBody(binding, call.args);
         return this.window.request({
             method: binding.method,

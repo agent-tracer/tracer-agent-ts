@@ -13,7 +13,7 @@ describe("대화 도구 계약", () => {
     });
 
     it("확인 게이트가 필요한 도구만 쓰기로 가른다", () => {
-        expect(CHAT_CONFIRM_TOOLS).toContain("update_task");
+        expect(CHAT_CONFIRM_TOOLS).toContain("propose_task_write");
         expect(CHAT_CONFIRM_TOOLS).not.toContain("search_tasks");
     });
 
@@ -30,14 +30,14 @@ describe("대화 도구 계약", () => {
     });
 
     it("계약이 허용한 인자만 좁혀 낸다", () => {
-        expect(parseChatToolArgs("update_task", { taskId: "t1", title: "제목" }))
-            .toEqual({ taskId: "t1", title: "제목" });
+        expect(parseChatToolArgs("propose_task_write", { action: "update", taskId: "t1", title: "제목" }))
+            .toEqual({ action: "update", taskId: "t1", title: "제목" });
     });
 
     it("배열 인자를 배열로 받고 문자열을 거절한다", () => {
-        expect(parseChatToolArgs("set_task_tags", { taskId: "t1", tagIds: ["g1", "g2"] }))
-            .toEqual({ taskId: "t1", tagIds: ["g1", "g2"] });
-        expect(() => parseChatToolArgs("set_task_tags", { taskId: "t1", tagIds: '["g1"]' })).toThrow();
+        expect(parseChatToolArgs("propose_tag_write", { action: "assign", taskId: "t1", tagIds: ["g1", "g2"] }))
+            .toEqual({ action: "assign", taskId: "t1", tagIds: ["g1", "g2"] });
+        expect(() => parseChatToolArgs("propose_tag_write", { action: "assign", taskId: "t1", tagIds: '["g1"]' })).toThrow();
     });
 
     it("객체 인자를 객체로 받고 문자열을 거절한다", () => {

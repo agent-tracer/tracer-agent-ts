@@ -53,11 +53,11 @@ describe("ProposeToolUseCase", () => {
         const result = await useCase.execute({
             userId: "local",
             threadId: "t1",
-            toolName: "archive_task",
-            args: { taskId: "task-1" },
+            toolName: "propose_task_write",
+            args: { action: "archive", taskId: "task-1" },
         });
 
-        expect(result).toMatchObject({ toolName: "archive_task", status: "pending" });
+        expect(result).toMatchObject({ toolName: "propose_task_write", status: "pending" });
         expect(await pendingTools.listByThread("t1")).toHaveLength(1);
     });
 
@@ -67,17 +67,17 @@ describe("ProposeToolUseCase", () => {
         const result = await useCase.execute({
             userId: "local",
             threadId: "t1",
-            toolName: "archive_task",
-            args: { taskId: "task-1" },
+            toolName: "propose_task_write",
+            args: { action: "archive", taskId: "task-1" },
         });
 
-        expect(result.summary).toBe("archive_task(taskId=task-1)");
+        expect(result.summary).toBe("propose_task_write(action=archive, taskId=task-1)");
     });
 
     it("대기 행이 생기면 열린 연결을 깨운다", async () => {
         const { useCase, updates } = makeUseCase();
 
-        await useCase.execute({ userId: "local", threadId: "t1", toolName: "archive_task", args: { taskId: "task-1" } });
+        await useCase.execute({ userId: "local", threadId: "t1", toolName: "propose_task_write", args: { action: "archive", taskId: "task-1" } });
 
         expect(updates.published).toEqual(["e1"]);
     });
@@ -92,14 +92,14 @@ describe("ProposeToolUseCase", () => {
     it("계약을 만족하지 않는 인자를 거절한다", async () => {
         const { useCase } = makeUseCase();
 
-        await expect(useCase.execute({ userId: "local", threadId: "t1", toolName: "archive_task", args: {} }))
-            .rejects.toThrow("archive_task arguments are invalid");
+        await expect(useCase.execute({ userId: "local", threadId: "t1", toolName: "propose_task_write", args: {} }))
+            .rejects.toThrow("propose_task_write arguments are invalid");
     });
 
     it("남의 스레드에는 대기 행을 세우지 않는다", async () => {
         const { useCase } = makeUseCase();
 
-        await expect(useCase.execute({ userId: "other", threadId: "t1", toolName: "archive_task", args: { taskId: "task-1" } }))
+        await expect(useCase.execute({ userId: "other", threadId: "t1", toolName: "propose_task_write", args: { action: "archive", taskId: "task-1" } }))
             .rejects.toThrow("Thread not found");
     });
 });

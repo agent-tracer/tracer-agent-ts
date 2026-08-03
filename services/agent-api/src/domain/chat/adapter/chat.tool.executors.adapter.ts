@@ -1,4 +1,4 @@
-import { toolBinding, type TracerApiClient } from "@tracer-agent/tracer-client";
+import { toolUpstreamPath, type TracerApiClient } from "@tracer-agent/tracer-client";
 import type {
     ChatToolExecutor,
     ChatToolExecutorRegistry,
@@ -17,7 +17,7 @@ export function buildChatToolExecutors(
 ): ChatToolExecutorRegistry {
     const registry: Record<string, ChatToolExecutor> = {};
     for (const [toolName, plan] of Object.entries(chatToolCallPlan)) {
-        const client = callsAgentUpstream(toolBinding(toolName).path) ? agentClient : tracerClient;
+        const client = callsAgentUpstream(toolUpstreamPath(toolName)) ? agentClient : tracerClient;
         registry[toolName] = async (userId, args) => {
             const call = plan(args);
             return call.describe(await client.call({ toolName, userId, args: call.args }));
