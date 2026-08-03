@@ -35,13 +35,32 @@ const pricingSchema = z.object({
     }),
 });
 
+const pacingSchema = z.object({
+    meaning: z.string().min(1),
+    unit: z.string().min(1),
+    progressNotice: z.object({
+        template: z.string().min(1),
+        when: z.string().min(1),
+        placeholders: z.array(z.string().min(1)).nonempty(),
+        reason: z.string().min(1),
+    }),
+    landingDirective: z.object({
+        when: z.string().min(1),
+        structured: z.string().min(1),
+        freeText: z.string().min(1),
+        reason: z.string().min(1),
+    }),
+});
+
 const executionBudgetSchema = z.object({
     meaning: z.string().min(1),
     reservation: reservationSchema,
+    pacing: pacingSchema,
     wallClock: wallClockSchema,
     pricing: pricingSchema,
 });
 
+export type ExecutionBudgetPacing = z.infer<typeof pacingSchema>;
 export type ExecutionBudgetWallClock = z.infer<typeof wallClockSchema>;
 export type ExecutionBudgetPricing = z.infer<typeof pricingSchema>;
 export type ExecutionBudgetReservationEntry = z.infer<typeof reservationEntrySchema>;

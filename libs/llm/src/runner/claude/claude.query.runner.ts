@@ -1,4 +1,4 @@
-import { query, type HookJSONOutput } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE, UnpricedModelError } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import { createAgentDeadline, DeadlineExceededError } from "~llm/model/deadline.js";
@@ -8,7 +8,6 @@ import { GEN_AI_PROVIDER } from "~llm/observability/semconv.const.js";
 import { withGenAiClientTelemetry } from "~llm/observability/telemetry.js";
 import { TrajectoryRecorder } from "~llm/observability/trajectory.js";
 import { estimateCostUsd } from "~llm/pricing/pricing.js";
-import { landingDirective } from "~llm/runner/landing.directive.js";
 import type { AgentQueryRequest, AgentQueryResult, IQueryRunner } from "~llm/runner/llm.runner.js";
 import { redactText } from "~llm/support/redaction.js";
 import { logWarn } from "@tracer-agent/platform";
@@ -26,6 +25,7 @@ import type { ClaudeQueryOptions } from "./claude.query.options.js";
 import { buildQueryPermissions, reportPermissionDenials } from "./claude.query.permissions.js";
 import { partialAssistantDeltaText } from "./claude.stream.delta.js";
 import { buildSystemPrompt } from "./claude.system.prompt.js";
+import { toolPacingHook } from "./tool.pacing.hook.js";
 import { createClaudeRunTree, finishClaudeRunTree } from "./claude.trace.js";
 
 /** Claude Agent SDK로 도구 사용 질의를 실행한다. */
@@ -83,20 +83,13 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         let runningCostUsd = 0;
         let peakCallCostUsd = 0;
         let landing = false;
-        // continue:false는 루프를 멈춰 결론 턴을 잃으므로 그 도구만 막아 모델이 남은 것으로 결론을 내게 한다.
-        const landingReason = landingDirective(request.outputSchema !== undefined);
-        const denyToolsWhenLanding = (): Promise<HookJSONOutput> =>
-            Promise.resolve(
-                landing
-                    ? {
-                        hookSpecificOutput: {
-                            hookEventName: "PreToolUse",
-                            permissionDecision: "deny",
-                            permissionDecisionReason: landingReason,
-                        },
-                    }
-                    : { continue: true },
-            );
+        let modelTurns = 0;
+        const paceToolUse = toolPacingHook({
+            landing: () => landing,
+            modelTurns: () => modelTurns,
+            maxTurns: request.maxTurns,
+            hasOutputSchema: request.outputSchema !== undefined,
+        });
 
         const options = request.providerOptions;
         const systemPrompt = buildSystemPrompt(request, options);
@@ -139,7 +132,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 ...(request.maxBudgetUsd !== undefined ? { maxBudgetUsd: request.maxBudgetUsd } : {}),
                 ...(options?.fallbackModel !== undefined ? { fallbackModel: options.fallbackModel } : {}),
                 stderr: (data) => stderr.append(data),
-                hooks: { PreToolUse: [{ hooks: [denyToolsWhenLanding] }] },
+                hooks: { PreToolUse: [{ hooks: [paceToolUse] }] },
             },
         });
 
@@ -157,6 +150,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     continue;
                 }
                 if (msg.type === "assistant") {
+                    modelTurns += 1;
                     // 공급자 식별자는 모델 호출 하나를 가리키므로 마지막 호출의 값이 이 시도를 대표한다.
                     if (msg.request_id !== undefined) providerRequestId = msg.request_id;
                     let text = "";
