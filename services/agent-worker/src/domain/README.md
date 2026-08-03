@@ -45,8 +45,6 @@ flowchart LR
 
 ## 노드와 단계
 
-### 단계의 공통 수명주기
-
 각 단계는 하나의 SDK 호출 또는 하나의 결정적 처리 단위로 기록된다. 단계가 모델 호출이면 `ClaudeQueryRunner`가 스트림과 도구 호출과 출력 검증을 수집하고, 도메인 어댑터가 `nodeStarted`, `nodeCompleted`, `nodeFailed`, `routeSelected`, `validationFailed`와 같은 실행 이벤트를 남긴다.
 
 ```mermaid
@@ -188,6 +186,12 @@ sequenceDiagram
 ```
 
 도구 결과는 모델에 전달되기 전에 정제되며, 대화의 쓰기 도구는 즉시 데이터를 변경하지 않고 확인 요청을 생성한다. 계약 도구 이름은 SDK가 요구하는 MCP prefix로 변환되지만 trajectory와 최종 관측 원장에는 정규 이름을 유지한다.
+
+## 실행 단위 재사용
+
+`ClaudeQueryRunner`는 워커 진입점(`chat.main.ts`, `jobs.main.ts`, `generate.main.ts`)에서 프로세스마다 한 번 서고 그 프로세스의 모든 단계가 함께 쓴다. 실행기는 요청 상태를 갖지 않고 호출마다 받은 질의로만 돌므로 단계가 병렬로 돌아도 서로의 예산·궤적·중단 신호를 보지 않는다. 대화 요약은 도구 없이 한 턴만 도는 별도 실행이라 자기 실행기를 갖는다.
+
+호출마다 다시 서는 것은 MCP 도구 서버와 그 handler다. `query()`가 단계마다 Claude CLI 하위 프로세스를 새로 띄우므로 다시 쓸 컴파일된 위상이 없고, handler는 그 요청의 사용자 범위(`userId`·`scopeToken`·`threadId`)를 만들 때 묶어 두었다가 도구 호출에 싣는다. 열기로 한 도구가 하나도 없는 단계는 MCP 서버 자체를 세우지 않아 열지 않은 도구가 표면에 새어 나갈 자리를 없앤다.
 
 ## 프롬프트 실행 구조
 
