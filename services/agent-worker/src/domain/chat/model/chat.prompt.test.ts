@@ -10,6 +10,7 @@ import {
     renderChatPrompt,
     renderChatTurnContext,
 } from "./chat.prompt.js";
+import { CHAT_TOOL_CONTRACT } from "./chat.tool.schema.js";
 
 const DECLARED = readAgentPrompt(AGENT.chat.id);
 const PROMPT = buildAgentPrompt(DECLARED);
@@ -86,7 +87,7 @@ describe("대화 프롬프트가 이번 턴에 내리는 지시", () => {
             { role: "tool", content: "Archived task task-1." },
         ]);
 
-        expect(prompt).toContain("The user approved the action above and it has now run.");
+        expect(prompt).toContain(CHAT_TOOL_CONTRACT.approvalReportNote);
         expect(prompt).not.toContain("Answer the user's most recent message.");
     });
 });

@@ -1,6 +1,7 @@
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { SAFETY_POLICY } from "~agent-worker/domain/chat/model/chat.safety.policy.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
+import { CHAT_TOOL_CONTRACT } from "./chat.tool.schema.js";
 import type { ChatTurnMessage, ChatUserFact } from "./chat.turn.model.js";
 
 export const CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY = "chat.assistant.system";
@@ -47,18 +48,17 @@ export function renderChatTurnContext(
 
 const ANSWER_DIRECTIVE = "Answer the user's most recent message.";
 
-/** 이력이 도구 결과로 끝나면 사용자는 승인만 했으므로 답할 발화가 없고 보고할 결과가 있다. */
-const REPORT_DIRECTIVE =
-    "The user approved the action above and it has now run. "
-    + "Tell them what it did, grounded in that result, and do not propose it again.";
-
 /** 러너가 단발이라 대화 전체를 한 프롬프트로 재생하며 이력의 마지막 줄이 이번 턴의 과제다. */
 export function renderChatPrompt(messages: readonly ChatTurnMessage[]): string {
     const lines = ['<history source="untrusted">'];
     for (const message of messages) lines.push(renderMessage(message));
-    const last = messages.at(-1);
-    const directive = last?.role === CHAT_MESSAGE_ROLE.tool ? REPORT_DIRECTIVE : ANSWER_DIRECTIVE;
-    lines.push("</history>", "", directive);
+    // 이력이 도구 결과로 끝나면 사용자는 승인만 했으므로 답할 발화가 없고 알릴 결과가 있다.
+    const resumesFromApproval = messages.at(-1)?.role === CHAT_MESSAGE_ROLE.tool;
+    lines.push(
+        "</history>",
+        "",
+        resumesFromApproval ? CHAT_TOOL_CONTRACT.approvalReportNote : ANSWER_DIRECTIVE,
+    );
     return lines.join("\n");
 }
 

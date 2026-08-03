@@ -15,6 +15,8 @@ export interface ChatToolContract extends ContractToolFile {
     readonly responses: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
     /** 확인 대기 응답에 싣는 안내이며 두 구현체가 같은 문장을 모델에게 보인다. */
     readonly proposalNote: string;
+    /** 승인된 도구가 실행된 뒤 그 결과를 알리라고 이르는 문장이다. */
+    readonly approvalReportNote: string;
     readonly failures: ToolFailureTexts;
 }
 
