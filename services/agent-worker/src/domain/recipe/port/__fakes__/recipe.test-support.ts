@@ -7,7 +7,7 @@ import type {
     RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import type { RecipeIdGeneratorPort } from "~agent-worker/domain/recipe/port/recipe.id.generator.port.js";
-import type { RecipeNotificationPort } from "~agent-worker/domain/recipe/port/recipe.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     RecipeCandidateBatch,
     RecipeOutputPort,
@@ -60,7 +60,7 @@ export class FixedClock implements IClock {
 
 export const fixedClock: IClock = new FixedClock();
 
-export class CapturingRecipeNotification implements RecipeNotificationPort {
+export class CapturingRecipeNotification implements JobNotificationPort {
     readonly published: { readonly userId: string; readonly payload: Record<string, unknown> }[] = [];
 
     async jobUpdated(userId: string, payload: Record<string, unknown>): Promise<void> {

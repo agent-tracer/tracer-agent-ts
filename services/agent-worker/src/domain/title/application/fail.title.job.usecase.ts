@@ -1,7 +1,7 @@
 import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import type { FailTitleJobInput } from "~agent-worker/domain/title/model/title.job.model.js";
-import type { TitleNotificationPort } from "~agent-worker/domain/title/port/title.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
 
 const ERROR_LIMIT = 1000;
@@ -11,7 +11,7 @@ const SUMMARY_LIMIT = 240;
 export class FailTitleJobUsecase {
     constructor(
         private readonly repository: TitleRepositoryPort,
-        private readonly notification: TitleNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
     ) {}
 

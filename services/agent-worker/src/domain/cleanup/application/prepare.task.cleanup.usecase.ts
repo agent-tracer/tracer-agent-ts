@@ -10,7 +10,7 @@ import { resolveCleanupPromptPin } from "../model/cleanup.prompt.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import type { CleanupAgentPort } from "../port/cleanup.agent.port.js";
-import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
 
 const DEFAULT_MAX_SUGGESTIONS = 20;
@@ -38,7 +38,7 @@ export class PrepareTaskCleanupUsecase {
     constructor(
         private readonly repository: CleanupRepositoryPort,
         private readonly agent: CleanupAgentPort,
-        private readonly notification: CleanupNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly prompts: PromptSourcePort,
     ) {}

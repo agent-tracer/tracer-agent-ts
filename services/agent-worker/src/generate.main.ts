@@ -19,7 +19,7 @@ import { GENERATE_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { createTemporalWorker } from "~agent-worker/config/temporal.worker.js";
 import { runUntilShutdown } from "~agent-worker/config/worker.lifecycle.js";
-import { RecipeNotificationAdapter } from "~agent-worker/domain/recipe/adapter/recipe.notification.adapter.js";
+import { JobNotification } from "~agent-worker/support/job.notification.js";
 import { RecipeOutputAdapter } from "~agent-worker/domain/recipe/adapter/recipe.output.adapter.js";
 import { RecipeReaderAdapter } from "~agent-worker/domain/recipe/adapter/recipe.reader.adapter.js";
 import { RecipeSearchAdapter } from "~agent-worker/domain/recipe/adapter/recipe.search.adapter.js";
@@ -35,7 +35,6 @@ import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/applicati
 import { PrepareRecipeScanUsecase } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
 import { ScanRecipeUsecase } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { RecipeActivity } from "~agent-worker/domain/recipe/inbound/recipe.activity.js";
-import { CleanupNotificationAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.notification.adapter.js";
 import { CleanupOutputAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.output.adapter.js";
 import { CleanupReaderAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.reader.adapter.js";
 import { CleanupRepositoryAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.repository.adapter.js";
@@ -47,7 +46,6 @@ import { PrepareTaskCleanupUsecase } from "~agent-worker/domain/cleanup/applicat
 
 import { SuggestCleanupUsecase } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { CleanupActivity } from "~agent-worker/domain/cleanup/inbound/cleanup.activity.js";
-import { TitleNotificationAdapter } from "~agent-worker/domain/title/adapter/title.notification.adapter.js";
 import { TitleEventReaderAdapter } from "~agent-worker/domain/title/adapter/title.event.reader.adapter.js";
 import { TitleRepositoryAdapter } from "~agent-worker/domain/title/adapter/title.repository.adapter.js";
 import { TitleAgentAdapter } from "~agent-worker/domain/title/adapter/title.agent.adapter.js";
@@ -86,7 +84,7 @@ async function bootstrap(): Promise<void> {
     const recipeSearch = new RecipeSearchAdapter(tracer);
     const recipeRepository = new RecipeRepositoryAdapter(dataSource, tracer);
     const recipeOutput = new RecipeOutputAdapter(tracer);
-    const recipeNotification = new RecipeNotificationAdapter(publish);
+    const recipeNotification = new JobNotification(publish);
     const recipePrompts = new ContractPromptSource(AGENT.recipeScan.id);
     const recipeStageOutputs = new RecipeStageOutputAdapter(dataSource);
     const recipeStages = new RunRecipeStageUsecase(recipeStageOutputs, clock);
@@ -112,7 +110,7 @@ async function bootstrap(): Promise<void> {
     const titleIds = new TitleUlidGenerator(clock);
     const titleReader = new TitleEventReaderAdapter(tracer);
     const titleRepository = new TitleRepositoryAdapter(dataSource, tracer);
-    const titleNotification = new TitleNotificationAdapter(publish);
+    const titleNotification = new JobNotification(publish);
     const titlePrompts = new ContractPromptSource(AGENT.titleSuggestion.id);
     const titleAgent = new TitleAgentAdapter(claudeRunner, titleReader, titlePrompts);
     const title = new TitleActivity(
@@ -126,7 +124,7 @@ async function bootstrap(): Promise<void> {
     const cleanupReader = new CleanupReaderAdapter(tracer);
     const cleanupRepository = new CleanupRepositoryAdapter(dataSource, tracer);
     const cleanupOutput = new CleanupOutputAdapter(tracer);
-    const cleanupNotification = new CleanupNotificationAdapter(publish);
+    const cleanupNotification = new JobNotification(publish);
     const cleanupPrompts = new ContractPromptSource(AGENT.taskCleanup.id);
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {
         tasks: cleanupReader,

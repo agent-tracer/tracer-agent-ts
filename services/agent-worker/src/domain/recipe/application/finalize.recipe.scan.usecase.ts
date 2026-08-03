@@ -9,7 +9,7 @@ import {
     recipeScanSummary,
     type GeneratedRecipeCandidate,
 } from "../model/recipe.candidate.model.js";
-import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { RecipeOutputPort } from "../port/recipe.output.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
 import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
@@ -34,7 +34,7 @@ export class FinalizeRecipeScanUsecase {
     constructor(
         private readonly repository: RecipeRepositoryPort,
         private readonly output: RecipeOutputPort,
-        private readonly notification: RecipeNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly stageOutputs: RecipeStageOutputPort | null = null,
     ) {}

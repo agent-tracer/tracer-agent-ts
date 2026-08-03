@@ -3,7 +3,7 @@ import type { IClock } from "@tracer-agent/platform";
 import type { TitleContext } from "~agent-worker/domain/title/model/title.context.model.js";
 import type { GenerateTitleSuggestionsOutput } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleIdGeneratorPort } from "~agent-worker/domain/title/port/title.id.generator.port.js";
-import type { TitleNotificationPort } from "~agent-worker/domain/title/port/title.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     TitleFailedAttempt,
     TitleJobSnapshot,
@@ -47,7 +47,7 @@ export class FixedClock implements IClock {
     }
 }
 
-export class CapturingTitleNotification implements TitleNotificationPort {
+export class CapturingTitleNotification implements JobNotificationPort {
     readonly sent: { userId: string; payload: Record<string, unknown> }[] = [];
 
     async jobUpdated(userId: string, payload: Record<string, unknown>): Promise<void> {

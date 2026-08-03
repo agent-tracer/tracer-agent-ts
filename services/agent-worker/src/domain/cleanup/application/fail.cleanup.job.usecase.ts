@@ -1,6 +1,6 @@
 import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
-import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
 
 const ERROR_LIMIT = 1000;
@@ -15,7 +15,7 @@ export interface FailCleanupJobInput {
 export class FailCleanupJobUsecase {
     constructor(
         private readonly repository: CleanupRepositoryPort,
-        private readonly notification: CleanupNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
     ) {}
 

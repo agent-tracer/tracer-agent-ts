@@ -3,7 +3,7 @@ import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { buildJobUsage, type AgentUsageSummary } from "~agent-worker/support/llm/job.attempt.js";
 import { taskCleanupSummary } from "../model/cleanup.suggestion.model.js";
-import type { CleanupNotificationPort } from "../port/cleanup.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { CleanupOutputPort } from "../port/cleanup.output.port.js";
 import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
 import type { GeneratedCleanupSuggestion } from "../model/cleanup.suggestion.model.js";
@@ -27,7 +27,7 @@ export class FinalizeTaskCleanupUsecase {
     constructor(
         private readonly repository: CleanupRepositoryPort,
         private readonly output: CleanupOutputPort,
-        private readonly notification: CleanupNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
     ) {}
 

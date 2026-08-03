@@ -1,6 +1,6 @@
 import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
-import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
 import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 
@@ -16,7 +16,7 @@ export interface FailRecipeJobInput {
 export class FailRecipeJobUsecase {
     constructor(
         private readonly repository: RecipeRepositoryPort,
-        private readonly notification: RecipeNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly stageOutputs: RecipeStageOutputPort | null = null,
     ) {}

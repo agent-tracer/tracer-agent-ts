@@ -23,7 +23,7 @@ export class StubPromptSource implements PromptSourcePort {
         return Promise.resolve(CLEANUP_PROMPT);
     }
 }
-import type { CleanupNotificationPort } from "~agent-worker/domain/cleanup/port/cleanup.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     CleanupOutputPort,
     CleanupSuggestionBatch,
@@ -59,7 +59,7 @@ export class FixedClock implements IClock {
 
 export const fixedClock: IClock = new FixedClock();
 
-export class CapturingCleanupNotification implements CleanupNotificationPort {
+export class CapturingCleanupNotification implements JobNotificationPort {
     readonly published: { readonly userId: string; readonly payload: Record<string, unknown> }[] = [];
 
     async jobUpdated(userId: string, payload: Record<string, unknown>): Promise<void> {

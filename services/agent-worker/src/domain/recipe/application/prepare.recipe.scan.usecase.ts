@@ -14,7 +14,7 @@ import {
 import { resolveRecipePromptPin } from "../model/recipe.prompt.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeAgentPort } from "../port/recipe.agent.port.js";
-import type { RecipeNotificationPort } from "../port/recipe.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
 
 export interface RecipeScanInput {
@@ -40,7 +40,7 @@ export class PrepareRecipeScanUsecase {
     constructor(
         private readonly repository: RecipeRepositoryPort,
         private readonly agent: RecipeAgentPort,
-        private readonly notification: RecipeNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly prompts: PromptSourcePort,
     ) {}

@@ -17,7 +17,7 @@ import type {
 import { resolveTitlePromptPin } from "~agent-worker/domain/title/model/title.prompt.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
-import type { TitleNotificationPort } from "~agent-worker/domain/title/port/title.notification.port.js";
+import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
 
 /** 대화 컨텍스트를 모으고 잡을 실행 상태로 올린 뒤 실행 인자를 확정한다. */
@@ -25,7 +25,7 @@ export class PrepareTitleSuggestionUsecase {
     constructor(
         private readonly repository: TitleRepositoryPort,
         private readonly agent: TitleAgentPort,
-        private readonly notification: TitleNotificationPort,
+        private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly prompts: PromptSourcePort,
     ) {}
