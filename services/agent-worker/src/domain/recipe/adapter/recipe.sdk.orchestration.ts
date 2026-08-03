@@ -1,4 +1,5 @@
 import type { StructuredQueryResult } from "@tracer-agent/llm";
+import { agentFailureAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
   AGENT_NODE,
   fanOutNode,
@@ -28,7 +29,7 @@ import {
   type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
 import { runRecipeSurvey } from "./recipe.sdk.survey.js";
-import { agentFailureAccounting, runRecipeProbe, type RecipeProbeRun } from "./recipe.sdk.probe.js";
+import { runRecipeProbe, type RecipeProbeRun } from "./recipe.sdk.probe.js";
 import {
   probeStageSchema,
   type ProbeStageOutput,

@@ -1,5 +1,6 @@
 import type { StructuredQueryResult } from "@tracer-agent/llm";
 import type { AgentBudgetLease, ExecutionBudget } from "~agent-worker/support/llm/agent.budget.js";
+import { agentFailureAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import { AGENT_NODE, fanOutNode, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import { buildCleanupUserPrompt } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import type { InspectReport, TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
@@ -8,7 +9,7 @@ import type { GenerateCleanupSuggestionsInput } from "~agent-worker/domain/clean
 import type { CleanupToolBatch, CleanupToolDeps } from "./cleanup.tools.js";
 import type { CleanupQueryContext } from "./cleanup.sdk.query.js";
 import { runCleanupTriage } from "./cleanup.sdk.triage.js";
-import { agentFailureAccounting, runCleanupInspect } from "./cleanup.sdk.inspect.js";
+import { runCleanupInspect } from "./cleanup.sdk.inspect.js";
 import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.investigate.js";
 
 const EMPTY_PLAN: TriagePlan = { inspect: [] };

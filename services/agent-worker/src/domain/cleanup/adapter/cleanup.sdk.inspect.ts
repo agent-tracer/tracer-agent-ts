@@ -1,7 +1,7 @@
 import type { JobStepPayload } from "@tracer-agent/llm";
 import { AgentExecutionFailure } from "@tracer-agent/llm";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
-import { type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
+import { agentFailureAccounting, type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
     buildCleanupInspectPrompt,
     buildCleanupInspectSystemPrompt,
@@ -60,13 +60,3 @@ export async function runCleanupInspect(
     }
 }
 
-// 무너진 호출의 실제 지출은 알 수 없으므로 settle()의 null 처리가 예약해 준 몫을 전부 쓴 것으로
-// 보수적으로 간주하도록 costUsd와 numTurns를 비워 둔다.
-export function agentFailureAccounting(error: unknown): AgentCallAccounting {
-    return {
-        durationMs: error instanceof AgentExecutionFailure ? (error.durationMs ?? 0) : 0,
-        costUsd: null,
-        numTurns: null,
-        usage: error instanceof AgentExecutionFailure ? error.usage : null,
-    };
-}

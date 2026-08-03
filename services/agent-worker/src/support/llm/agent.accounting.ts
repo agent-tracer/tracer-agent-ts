@@ -1,4 +1,4 @@
-import type { AgentQueryUsage } from "@tracer-agent/llm";
+import { AgentExecutionFailure, type AgentQueryUsage } from "@tracer-agent/llm";
 
 /** 한 번의 호출이 남긴 회계이며 실행 단위로 합산될 수 있다. */
 export interface AgentCallAccounting {
@@ -35,4 +35,15 @@ function mergeUsage(values: readonly (AgentQueryUsage | null)[]): AgentQueryUsag
         }),
         { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
     );
+}
+
+// 무너진 호출의 실제 지출은 알 수 없으므로 settle()의 null 처리가 예약해 준 몫을 전부 쓴 것으로
+// 보수적으로 간주하도록 costUsd와 numTurns를 비워 둔다.
+export function agentFailureAccounting(error: unknown): AgentCallAccounting {
+    return {
+        durationMs: error instanceof AgentExecutionFailure ? (error.durationMs ?? 0) : 0,
+        costUsd: null,
+        numTurns: null,
+        usage: error instanceof AgentExecutionFailure ? error.usage : null,
+    };
 }
