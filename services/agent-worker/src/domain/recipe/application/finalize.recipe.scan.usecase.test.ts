@@ -111,3 +111,43 @@ describe("FinalizeRecipeScanUsecase", () => {
         expect(outputs.batches).toHaveLength(1);
     });
 });
+
+class RecordingStageOutputs {
+    readonly cleared: string[] = [];
+
+    find(): Promise<unknown> {
+        return Promise.resolve(null);
+    }
+
+    save(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    clear(jobId: string): Promise<void> {
+        this.cleared.push(jobId);
+        return Promise.resolve();
+    }
+}
+
+describe("종결한 잡의 단계 산출", () => {
+    it("그 잡은 다시 실행되지 않으므로 원장에서 지운다", async () => {
+        const stages = new RecordingStageOutputs();
+        const target = new FinalizeRecipeScanUsecase(
+            seedRepository(),
+            new InMemoryRecipeOutput(),
+            new CapturingRecipeNotification(),
+            fixedClock,
+            stages,
+        );
+
+        await target.execute({
+            jobId: "job-1",
+            userId: "user-1",
+            sourceTaskId: "task-1",
+            language: OUTPUT_LANGUAGE.ko,
+            output: output(),
+        });
+
+        expect(stages.cleared).toEqual(["job-1"]);
+    });
+});

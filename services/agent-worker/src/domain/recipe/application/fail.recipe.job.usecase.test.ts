@@ -49,3 +49,50 @@ describe("FailRecipeJobUsecase", () => {
         expect(notification.published).toEqual([]);
     });
 });
+
+class RecordingStageOutputs {
+    readonly cleared: string[] = [];
+
+    find(): Promise<unknown> {
+        return Promise.resolve(null);
+    }
+
+    save(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    clear(jobId: string): Promise<void> {
+        this.cleared.push(jobId);
+        return Promise.resolve();
+    }
+}
+
+describe("실패로 끝난 잡의 단계 산출", () => {
+    it("그 잡은 다시 실행되지 않으므로 원장에서 지운다", async () => {
+        const outputs = new RecordingStageOutputs();
+        const target = new FailRecipeJobUsecase(
+            seedRepository(),
+            new CapturingRecipeNotification(),
+            fixedClock,
+            outputs,
+        );
+
+        await target.execute({ jobId: "job-1", message: "rate limited" });
+
+        expect(outputs.cleared).toEqual(["job-1"]);
+    });
+
+    it("종결하지 못한 잡의 산출은 지우지 않는다", async () => {
+        const outputs = new RecordingStageOutputs();
+        const target = new FailRecipeJobUsecase(
+            new InMemoryRecipeRepository(),
+            new CapturingRecipeNotification(),
+            fixedClock,
+            outputs,
+        );
+
+        await target.execute({ jobId: "unknown", message: "rate limited" });
+
+        expect(outputs.cleared).toEqual([]);
+    });
+});
