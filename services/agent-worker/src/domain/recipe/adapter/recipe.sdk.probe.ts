@@ -27,6 +27,7 @@ import {
 } from "./recipe.tools.js";
 import {
     RECIPE_SCAN_SPEC,
+    recipeModelName,
     runRecipeQuery,
     type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
@@ -89,7 +90,7 @@ export async function runRecipeProbe(
     return {
       report: buildProbeFailureReport(assignment.probe, error),
       ledger,
-      accounting: agentFailureAccounting(error),
+      accounting: agentFailureAccounting(error, recipeModelName(ctx.input)),
       steps: error instanceof AgentExecutionFailure ? error.steps : [],
     };
   }

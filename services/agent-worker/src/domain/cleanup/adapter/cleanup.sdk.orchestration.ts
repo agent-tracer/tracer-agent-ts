@@ -7,7 +7,7 @@ import type { InspectReport, TriagePlan } from "~agent-worker/domain/cleanup/mod
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import type { GenerateCleanupSuggestionsInput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import type { CleanupToolBatch, CleanupToolDeps } from "./cleanup.tools.js";
-import type { CleanupQueryContext } from "./cleanup.sdk.query.js";
+import { cleanupModelName, type CleanupQueryContext } from "./cleanup.sdk.query.js";
 import { runCleanupTriage } from "./cleanup.sdk.triage.js";
 import { runCleanupInspect } from "./cleanup.sdk.inspect.js";
 import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.investigate.js";
@@ -30,7 +30,7 @@ export async function runCleanupTriagePhase(
         segments.push(toRunSegment(result, AGENT_NODE.triage));
         return { plan: result.data, ledger };
     } catch (error) {
-        const accounting = agentFailureAccounting(error);
+        const accounting = agentFailureAccounting(error, cleanupModelName(ctx.input));
         budget.settle(lease, { costUsd: accounting.costUsd, numTurns: accounting.numTurns });
         segments.push({ accounting, steps: [], nodeName: AGENT_NODE.triage });
         return { plan: EMPTY_PLAN, ledger: new CleanupProvenanceLedger() };

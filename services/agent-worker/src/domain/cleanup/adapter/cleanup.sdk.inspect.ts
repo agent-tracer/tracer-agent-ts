@@ -10,7 +10,12 @@ import { inspectReportSchema, type InspectAssignment, type InspectReport } from 
 import { buildInspectFailureReport, CLEANUP_REVIEWER_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import { buildCleanupToolHandlers, type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
-import { runCleanupQuery, TASK_CLEANUP_SPEC, type CleanupQueryContext } from "./cleanup.sdk.query.js";
+import {
+    cleanupModelName,
+    runCleanupQuery,
+    TASK_CLEANUP_SPEC,
+    type CleanupQueryContext,
+} from "./cleanup.sdk.query.js";
 
 const INSPECT_TOOL_NAMES = CLEANUP_REVIEWER_TOOLS;
 
@@ -54,7 +59,7 @@ export async function runCleanupInspect(
         return {
             report: buildInspectFailureReport(assignment.taskId, error),
             ledger,
-            accounting: agentFailureAccounting(error),
+            accounting: agentFailureAccounting(error, cleanupModelName(ctx.input)),
             steps: error instanceof AgentExecutionFailure ? error.steps : [],
         };
     }

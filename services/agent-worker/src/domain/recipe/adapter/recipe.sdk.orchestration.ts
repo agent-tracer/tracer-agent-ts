@@ -92,7 +92,7 @@ export async function runRecipeSurveyPhase(
     pushRouteSelected(segments, AGENT_NODE.survey, `survey -> ${chosen}`);
     return { plan: run.data, modelUsed: run.modelUsed };
   } catch (error) {
-    const accounting = agentFailureAccounting(error);
+    const accounting = agentFailureAccounting(error, recipeModelName(ctx.input));
     budget.settle(lease, {
       costUsd: accounting.costUsd,
       numTurns: accounting.numTurns,
