@@ -76,6 +76,8 @@ npm run build
 node contract/conformance/runner/verify.mjs
 ```
 
+`npm test`는 실행 상태 케이스를 위해 Postgres 컨테이너를 띄우므로 도커를 요구합니다.
+
 실행 중인 API 표면까지 확인할 때는 `node contract/conformance/runner/verify.mjs http://127.0.0.1:3904`를 씁니다. 계약·DB·큐·워크플로를 바꾸면 Python 구현체의 검증과 이미지 빌드까지 함께 확인합니다.
 
 ## 운영 원칙

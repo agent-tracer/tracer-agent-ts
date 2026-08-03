@@ -138,7 +138,7 @@ classDiagram
 | 정책 | 구현 위치 | 역할 |
 | --- | --- | --- |
 | 도구 허용 목록 | `chat.agent.adapter.ts`·`title.agent.adapter.ts`·`recipe.sdk.query.ts`·`cleanup.sdk.query.ts` | 단계별로 사용할 MCP 도구만 허용한다 |
-| 예산 착륙 hook | `libs/llm/src/runner/claude/claude.query.runner.ts` | 남은 턴·예산이 임계값에 도달하면 `PreToolUse`에서 추가 도구를 거부하고 최종 출력을 유도한다 |
+| 도구 페이싱 hook | `libs/llm/src/runner/claude/tool.pacing.hook.ts` | `PreToolUse`에서 남은 몫을 문맥으로 건네고, 예산이 다하면 그 도구만 거부하며 계약의 마무리 지시를 준다 |
 | MCP 경계 | `libs/llm/src/tool/claude.tool.schema.ts` | 계약 도구를 SDK MCP tool로 변환하고 인자 스키마와 실패 응답을 연결한다 |
 | 결과 비식별화 | `libs/llm/src/tool/claude.tool.schema.ts`, `libs/llm/src/support/redaction.ts` | 도구 결과·답변·초안에 포함된 민감 정보를 모델과 사용자 경계 전에 제거한다 |
 | 도구 이름 정규화 | `libs/llm/src/tool/mcp.tool.prefix.ts` | `mcp__{server}__{tool}` 이름과 계약의 정규 이름 사이를 변환한다 |
@@ -152,9 +152,10 @@ flowchart TD
     R[도메인 실행 요청] --> B[프롬프트·도구·예산 조합]
     B --> D[deadline / parent signal]
     D --> Q[ClaudeQueryRunner]
-    Q --> H{PreToolUse landing?}
-    H -- 예 --> DENY[도구 거부·최종 출력 지시]
-    H -- 아니오 --> MCP[MCP server]
+    Q --> H{PreToolUse: 예산이 다했나?}
+    H -- 예 --> DENY[도구 거부·마무리 지시]
+    H -- 아니오 --> NOTICE[남은 몫 통지]
+    NOTICE --> MCP[MCP server]
     MCP --> S[인자 schema 검증]
     S --> HANDLER[도구 handler]
     HANDLER --> REDACT[결과 redact]

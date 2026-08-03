@@ -135,6 +135,10 @@ npm run build
 node contract/conformance/runner/verify.mjs
 ```
 
+`agent-api`와 `agent-worker`의 실행 상태 케이스는 계약이 소유한 migration을 적용한 Postgres를
+컨테이너로 띄워 판정을 대조합니다. `npm test`는 도커를 요구하며, 도커가 없으면 그 두 배포 단위의
+테스트가 컨테이너 기동에서 멈춥니다.
+
 실행 중인 API 표면까지 비교하려면 주소를 전달합니다.
 
 ```bash
