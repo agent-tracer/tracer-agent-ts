@@ -63,7 +63,7 @@ export class JobQueryController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const steps = await this.jobSteps.execute(resolveUserId(user), id);
-        if (steps === null) throw new NotFoundException("Job not found");
+        if (steps === null) throw new NotFoundException("Job execution not found");
         return steps;
     }
 
@@ -73,7 +73,7 @@ export class JobQueryController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const job = await this.getJob.execute(resolveUserId(user), id);
-        if (job === null) throw new NotFoundException("Job not found");
+        if (job === null) throw new NotFoundException("Job execution not found");
         return { job };
     }
 }

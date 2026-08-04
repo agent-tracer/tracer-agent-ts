@@ -10,6 +10,16 @@ export class LlmKeyMissingError extends DomainError {
     }
 }
 
+/** 리스를 쥔 실행기의 이름이 없어 어느 실행기의 요청인지 가릴 수 없음을 알린다. */
+export class LeaseOwnerMissingError extends DomainError {
+    readonly httpStatus = 400;
+    readonly code = "job.lease-owner-missing";
+
+    constructor() {
+        super("Lease owner header is required");
+    }
+}
+
 /** 같은 멱등키를 서로 다른 요청 본문으로 재사용했음을 알린다. */
 export class JobIdempotencyConflictError extends DomainError {
     readonly httpStatus = 409;

@@ -1,11 +1,11 @@
-import { BadRequestException, Body, Controller, Headers, HttpCode, HttpStatus, NotFoundException, Param, Post } from "@nestjs/common";
+import { Body, Controller, Headers, HttpCode, HttpStatus, NotFoundException, Param, Post } from "@nestjs/common";
 import { MONITOR_USER_HEADER } from "@tracer-agent/platform";
 import { ClaimRuleJobUseCase } from "~agent-api/domain/job/application/command/claim.rule.job.usecase.js";
 import { ReleaseRuleJobUseCase } from "~agent-api/domain/job/application/command/release.rule.job.usecase.js";
 import { RenewRuleJobLeaseUseCase } from "~agent-api/domain/job/application/command/renew.rule.job.lease.usecase.js";
 import { SettleRuleJobUseCase } from "~agent-api/domain/job/application/command/settle.rule.job.usecase.js";
 import { JOB_STATUS, type JobStatus } from "~agent-api/domain/job/model/job.const.js";
-import { JobLeaseHeldError } from "~agent-api/domain/job/model/job.errors.js";
+import { JobLeaseHeldError, LeaseOwnerMissingError } from "~agent-api/domain/job/model/job.errors.js";
 import { MONITOR_LEASE_OWNER_HEADER } from "~agent-api/domain/job/model/job.lease.const.js";
 import { failureBodySchema, reportBodySchema, type FailureBody, type ReportBody } from "./job.lease.schema.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
@@ -48,7 +48,7 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const job = await this.cancelJob.execute(resolveUserId(user), id, new Date());
-        if (job === null) throw new NotFoundException("Job not found");
+        if (job === null) throw new NotFoundException("Job execution not found");
         return { job };
     }
 
@@ -60,7 +60,7 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const lease = await this.claimRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), new Date());
-        if (lease === null) throw new NotFoundException("Job not found");
+        if (lease === null) throw new NotFoundException("Job execution not found");
         if (!lease.held) throw new JobLeaseHeldError();
         return lease;
     }
@@ -73,7 +73,7 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const lease = await this.renewRuleJobLease.execute(resolveUserId(user), id, leaseOwnerOf(owner), new Date());
-        if (lease === null) throw new NotFoundException("Job not found");
+        if (lease === null) throw new NotFoundException("Job execution not found");
         return lease;
     }
 
@@ -107,7 +107,7 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
     ) {
         const released = await this.releaseRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), new Date());
-        if (released === null) throw new NotFoundException("Job not found");
+        if (released === null) throw new NotFoundException("Job execution not found");
         return { released };
     }
 
@@ -118,7 +118,7 @@ export class JobCommandController {
         outcome: { status: JobStatus; result?: Record<string, unknown>; error?: string },
     ) {
         const settled = await this.settleRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), outcome, new Date());
-        if (settled === "not-found") throw new NotFoundException("Job not found");
+        if (settled === "not-found") throw new NotFoundException("Job execution not found");
         if (settled === "lease-lost") throw new JobLeaseHeldError();
         return { settled: true };
     }
@@ -127,6 +127,6 @@ export class JobCommandController {
 /** 리스는 쥔 실행기를 이름으로 구분하므로 이름이 없으면 요청 자체가 성립하지 않는다. */
 function leaseOwnerOf(owner: string | undefined): string {
     const trimmed = owner?.trim() ?? "";
-    if (trimmed.length === 0) throw new BadRequestException("x-monitor-lease-owner is required");
+    if (trimmed.length === 0) throw new LeaseOwnerMissingError();
     return trimmed;
 }
