@@ -19,7 +19,7 @@
     "lint:structure": "node scripts/check-structure.mjs",
     "lint:deps": "node scripts/check-dependencies.mjs",
     "build": "node scripts/run-workspaces.mjs build",
-    "test": "vitest run && node --test \"scripts/**/*.test.mjs\""
+    "test": "vitest run && node --test \"scripts/**/*.test.mjs\" \"eslint-rules/**/*.test.mjs\""
   },
   "engines": {
     "node": ">=24.0.0 <25.0.0"

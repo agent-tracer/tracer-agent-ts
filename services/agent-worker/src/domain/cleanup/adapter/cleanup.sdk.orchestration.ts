@@ -65,7 +65,7 @@ export async function dispatchCleanupInspections(
     return reports;
 }
 
-/** 지금까지 모인 조사 보고로 결정 호출을 돌리고, 실제 지출을 정산해 궤적에 남긴다. */
+/** 지금까지 모인 조사 보고로 결정 호출을 실행하고, 실제 지출을 정산해 궤적에 남긴다. */
 export async function decideCleanup(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

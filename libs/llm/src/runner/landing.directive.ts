@@ -1,6 +1,6 @@
 import { loadExecutionBudgetContract } from "~llm/model/execution.budget.schema.js";
 
-/** 예산이 바닥난 실행에 남길 마무리 지시를 고르며 출력 스키마를 요구한 실행만 구조화 출력을 낸다. */
+/** 예산이 소진된 실행에 남길 마무리 지시를 고르며 출력 스키마를 요구한 실행만 구조화 출력을 낸다. */
 export function landingDirective(hasOutputSchema: boolean): string {
     const { landingDirective: directive } = loadExecutionBudgetContract().pacing;
     return hasOutputSchema ? directive.structured : directive.freeText;

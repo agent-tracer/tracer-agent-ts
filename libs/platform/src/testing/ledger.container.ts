@@ -41,7 +41,7 @@ export async function startLedger(
     };
 }
 
-/** 케이스마다 원장을 비워 앞 케이스가 심은 행이 다음 판정에 섞이지 않게 한다. */
+/** 케이스마다 원장을 비워 앞 케이스가 기록한 행이 다음 판정에 섞이지 않게 한다. */
 async function truncateAll(source: DataSource): Promise<void> {
     const tables = source.entityMetadatas.map((meta) => `"${meta.tableName}"`).join(", ");
     if (tables.length > 0) await source.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);

@@ -10,7 +10,7 @@ import {
 export { MAX_REDISPATCH_ROUNDS };
 
 // SDK 백엔드가 조사를 조율자와 후보별 조사로 나눌 때만 쓰는 내부 계획·보고 스키마이며, 계약이
-// 잠그는 도구·출력·예산 계약과는 분리된 오케스트레이션 지식이다.
+// 고정하는 도구·출력·예산 계약과는 분리된 오케스트레이션 지식이다.
 
 export const MAX_INSPECT_EXCERPTS = 6;
 export const MAX_INSPECT_REASON_CHARS = 400;

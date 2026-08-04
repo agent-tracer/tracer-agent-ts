@@ -18,7 +18,7 @@ export {
 export type { ProbeAssignment, RecipeProbeName };
 
 // 조사를 조율자와 전문가로 나눌 때만 쓰는 내부 계획과 보고 스키마이며, 최종 출력이 계약으로
-// 잠그는 recipes·redispatch 모양은 recipe.scan.schema.ts가 갖는다.
+// 고정하는 recipes·redispatch 모양은 recipe.scan.schema.ts가 갖는다.
 
 export const MAX_DISPATCH_PROBES = 3;
 export const MAX_EXCERPTS_PER_PROBE = 12;

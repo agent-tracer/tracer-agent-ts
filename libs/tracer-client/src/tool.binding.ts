@@ -43,7 +43,7 @@ export const TOOL_ACTION_BINDINGS: Readonly<
     Record<string, Readonly<Record<string, ToolBinding>>>
 > = SECTION.actionBindings;
 
-/** 이 도구가 action 으로 자리를 가르는지 알린다. */
+/** 이 도구가 action 으로 자리를 구분하는지 알린다. */
 export function takesAction(toolName: string): boolean {
     return TOOL_ACTION_BINDINGS[toolName] !== undefined;
 }
