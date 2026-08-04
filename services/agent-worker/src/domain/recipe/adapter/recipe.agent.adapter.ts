@@ -231,6 +231,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       input.language,
       plan,
       reports,
+      coordinatorLedger.snapshot(),
     );
     let repaired: RecipeSynthesisRun;
     try {

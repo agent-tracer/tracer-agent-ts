@@ -2,7 +2,12 @@ import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import type { DispatchPlan, ProbeAssignment, ProbeReport } from "./recipe.dispatch.schema.js";
-import { RECIPE_CANDIDATE_LIMIT, RECIPE_TOOL_CONTRACT } from "./recipe.tool.schema.js";
+import type { ProvenanceSnapshot } from "./recipe.provenance.model.js";
+import {
+    CITABLE_ID_LIST_LIMIT,
+    RECIPE_CANDIDATE_LIMIT,
+    RECIPE_TOOL_CONTRACT,
+} from "./recipe.tool.schema.js";
 
 export const RECIPE_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "recipe-scan.investigator.system" as const;
 export const RECIPE_INVESTIGATOR_REPAIR_TEMPLATE_KEY = "recipe-scan.investigator.repair" as const;
@@ -10,6 +15,7 @@ export const RECIPE_SURVEY_SYSTEM_TEMPLATE_KEY = "recipe-scan.survey.system" as 
 export const RECIPE_PROBE_SYSTEM_TEMPLATE_KEY = "recipe-scan.probe.system" as const;
 export const RECIPE_PROBE_USER_TEMPLATE_KEY = "recipe-scan.probe.user" as const;
 export const RECIPE_SURVEY_USER_TEMPLATE_KEY = "recipe-scan.survey.user" as const;
+export const RECIPE_INVESTIGATOR_USER_TEMPLATE_KEY = "recipe-scan.investigator.user" as const;
 
 
 
@@ -72,6 +78,7 @@ export function buildRecipeUserPrompt(
     language: OutputLanguage,
     plan: DispatchPlan | null = null,
     reports: readonly ProbeReport[] = [],
+    provenance: ProvenanceSnapshot | null = null,
 ): string {
     const lines: string[] = [`Anchor taskId: ${taskId}`];
     if (userPrompt !== undefined && userPrompt.trim().length > 0) {
@@ -83,7 +90,47 @@ export function buildRecipeUserPrompt(
         "",
         `Return one candidate per distinct reusable workflow, up to ${RECIPE_CANDIDATE_LIMIT}.`,
     );
-    return lines.join("\n") + renderRecipePlan(plan) + renderRecipeReports(reports);
+    return (
+        lines.join("\n") +
+        renderRecipePlan(plan) +
+        renderRecipeReports(reports) +
+        renderCitableIds(prompt, provenance)
+    );
+}
+
+/** 조율자는 도구를 갖지 않으므로 전문가 장부가 뒷받침하는 식별자를 요청이 직접 싣는다. */
+export function renderCitableIds(
+    prompt: AgentPrompt,
+    provenance: ProvenanceSnapshot | null,
+    limit: number = CITABLE_ID_LIST_LIMIT,
+): string {
+    if (provenance === null) return "";
+    const lines: string[] = [];
+    const taskIds = [
+        ...new Set([...Object.keys(provenance.eventIdsByTask), ...Object.keys(provenance.turnIdsByTask)]),
+    ].sort();
+    for (const taskId of taskIds) {
+        const events = provenance.eventIdsByTask[taskId] ?? [];
+        const turns = provenance.turnIdsByTask[taskId] ?? [];
+        if (events.length > 0) lines.push(`- ${taskId} events: ${listed(events, limit)}`);
+        if (turns.length > 0) lines.push(`- ${taskId} turns: ${listed(turns, limit)}`);
+    }
+    if (provenance.ruleIds.length > 0) lines.push(`- rules: ${listed(provenance.ruleIds, limit)}`);
+    const revisions = Object.entries(provenance.recipeRevs)
+        .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+        .map(([recipeId, rev]) => `${recipeId}@${rev}`);
+    if (revisions.length > 0) lines.push(`- recipes: ${listed(revisions, limit, true)}`);
+    if (lines.length === 0) return "";
+    const header = prompt.slot(RECIPE_INVESTIGATOR_USER_TEMPLATE_KEY, "citableIdentifiers");
+    return "\n\n" + header + "\n" + lines.join("\n");
+}
+
+/** 식별자를 정렬해 상한까지 적고 넘친 수를 뒤에 알린다. */
+function listed(ids: readonly string[], limit: number, presorted = false): string {
+    const ordered = presorted ? [...ids] : [...ids].sort();
+    const shown = ordered.slice(0, limit);
+    const remaining = ordered.length - shown.length;
+    return remaining === 0 ? shown.join(", ") : `${shown.join(", ")} (+${remaining} more)`;
 }
 
 /** 조율자가 세운 계획을 종합 호출이 읽을 지시문으로 편다. */

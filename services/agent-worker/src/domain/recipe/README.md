@@ -35,10 +35,10 @@ flowchart TD
 | --- | --- | --- | --- |
 | `survey` | 작업 요약, 목표, 언어, 남은 turn | 없음 | `DispatchPlan`; probe가 없으면 빈 결과 |
 | `probe` | 전문 역할, 작업 ID, 조사 지시 | `get_task_summary`, `get_task_events`, `list_rules`, `search_events`, `find_similar_tasks`, `search_recipes` 중 일부 | `ProbeReport`와 provenance ledger |
-| `investigate` | probe report, 공유 ledger, 후보 예산 | `check_citations` | `RecipeSynthesis`; 필요하면 `redispatch` |
+| `investigate` | probe report, 공유 ledger, 후보 예산 | 없음 | `RecipeSynthesis`; 필요하면 `redispatch` |
 | `repair` | 직전 출력, 검증 오류, 언어 | 없음 또는 단계별 제한 도구 | 재검증 가능한 `RecipeSynthesis` |
 
-coordinator 도구 목록은 `RECIPE_COORDINATOR_TOOLS = [check_citations]`로 제한된다. 조사 도구의 실제 호출은 MCP handler가 수행하고, provenance ledger가 출처와 관측 범위를 누적한다.
+coordinator는 도구를 갖지 않고 인용 가능한 식별자를 요청으로 받는다. 조사 도구의 실제 호출은 MCP handler가 수행하고, provenance ledger가 출처와 관측 범위를 누적한다.
 
 ## 전문 dispatch 정책
 
@@ -92,7 +92,6 @@ sequenceDiagram
 | `search_events` | 조건에 맞는 사건 검색 |
 | `find_similar_tasks` | 유사 작업 검색 |
 | `search_recipes` | 등록된 recipe 맥락 검색 |
-| `check_citations` | 후보가 근거를 충분히 인용하는지 검사 |
 
 도구 결과가 노출한 데이터는 provenance ledger에 기록되며, 민감 정보 redaction 이후 모델에 전달된다. 도구 오류는 probe 단계에서 실패 보고서로 낮춰질 수 있으나, 최종 후보는 검증 규칙을 통과해야 한다.
 

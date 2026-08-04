@@ -31,7 +31,6 @@ const RECIPE_TOOLS = readAgentTools<RecipeToolContract>(AGENT.recipeScan.id);
 /** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문으로 견주게 한다. */
 export const RECIPE_PROMPT: AgentPrompt = buildAgentPrompt(readAgentPrompt(AGENT.recipeScan.id), {
     ...(RECIPE_TOOLS.limits ?? {}),
-    checkCitationsTool: RECIPE_TOOLS.orchestration.coordinatorTools[0]!,
 });
 
 export class StubPromptSource implements PromptSourcePort {

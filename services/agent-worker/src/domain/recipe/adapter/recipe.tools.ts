@@ -9,9 +9,6 @@ import { type ToolHandlers, withToolTelemetry } from "@tracer-agent/llm";
 import { clampInt } from "~agent-worker/support/clamp.js";
 import { toRecipeEventPage, type RecipeSlimEvent } from "~agent-worker/domain/recipe/model/recipe.event.model.js";
 import {
-    isEventVerified,
-    isRuleVerified,
-    isTurnVerified,
     ProvenanceLedger,
 } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import { buildTaskSummary, type TaskSummaryEvent } from "~agent-worker/domain/recipe/model/task.summary.model.js";
@@ -30,7 +27,6 @@ import {
     parseGetTaskSummaryArgs,
     parseListRulesArgs,
     parseSearchEventsArgs,
-    parseCheckCitationsArgs,
     parseSearchRecipesArgs,
     RECIPE_SCAN_TOOL,
     SUMMARY_EVENT_WINDOW,
@@ -149,21 +145,6 @@ export function buildRecipeToolHandlers(
                 const size = clampInt(limit, DEFAULT_SIMILAR_TASK_LIMIT, 1, MAX_SIMILAR_TASK_LIMIT);
                 const found = await deps.search.searchTasks(userId, anchor.title, size + 1);
                 return dump(found.filter((task) => task.id !== anchorTaskId).slice(0, size));
-            });
-        },
-
-        [RECIPE_SCAN_TOOL.checkCitations]: async (raw) => {
-            const { taskId, eventIds, turnIds, ruleIds } = parseCheckCitationsArgs(raw);
-            return telemetry(RECIPE_SCAN_TOOL.checkCitations, { taskId }, () => {
-                const seen = ledger.snapshot();
-                return Promise.resolve(
-                    dump({
-                        taskSupported: seen.eventIdsByTask[taskId] !== undefined,
-                        unsupportedEventIds: (eventIds ?? []).filter((id) => !isEventVerified(seen, taskId, id)).sort(),
-                        unsupportedTurnIds: (turnIds ?? []).filter((id) => !isTurnVerified(seen, taskId, id)).sort(),
-                        unsupportedRuleIds: (ruleIds ?? []).filter((id) => !isRuleVerified(seen, id)).sort(),
-                    }),
-                );
             });
         },
 

@@ -174,6 +174,7 @@ export async function synthesizeRecipe(
     ctx.input.language,
     plan,
     reports,
+    coordinatorLedger.snapshot(),
   );
   const run = await withNodeTrajectory(segments, AGENT_NAME, AGENT_NODE.investigate, () =>
     runRecipeSynthesis(ctx, deps, coordinatorLedger, prompt, lease, AGENT_NODE.investigate),

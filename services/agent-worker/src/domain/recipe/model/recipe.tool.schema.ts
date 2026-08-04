@@ -20,7 +20,6 @@ export const RECIPE_SCAN_TOOL = {
     searchEvents: "search_events",
     findSimilarTasks: "find_similar_tasks",
     searchRecipes: "search_recipes",
-    checkCitations: "check_citations",
 } as const;
 
 export type RecipeScanToolName = (typeof RECIPE_SCAN_TOOL)[keyof typeof RECIPE_SCAN_TOOL];
@@ -74,9 +73,6 @@ export const MAX_SUMMARY_EVENT_WINDOW = contractIntMax(
     tool("get_task_summary"),
     "window",
 );
-export const MAX_CITED_IDS = RECIPE_TOOL_CONTRACT.tools[RECIPE_SCAN_TOOL.checkCitations]?.args["eventIds"]
-    ?.maxItems ?? 0;
-
 /** 한 태스크가 서로 다른 작업 턴을 담을 수 있어 스캔 한 번이 낼 수 있는 후보 수다. */
 export const RECIPE_CANDIDATE_LIMIT = contractLimit(RECIPE_TOOL_CONTRACT, "recipeCandidateLimit");
 
@@ -88,6 +84,9 @@ export const MAX_REDISPATCH_ROUNDS = contractLimit(RECIPE_TOOL_CONTRACT, "maxRed
 
 /** 전문가 하나에 배정할 수 있는 조사 몫의 상한이다. */
 export const MAX_PROBE_WEIGHT = contractLimit(RECIPE_TOOL_CONTRACT, "maxProbeWeight");
+
+/** 조율자 요청이 한 줄에 적는 인용 가능한 식별자 수의 상한이다. */
+export const CITABLE_ID_LIST_LIMIT = contractLimit(RECIPE_TOOL_CONTRACT, "citableIdListLimit");
 
 /** 검색이 걸러 낼 수 있는 이벤트 종류이며 값은 계약이 소유한다. */
 export const TIMELINE_EVENT_KINDS: readonly [string, ...string[]] = contractEnumValues(
@@ -105,7 +104,6 @@ const listRulesShape = shape(RECIPE_SCAN_TOOL.listRules);
 const searchEventsShape = shape(RECIPE_SCAN_TOOL.searchEvents);
 const findSimilarTasksShape = shape(RECIPE_SCAN_TOOL.findSimilarTasks);
 const searchRecipesShape = shape(RECIPE_SCAN_TOOL.searchRecipes);
-const checkCitationsShape = shape(RECIPE_SCAN_TOOL.checkCitations);
 
 /** 이 에이전트가 모델에게 여는 도구 계약이며 목록은 계약의 tools가 소유한다. */
 export const RECIPE_SCAN_TOOLS: readonly LlmToolDefinition[] =
@@ -148,13 +146,6 @@ export interface SearchRecipesArgs {
     readonly limit?: number;
 }
 
-export interface CheckCitationsArgs {
-    readonly taskId: string;
-    readonly eventIds?: readonly string[];
-    readonly turnIds?: readonly string[];
-    readonly ruleIds?: readonly string[];
-}
-
 export function parseGetTaskSummaryArgs(raw: unknown): GetTaskSummaryArgs {
     return z.object(getTaskSummaryShape).parse(raw) as GetTaskSummaryArgs;
 }
@@ -177,10 +168,6 @@ export function parseFindSimilarTasksArgs(raw: unknown): FindSimilarTasksArgs {
 
 export function parseSearchRecipesArgs(raw: unknown): SearchRecipesArgs {
     return z.object(searchRecipesShape).parse(raw) as SearchRecipesArgs;
-}
-
-export function parseCheckCitationsArgs(raw: unknown): CheckCitationsArgs {
-    return z.object(checkCitationsShape).parse(raw) as CheckCitationsArgs;
 }
 
 /** 도구가 무너졌을 때와 전문가 하나가 통째로 무너졌을 때 읽는 문구이며 값은 계약이 소유한다. */

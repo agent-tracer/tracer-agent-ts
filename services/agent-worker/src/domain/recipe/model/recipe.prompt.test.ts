@@ -25,7 +25,7 @@ import {
     MAX_REDISPATCH_PROBES,
     MAX_REDISPATCH_ROUNDS,
 } from "./recipe.dispatch.schema.js";
-import { RECIPE_CANDIDATE_LIMIT, RECIPE_SCAN_TOOL } from "./recipe.tool.schema.js";
+import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 
 const DECLARED = readAgentPrompt(AGENT.recipeScan.id);
 const TOOLS = readAgentTools(AGENT.recipeScan.id);
@@ -103,11 +103,10 @@ describe("레시피 조사 프롬프트", () => {
         }
     });
 
-    it("자리표시자를 계약의 상한과 조율자 도구 이름으로 치환한다", () => {
+    it("자리표시자를 계약의 상한으로 치환한다", () => {
         const rendered = buildRecipeSystemPrompt(RECIPE_PROMPT);
 
         expect(rendered).not.toContain("${");
-        expect(rendered).toContain(RECIPE_SCAN_TOOL.checkCitations);
         expect(rendered).toContain(String(LIMITS["recipeCandidateLimit"]));
     });
 
