@@ -1,4 +1,4 @@
-/** 도구가 무너졌을 때 모델이 읽는 문구이며 값은 각 에이전트의 계약이 소유한다. */
+/** 도구가 실패했을 때 모델이 읽는 문구이며 값은 각 에이전트의 계약이 소유한다. */
 export interface ToolFailureTexts {
     /** {tool}과 {reason} 자리를 갖는다. */
     readonly toolFailed: string;

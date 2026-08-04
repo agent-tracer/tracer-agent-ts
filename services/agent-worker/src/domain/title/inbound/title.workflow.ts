@@ -32,7 +32,7 @@ const { finalizeTitleSuggestion, markTitleJobFailed } = proxyActivities<TitleFin
     retry: { maximumAttempts: 5 },
 });
 
-/** 긴 모델 호출이 짧은 활동의 슬롯을 굶기지 않도록 분리한 생성 큐로 보낸다. */
+/** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 생성 큐로 보낸다. */
 function generateActivities() {
     return proxyActivities<TitleGenerateActivities>({
         taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),

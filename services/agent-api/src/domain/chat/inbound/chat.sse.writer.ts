@@ -14,7 +14,7 @@ export class SseWriter {
         return this.tail;
     }
 
-    /** 연결이 닫혔음을 알려 대기 중인 쓰기를 깨우고 이후 쓰기를 무력화한다. */
+    /** 연결이 닫혔음을 알려 대기 중인 쓰기를 풀고 이후 쓰기를 무력화한다. */
     close(): void {
         if (this.closed) return;
         this.closed = true;

@@ -36,7 +36,7 @@ import { buildTitleToolHandlers } from "./title.tools.js";
 
 const MCP_SERVER = `monitor-${TITLE_SUGGESTION_SPEC.name}`;
 
-// 첫 실행이 예산을 거의 다 써도 수리가 도구를 쥔 채 출력을 낼 최소 여지는 남긴다.
+// 첫 실행이 예산을 거의 다 써도 수리가 도구를 가진 채 출력을 낼 최소 여지는 남긴다.
 const REPAIR_RESERVED_TURNS = 1;
 const REPAIR_RESERVED_BUDGET_SHARE = 0.2;
 
@@ -101,7 +101,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const firstPass = normalizeTitleSuggestions(first.data.suggestions, input.context.title);
         if (firstPass.errors.length === 0) return toOutput(input, runs, firstPass.kept);
 
-        // 예약된 몫마저 소진되 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
+        // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) return toOutput(input, runs, []);
 
         // 제목이 제약을 어기면 오류를 모델에게 돌려주고 예약해 둔 몫으로 한 번만 다시 받는다.

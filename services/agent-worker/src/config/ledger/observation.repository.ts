@@ -5,7 +5,7 @@ import {
     toAgentRunObservationRow,
 } from "./agent.run.observation.entity.js";
 
-/** 실행 관측을 원장에 한 번만 새기며 같은 시도가 다시 오면 덮지 않는다. */
+/** 실행 관측을 원장에 한 번만 기록하며 같은 시도가 다시 오면 덮지 않는다. */
 export class TypeOrmAgentRunObservationRepository {
     constructor(private readonly repo: Repository<AgentRunObservationEntity>) {}
 

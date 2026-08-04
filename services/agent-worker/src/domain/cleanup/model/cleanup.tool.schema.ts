@@ -97,6 +97,6 @@ export function parseGetTaskEventsArgs(raw: unknown): GetTaskEventsArgs {
     return z.object(getTaskEventsShape).parse(raw) as GetTaskEventsArgs;
 }
 
-/** 도구가 무너졌을 때와 검토 하나가 통째로 무너졌을 때 모델과 조율자가 읽는 문구이며 값은 계약이 소유한다. */
+/** 도구가 실패했을 때와 검토 하나가 통째로 실패했을 때 모델과 조율자가 읽는 문구이며 값은 계약이 소유한다. */
 export const TASK_CLEANUP_FAILURES: ToolFailureTexts & { readonly workerFailed: string } =
     CLEANUP_TOOL_CONTRACT.failures as ToolFailureTexts & { readonly workerFailed: string };

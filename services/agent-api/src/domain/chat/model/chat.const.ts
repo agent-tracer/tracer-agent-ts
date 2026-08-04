@@ -47,7 +47,7 @@ export const CHAT_EXECUTION_STATUSES = [
 
 export type ChatExecutionStatus = (typeof CHAT_EXECUTION_STATUSES)[number];
 
-/** 모델이 왜 말을 멈췄는지이며, 실행 수명을 나타내는 status와 다른 축이다. */
+/** 모델이 응답을 멈춘 이유이며, 실행 수명을 나타내는 status와 다른 축이다. */
 export const CHAT_STOP_REASON = {
     completed: "completed",
     deadline: "deadline",

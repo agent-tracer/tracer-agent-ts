@@ -14,7 +14,7 @@ if (!script) {
 }
 
 const jobsFlag = process.argv.indexOf("--jobs");
-// tsc 한 프로세스가 수백 MB를 쓰므로 코어 수만큼 띄우면 메모리 압박으로 되레 느려진다.
+// tsc 한 프로세스가 수백 MB를 쓰므로 코어 수만큼 띄우면 메모리 압박으로 오히려 느려진다.
 const DEFAULT_JOBS = Math.max(1, Math.min(4, cpus().length - 1));
 const jobs = jobsFlag > 0 ? Number(process.argv[jobsFlag + 1]) : DEFAULT_JOBS;
 

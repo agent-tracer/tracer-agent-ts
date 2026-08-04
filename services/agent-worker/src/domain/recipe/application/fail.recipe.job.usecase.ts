@@ -28,7 +28,7 @@ export class FailRecipeJobUsecase {
             this.clock.now(),
         );
         if (failed === null) return;
-        // 실패도 종결이라 그 잡은 다시 돌지 않으므로 단계 산출을 원장에 남기지 않는다.
+        // 실패도 종결이라 그 잡은 다시 실행되지 않으므로 단계 산출을 원장에 남기지 않는다.
         await this.stageOutputs?.clear(input.jobId);
 
         await this.notification.jobUpdated(failed.userId, {

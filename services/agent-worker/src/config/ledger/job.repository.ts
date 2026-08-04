@@ -12,7 +12,7 @@ export class TypeOrmAiJobRepository {
         return this.repo.findOne({ where: { id } });
     }
 
-    /** 읽은 시점의 상태가 그대로일 때만 전이를 새기며 밀렸으면 거짓을 낸다. */
+    /** 읽은 시점의 상태가 그대로일 때만 전이를 기록하며 밀렸으면 거짓을 낸다. */
     async commitTransition(job: AiJobEntity, expected: readonly JobStatus[]): Promise<boolean> {
         const patch = {
             status: job.status,
@@ -55,7 +55,7 @@ export class TypeOrmAiJobStageOutputRepository {
     }
 
     async save(jobId: string, stage: string, slot: string, payload: unknown, now: Date): Promise<void> {
-        // 같은 단계를 다시 돈 시도가 앞선 산출을 덮지 않도록 먼저 적힌 것을 남긴다.
+        // 같은 단계를 다시 실행한 시도가 앞선 산출을 덮지 않도록 먼저 적힌 것을 남긴다.
         await this.repo
             .createQueryBuilder()
             .insert()

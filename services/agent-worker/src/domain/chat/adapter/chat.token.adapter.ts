@@ -25,7 +25,7 @@ export class ChatDraftTokenAdapter implements ChatDraftTokenPort {
     }
 }
 
-/** 실행 시도의 마감을 넘겨 살아남지 않는 범위 자격을 서명으로만 발급한다. */
+/** 실행 시도의 마감과 함께 만료하는 범위 자격을 서명으로만 발급한다. */
 export class ChatScopeTokenAdapter implements ChatScopeTokenPort {
     issue(grant: ChatScopeGrant, now: Date): string | null {
         return issueExecutionScopeToken({

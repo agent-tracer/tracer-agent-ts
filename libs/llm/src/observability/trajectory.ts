@@ -43,7 +43,7 @@ export class TrajectoryRecorder {
     private readonly steps: JobStepPayload[] = [];
     private lastStepAtMs: number;
 
-    /** durationMs는 직전 스텝 이후 흐른 시간이라 어느 호출이 시간을 먹었는지 궤적만 보고 답할 수 있다. */
+    /** durationMs는 직전 스텝 이후 흐른 시간이라 어느 호출이 시간을 썼는지 궤적만 보고 답할 수 있다. */
     constructor(private readonly nowMs: () => number = () => Date.now()) {
         this.lastStepAtMs = nowMs();
     }

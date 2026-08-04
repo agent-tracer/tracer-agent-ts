@@ -85,7 +85,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo.createQueryBuilder().update(ChatExecutionEntity)
             .set({ status: CHAT_EXECUTION_STATUS.canceled, completedAt: now, updatedAt: now })
             .where("id = :id", { id })
-            // running 행은 관측이 취소를 새겼거나 그 실행의 관측이 하나도 없을 때 닫는다.
+            // running 행은 관측이 취소를 기록했거나 그 실행의 관측이 하나도 없을 때 닫는다.
             .andWhere(`(status = :queued OR (status = :running AND (EXISTS (
                 SELECT 1 FROM agent_run_observations observation
                  WHERE observation.execution_id = chat_executions.id

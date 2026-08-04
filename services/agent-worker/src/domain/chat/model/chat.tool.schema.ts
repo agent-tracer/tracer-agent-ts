@@ -15,7 +15,7 @@ export interface ChatToolContract extends ContractToolFile {
     readonly responses: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
     /** 확인 대기 응답에 싣는 안내이며 두 구현체가 같은 문장을 모델에게 보인다. */
     readonly proposalNote: string;
-    /** 승인된 도구가 실행된 뒤 그 결과를 알리라고 이르는 문장이다. */
+    /** 승인된 도구가 실행된 뒤 그 결과를 알리도록 지시하는 문장이다. */
     readonly approvalReportNote: string;
     readonly failures: ToolFailureTexts;
 }
@@ -41,7 +41,7 @@ export const CHAT_TOOL_DEFINITIONS: readonly LlmToolDefinition[] =
 
 export const CHAT_TOOL_NAMES: readonly string[] = [...CHAT_TOOLS];
 
-/** 대화에는 rationale 필드가 없어 다른 에이전트와 문구가 나뉘어지므로 계약이 몫을 따로 갖는다. */
+/** 대화에는 rationale 필드가 없어 다른 에이전트와 문구가 갈리므로 계약이 몫을 따로 갖는다. */
 export const CHAT_TOOL_FAILURES: ToolFailureTexts = CHAT_TOOL_CONTRACT.failures;
 
 /** 도구 이름에 맞는 계약 shape로 원본 인자를 파싱하며 모델이 낸 값의 타입을 좁힌다. */

@@ -33,7 +33,7 @@ export const CHAT_EXECUTION_STATUSES = [
 
 export type ChatExecutionStatus = (typeof CHAT_EXECUTION_STATUSES)[number];
 
-/** 모델이 왜 말을 멈췄는지이며 실행 수명을 나타내는 status와 다른 축이다. */
+/** 모델이 응답을 멈춘 이유이며 실행 수명을 나타내는 status와 다른 축이다. */
 export const CHAT_STOP_REASON = {
     completed: "completed",
     deadline: "deadline",
@@ -56,7 +56,7 @@ export const CHAT_STOP_REASONS = [
 
 export type ChatStopReason = (typeof CHAT_STOP_REASONS)[number];
 
-/** 실행을 집을 때 스레드의 running 자리를 얻었는지의 판정이다. */
+/** 실행을 가져갈 때 스레드의 running 자리를 얻었는지의 판정이다. */
 export const CHAT_EXECUTION_CLAIM = {
     claimed: "claimed",
     threadBusy: "thread-busy",

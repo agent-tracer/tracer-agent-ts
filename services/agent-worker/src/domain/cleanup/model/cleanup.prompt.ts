@@ -71,7 +71,7 @@ export function buildCleanupUserPrompt(
     return lines.join("\n") + renderInspectReports(reports);
 }
 
-/** 후보별 검토 전문가가 올린 판정을 결정 호출이 읽을 근거로 편다. */
+/** 후보별 검토 전문가가 올린 판정을 결정 호출이 읽을 근거로 정리한다. */
 function renderInspectReports(reports: readonly InspectReport[]): string {
     if (reports.length === 0) return "";
     const lines = reports.map(

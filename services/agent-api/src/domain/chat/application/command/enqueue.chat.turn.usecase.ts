@@ -96,7 +96,7 @@ export class EnqueueChatTurnUseCase {
         );
         if (existing !== null) return this.existing(tx.chatMessages, existing, inputHash);
 
-        // 진행 중인 턴이 남아 있으면 두 실행이 같은 스레드를 나눠 나누어 순서가 역전된다.
+        // 진행 중인 턴이 남아 있으면 두 실행이 같은 스레드를 나눠 가져 순서가 역전된다.
         const active = await tx.chatExecutions.findLatestActiveByThread(input.threadId);
         if (active !== null) throw new ChatActiveTurnConflictError();
 

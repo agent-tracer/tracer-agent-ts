@@ -45,7 +45,7 @@ const OWNED = new Set([
 ]);
 
 const DATE_KEYS = new Set(["createdAt", "updatedAt", "startedAt", "completedAt"]);
-// 관측이 종결의 정본이므로 running 에서 접는 케이스는 그 관측을 먼저 심는다.
+// 관측이 종결의 정본이므로 running 에서 접는 케이스는 그 관측을 먼저 기록한다.
 const OBSERVED_STATUS: Record<string, string> = {
     completeRunning: "succeeded",
     failActive: "failed",

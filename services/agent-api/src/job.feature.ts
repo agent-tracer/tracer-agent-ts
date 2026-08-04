@@ -75,7 +75,7 @@ export const jobFeature = {
         { provide: JOB_CLOCK, useClass: SystemClock },
         JobUlidGenerator,
         { provide: JOB_ID_GENERATOR, useExisting: JobUlidGenerator },
-        // 로컬 자격으로 진행 중인 프로파일에서는 접수가 API 키를 묻지 않는다.
+        // 로컬 자격으로 실행되는 프로파일에서는 접수가 API 키를 묻지 않는다.
         { provide: LOCAL_CLI_AUTH, useFactory: () => loadApplicationConfig().profile === "local" },
         {
             provide: JOB_REPOSITORY,

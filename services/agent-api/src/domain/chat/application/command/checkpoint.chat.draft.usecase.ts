@@ -35,7 +35,7 @@ export class CheckpointChatDraftUseCase {
         if (!execution.acceptsDraftToken(this.draftTokens.hash(input.token))) {
             throw new ForbiddenException("Chat draft callback is not authorized");
         }
-        // 재시도가 붙인 시도 번호를 실행기가 알 길이 없으므로, 살아 있는 시진행 중인 정본이 정한다.
+        // 재시도가 붙인 시도 번호를 실행기가 알 길이 없으므로, 살아 있는 시도는 정본이 정한다.
         const stored = await this.executions.checkpointRunning(
             input.executionId,
             execution.attempt,

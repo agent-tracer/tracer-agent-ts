@@ -17,7 +17,7 @@ import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.
 import { readAgentPrompt, readAgentTools } from "~agent-worker/support/contract.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
-/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문으로 견주게 한다. */
+/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문과 비교하게 한다. */
 export const TITLE_PROMPT: AgentPrompt = buildAgentPrompt(
     readAgentPrompt(AGENT.titleSuggestion.id),
     readAgentTools(AGENT.titleSuggestion.id).limits ?? {},

@@ -27,7 +27,7 @@ function untilAnchor(
     return messages.slice(0, index + 1);
 }
 
-// 확인 게이트 때문에 결과 없는 도구 호출이 정상적으로 쌓이고, 거절당한 호출은 영영 짝이 없다.
+// 확인 게이트 때문에 결과 없는 도구 호출이 정상적으로 쌓이고, 거절당한 호출은 끝내 짝이 없다.
 function pairedCallIds(window: readonly ChatMessage[]): ReadonlySet<string> {
     const paired = new Set<string>();
     for (const [index, message] of window.entries()) {

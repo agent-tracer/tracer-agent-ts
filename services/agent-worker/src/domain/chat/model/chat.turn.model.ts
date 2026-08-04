@@ -86,7 +86,7 @@ export interface ChatTurnResult {
     readonly costUsd: number | null;
     readonly numTurns: number | null;
     readonly usage: AgentQueryUsage | null;
-    /** 모델이 왜 말을 멈췄는지이며 완료가 아니면 사용자가 이어서 진행할지 정해야 한다. */
+    /** 모델이 응답을 멈춘 이유이며 완료가 아니면 사용자가 이어서 진행할지 정해야 한다. */
     readonly stopReason: ChatStopReason;
     /** 성공이든 중단이든 그 시점까지의 모델과 도구 궤적이다. */
     readonly steps: readonly JobStepPayload[];

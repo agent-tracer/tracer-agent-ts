@@ -1,4 +1,4 @@
-/** 두 스키마를 견줄 때 남기는 뼈대이며 칸 이름과 반드시 실리는지와 열거값만 갖는다. */
+/** 두 스키마를 비교할 때 남기는 뼈대이며 칸 이름과 반드시 실리는지와 열거값만 갖는다. */
 export interface OutputSchemaShape {
     readonly always?: readonly string[];
     readonly enum?: readonly string[];
@@ -37,7 +37,7 @@ function hasDefault(root: Node, schema: unknown): boolean {
     return isNode(node) && "default" in node;
 }
 
-/** 값이 없다는 뜻의 대안은 칸의 모양을 말하지 않으므로 견줄 목록에서 뺀다. */
+/** 값이 없다는 뜻의 대안은 칸의 모양을 말하지 않으므로 비교 목록에서 뺀다. */
 function alternatives(root: Node, node: Node): readonly unknown[] | null {
     const declared = node["oneOf"] ?? node["anyOf"];
     if (!Array.isArray(declared)) return null;

@@ -9,7 +9,7 @@ export const JOB_IDEMPOTENCY_KEYS = {
     [JOB_KIND.ruleGeneration]: ["taskId", "anchorEventId", "focus", "maxRules", "intent"],
 } as const satisfies Record<JobKind, readonly string[]>;
 
-/** 두 구현체가 같은 바이트를 먹도록 그 종류가 정한 칸만 정해진 순서로 적는다. */
+/** 두 구현체가 같은 바이트를 만들도록 그 종류가 정한 칸만 정해진 순서로 적는다. */
 export function canonicalJobInput(kind: JobKind, input: Record<string, unknown>): string {
     const canonical: Record<string, unknown> = {};
     for (const key of JOB_IDEMPOTENCY_KEYS[kind]) canonical[key] = readPath(input, key) ?? null;

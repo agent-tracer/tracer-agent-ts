@@ -50,7 +50,7 @@ export async function streamChatExecution(
         }).catch(() => close());
     };
     unsubscribe = watch.subscribe(target.executionId, refresh);
-    // 깨움이 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.
+    // 신호가 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.
     heartbeat = setInterval(() => {
         if (!closed) refresh();
     }, STREAM_RULES.resendIntervalMs);

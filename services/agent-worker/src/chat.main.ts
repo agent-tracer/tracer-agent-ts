@@ -58,7 +58,7 @@ const CHAT_ENTITIES = [
     AgentRunObservationEntity,
 ] as const;
 
-// 배포가 진행 중인 언어 모델 호출을 끝까지 기다린 뒤에 프로세스를 내린다.
+// 배포가 내려갈 때 실행 중인 언어 모델 호출을 끝까지 기다린 뒤에 프로세스를 내린다.
 const SHUTDOWN_TIMEOUT_MS = 370_000;
 
 async function bootstrap(): Promise<void> {

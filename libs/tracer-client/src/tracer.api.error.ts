@@ -1,6 +1,6 @@
 import { DomainError, isApiErrorEnvelope } from "@tracer-agent/platform";
 
-/** 추적 API가 거절을 낼 수 없을 만큼 무너졌을 때 부르는 쪽이 보는 상태다. */
+/** 추적 API가 거절조차 내지 못하고 실패했을 때 부르는 쪽이 보는 상태다. */
 const UPSTREAM_FAILURE_STATUS = 502;
 
 /** 추적 API가 낸 거절이며 상태와 코드를 그대로 실어 부르는 쪽이 다시 분류하지 않게 한다. */

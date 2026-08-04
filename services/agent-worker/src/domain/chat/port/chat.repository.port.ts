@@ -9,7 +9,7 @@ export interface ChatExecutionRepositoryPort {
     findById(id: string): Promise<ChatExecution | null>;
     listQueuedByThread(threadId: string): Promise<ChatExecution[]>;
     claimQueued(id: string, now: Date): Promise<ChatExecutionClaim>;
-    /** 갱신이 끊긴 running을 queued로 되돌리며 threadId를 주면 그 스레드만 조회하는다. */
+    /** 갱신이 끊긴 running을 queued로 되돌리며 threadId를 주면 그 스레드만 조회한다. */
     recoverStaleRunning(idleBefore: Date, now: Date, threadId?: string): Promise<number>;
     beginAttempt(id: string, attempt: number, draftTokenHash: string, now: Date): Promise<boolean>;
     checkpointRunning(
@@ -61,7 +61,7 @@ export interface ChatExecutionStepRepositoryPort {
     insertMany(steps: readonly ChatExecutionStepRecord[]): Promise<void>;
 }
 
-/** 실행 관측을 원장에 한 번만 새기며 이미 있으면 거짓을 낸다. */
+/** 실행 관측을 원장에 한 번만 기록하며 이미 있으면 거짓을 낸다. */
 export interface AgentRunObservationRepositoryPort {
     record(userId: string, observation: AgentRunObservation, now: Date): Promise<boolean>;
 }

@@ -28,7 +28,7 @@ import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/jo
 
 const RECIPE_TOOLS = readAgentTools<RecipeToolContract>(AGENT.recipeScan.id);
 
-/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문으로 견주게 한다. */
+/** 계약이 선언한 조각으로 세운 프롬프트이며 조립 결과를 실제 본문과 비교하게 한다. */
 export const RECIPE_PROMPT: AgentPrompt = buildAgentPrompt(readAgentPrompt(AGENT.recipeScan.id), {
     ...(RECIPE_TOOLS.limits ?? {}),
 });

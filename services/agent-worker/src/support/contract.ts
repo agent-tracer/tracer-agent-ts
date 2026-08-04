@@ -112,7 +112,7 @@ export function readTracerOutputsCase(): TracerOutputsCase {
     return readContractJson<TracerOutputsCase>("conformance/cases/tracer.outputs.json");
 }
 
-/** 계약이 usage의 model 칸 하나에 못 박은 값의 규칙이다. */
+/** 계약이 usage의 model 칸 하나에 고정한 값의 규칙이다. */
 export interface JobUsageModelRule {
     readonly value: string;
     readonly example: string;
@@ -120,7 +120,7 @@ export interface JobUsageModelRule {
     readonly rateKey: string;
 }
 
-/** 계약이 끝내지 못한 잡의 usage 한 칸에 못 박은 모양이다. */
+/** 계약이 끝내지 못한 잡의 usage 한 칸에 고정한 모양이다. */
 export interface JobFailedUsageRule {
     readonly shape: string;
     readonly fields: readonly string[];

@@ -43,7 +43,7 @@ export async function chatThreadWorkflow(input: ChatThreadWorkflowInput): Promis
         for (;;) {
             const executionId = await getNextChatExecution(input.threadId);
             if (executionId === null) break;
-            // 같은 실행이 연달아 실패하면 큐에 그대로 남아 무한히 다시 집히므로 이번 회차를 줄인다.
+            // 같은 실행이 연달아 실패하면 큐에 그대로 남아 무한히 다시 선택되므로 이번 회차를 줄인다.
             if (executionId === lastFailed) break;
             try {
                 const child = await startChild(CHAT_EXECUTION_WORKFLOW, {

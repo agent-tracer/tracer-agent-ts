@@ -133,7 +133,7 @@ function listed(ids: readonly string[], limit: number, presorted = false): strin
     return remaining === 0 ? shown.join(", ") : `${shown.join(", ")} (+${remaining} more)`;
 }
 
-/** 조율자가 세운 계획을 종합 호출이 읽을 지시문으로 편다. */
+/** 조율자가 세운 계획을 종합 호출이 읽을 지시문으로 정리한다. */
 function renderRecipePlan(plan: DispatchPlan | null): string {
     if (plan === null || plan.probes.length === 0) return "";
     const lines = plan.probes.map(
@@ -142,7 +142,7 @@ function renderRecipePlan(plan: DispatchPlan | null): string {
     return "\n\nYour own plan for this investigation:\n" + lines.join("\n");
 }
 
-/** 전문가들이 올린 보고를 종합 호출이 읽을 근거로 편다. */
+/** 전문가들이 올린 보고를 종합 호출이 읽을 근거로 정리한다. */
 function renderRecipeReports(reports: readonly ProbeReport[]): string {
     if (reports.length === 0) return "";
     const blocks = reports.map((report) => {

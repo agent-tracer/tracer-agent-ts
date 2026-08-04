@@ -93,7 +93,7 @@ export class ConfirmToolUseCase {
             await this.appendToolMessage(input.threadId, pending.id, content, now);
             await this.announce(input.threadId);
             logInfo({ msg: "chat.tool.rejected", threadId: input.threadId, userId: input.userId, confirmationId: pending.id, toolName: pending.toolName });
-            // 하지 말라고 이미 답한 자리라 이어 말할 턴을 세우지 않는다.
+            // 거절로 이미 답한 자리라 이어 말할 턴을 세우지 않는다.
             return { confirmationId: pending.id, toolName: pending.toolName, status: pending.status, result: content, execution: null };
         }
 
@@ -122,7 +122,7 @@ export class ConfirmToolUseCase {
         anchorMessageId: string,
         now: Date,
     ): Promise<ChatExecution | null> {
-        // 이미 도는 턴이 있으면 그 턴이 결과를 이력으로 읽으므로 줄을 하나 더 세우지 않는다.
+        // 이미 실행 중인 턴이 있으면 그 턴이 결과를 이력으로 읽으므로 줄을 하나 더 세우지 않는다.
         if ((await this.executions.findLatestActiveByThread(input.threadId)) !== null) return null;
         const [previous] = await this.executions.listByThread(input.threadId, 1);
         const execution = ChatExecution.createFollowUp({

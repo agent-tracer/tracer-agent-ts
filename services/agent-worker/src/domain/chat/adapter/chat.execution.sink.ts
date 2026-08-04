@@ -44,7 +44,7 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
 
     readonly sink = {
         onAssistantDelta: (text: string) => this.push(text),
-        // 도구가 진행 중인 동안 draft가 멈추면 화면도 멈춰 사용자가 실행이 끝난 줄 안다.
+        // 도구가 실행되는 동안 draft가 멈추면 화면도 멈춰 사용자가 실행이 끝난 줄 안다.
         onToolCall: (call: ChatTurnToolCall) => this.push(toolMarker(call.name)),
         onToolResult: () => undefined,
         onMemoryUpdated: () => this.events.publish(this.executionId),

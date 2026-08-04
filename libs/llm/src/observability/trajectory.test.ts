@@ -18,7 +18,7 @@ describe("TrajectoryRecorder", () => {
 
         const steps = recorder.snapshot();
         expect(steps.map((step) => step.durationMs)).toEqual([12_000, 118_000]);
-        // 어느 호출이 시간을 먹었는지 궤적만 보고 답할 수 있어야 한다.
+        // 어느 호출이 시간을 썼는지 궤적만 보고 답할 수 있어야 한다.
         expect(steps[1]?.toolName).toBe("search_tasks");
     });
 

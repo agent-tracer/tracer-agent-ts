@@ -55,7 +55,7 @@ export interface ToolCallObservation extends AgentAttemptIdentity {
     readonly errorType: string | null;
 }
 
-/** 결정적 검증 결과의 요약이며 오류 코드는 원문 오류 메시지를 대신한다. */
+/** 결정론 검증 결과의 요약이며 오류 코드는 원문 오류 메시지를 대신한다. */
 export interface ValidationObservation {
     readonly passed: boolean;
     readonly errorCodes: readonly string[];

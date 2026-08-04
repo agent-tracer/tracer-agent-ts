@@ -6,7 +6,7 @@ import type { KafkaClient, KafkaProducer } from "~agent-api/config/kafka.factory
 import type { ChatExecutionUpdatePublisherPort } from "~agent-api/domain/chat/port/chat.execution.update.port.js";
 import { ChatExecutionEvents } from "./chat.execution.events.js";
 
-/** 이 프로세스의 열린 연결을 즉시 깨우고 다른 replica에는 식별자만 전달한다. */
+/** 이 프로세스의 열린 연결에는 즉시 알리고 다른 replica에는 식별자만 전달한다. */
 @Injectable()
 export class ChatExecutionUpdatePublisher implements ChatExecutionUpdatePublisherPort, OnModuleDestroy {
     private readonly producer: KafkaProducer;

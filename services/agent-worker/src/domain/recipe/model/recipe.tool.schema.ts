@@ -29,7 +29,7 @@ export type RecipeScanToolName = (typeof RECIPE_SCAN_TOOL)[keyof typeof RECIPE_S
 /** 계약이 배분을 적는 전문가의 축이며 도구 선언과 같은 어휘를 쓴다. */
 export type RecipeProbeName = "timeline" | "rules" | "repetition";
 
-/** 레시피 조사 도구 선언이며 조율자가 단독으로 쥐는 도구를 오케스트레이션 절이 갖는다. */
+/** 레시피 조사 도구 선언이며 조율자가 단독으로 가지는 도구를 오케스트레이션 절이 갖는다. */
 export interface RecipeToolContract extends ContractToolFile {
     readonly orchestration: {
         readonly workerMaxTurns: number;
@@ -76,7 +76,7 @@ export const MAX_SUMMARY_EVENT_WINDOW = contractIntMax(
     tool("get_task_summary"),
     "window",
 );
-/** 한 태스크가 서로 다른 작업 턴을 담을 수 있어 스캔 한 번이 낼 수 있는 후보 수다. */
+/** 한 태스크가 서로 다른 작업 턴을 담을 수 있으므로 스캔 한 번이 낼 수 있는 후보 수의 상한이다. */
 export const RECIPE_CANDIDATE_LIMIT = contractLimit(RECIPE_TOOL_CONTRACT, "recipeCandidateLimit");
 
 /** 한 번의 추가 파견 요청이 부를 수 있는 전문가 수의 상한이다. */
@@ -175,6 +175,6 @@ export function parseSearchRecipesArgs(raw: unknown): SearchRecipesArgs {
     return z.object(searchRecipesShape).parse(raw) as SearchRecipesArgs;
 }
 
-/** 도구가 무너졌을 때와 전문가 하나가 통째로 무너졌을 때 읽는 문구이며 값은 계약이 소유한다. */
+/** 도구가 실패했을 때와 전문가 하나가 통째로 실패했을 때 읽는 문구이며 값은 계약이 소유한다. */
 export const RECIPE_SCAN_FAILURES: ToolFailureTexts & { readonly workerFailed: string } =
     RECIPE_TOOL_CONTRACT.failures as ToolFailureTexts & { readonly workerFailed: string };

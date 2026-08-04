@@ -73,5 +73,5 @@ export function parseGetTaskEventsArgs(raw: unknown): GetTaskEventsArgs {
     return z.object(getTaskEventsShape).parse(raw) as GetTaskEventsArgs;
 }
 
-/** 도구가 무너졌을 때 모델이 읽는 문구이며 값은 계약이 소유한다. */
+/** 도구가 실패했을 때 모델이 읽는 문구이며 값은 계약이 소유한다. */
 export const TITLE_SUGGESTION_FAILURES: ToolFailureTexts = TITLE_TOOL_CONTRACT.failures;

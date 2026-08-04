@@ -6,7 +6,7 @@ import type { ChatTurnMessage, ChatUserFact } from "./chat.turn.model.js";
 
 export const CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY = "chat.assistant.system";
 
-/** 턴마다 같은 지침만 담아 프롬프트 캐시의 접두사가 되며 바뀌는 값은 이 뒤에 연결되는다. */
+/** 턴마다 같은 지침만 담아 프롬프트 캐시의 접두사가 되며 바뀌는 값은 이 뒤에 실린다. */
 export function buildChatSystemPrompt(prompt: AgentPrompt): string {
     const slot = (name: string): string => prompt.slot(CHAT_ASSISTANT_SYSTEM_TEMPLATE_KEY, name);
     return [

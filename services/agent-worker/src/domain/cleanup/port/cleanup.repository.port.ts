@@ -17,7 +17,7 @@ export interface CleanupScanBatch {
     readonly activeChildParentIds: readonly string[];
     /** 조회 상한에 걸려 배치가 태스크 전체를 담지 못했는지 여부다. */
     readonly truncated: boolean;
-    /** 후보로 좁히기 전 이번 스캔이 훑은 태스크 수다. */
+    /** 후보로 좁히기 전 이번 스캔이 조회한 태스크 수다. */
     readonly tasksScanned: number;
 }
 

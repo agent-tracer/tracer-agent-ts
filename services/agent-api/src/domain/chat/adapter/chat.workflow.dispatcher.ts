@@ -23,7 +23,7 @@ export class ChatWorkflowDispatcher implements ChatExecutionDispatcherPort, OnMo
     ) {}
 
     async onModuleInit(): Promise<void> {
-        // 주인이 사라진 running은 유니크 인덱스로 그 스레드의 다음 턴을 막으므로 기동할 때 한 번 조회하는다.
+        // 주인이 사라진 running은 유니크 인덱스로 그 스레드의 다음 턴을 막으므로 기동할 때 한 번 조회한다.
         const now = new Date();
         const recovered = await this.executions.recoverStaleRunning(
             new Date(now.getTime() - CHAT_RUNNING_LEASE_MS),

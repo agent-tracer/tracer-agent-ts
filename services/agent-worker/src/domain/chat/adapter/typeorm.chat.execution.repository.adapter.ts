@@ -138,7 +138,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
     }
 }
 
-/** running 행은 관측이 같은 종결을 새겼을 때 접으며 이미 접힌 행에 산출물을 붙이는 길이 이것을 쓴다. */
+/** running 행은 관측이 같은 종결을 기록했을 때 접으며 이미 접힌 행에 산출물을 붙이는 길이 이것을 쓴다. */
 function observedTerminalCondition(observedStatus: string): string {
     return `(status = :settled OR (status = :running AND ${observedBy(observedStatus)}))`;
 }

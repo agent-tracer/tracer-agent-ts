@@ -10,7 +10,7 @@ export class AiJobStageOutputEntity {
     @PrimaryColumn({ type: "text" })
     stage!: string;
 
-    /** 같은 단계가 팬아웃과 재파견으로 여러 번 진행 중인 자리를 구분한다. */
+    /** 같은 단계가 팬아웃과 재파견으로 여러 번 실행되는 자리를 구분한다. */
     @PrimaryColumn({ type: "text" })
     slot!: string;
 

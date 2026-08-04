@@ -31,7 +31,7 @@ export interface ChatExecutionDto {
     readonly modelUsed: string | null;
     readonly costUsd: number | null;
     readonly numTurns: number | null;
-    /** 모델이 왜 말을 멈췄는지이며 값이 없으면 아직 끝나지 않은 실행이다. */
+    /** 모델이 응답을 멈춘 이유이며 값이 없으면 아직 끝나지 않은 실행이다. */
     readonly stopReason: ChatStopReason | null;
     readonly error: string | null;
     readonly createdAt: string;

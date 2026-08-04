@@ -10,7 +10,7 @@ export class ChatMissingApiKeyError extends DomainError {
     }
 }
 
-/** 아직 끝나지 않은 턴이 있는데 새 턴을 접수하면 두 워크플로가 같은 스레드를 나눠 나누어 순서가 역전된다. */
+/** 아직 끝나지 않은 턴이 있는데 새 턴을 접수하면 두 워크플로가 같은 스레드를 나눠 가져 순서가 역전된다. */
 export class ChatActiveTurnConflictError extends DomainError {
     readonly httpStatus = 409;
     readonly code = "chat.execution-active-conflict";

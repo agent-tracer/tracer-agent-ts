@@ -53,7 +53,7 @@ export class ExecutionBudget {
         };
     }
 
-    /** 몫을 lease보다 먼저 잔량에서 떼어내 별도로 쥐므로 그 뒤의 lease가 이 몫을 침범하지 못한다. */
+    /** 몫을 lease보다 먼저 잔량에서 떼어내 별도로 가지므로 그 뒤의 lease가 이 몫을 침범하지 못한다. */
     reserve(turns: number, budgetShare = 0): AgentBudgetLease {
         if (turns < 0) throw new RangeError(`turns must be >= 0, got ${turns}`);
         if (budgetShare < 0 || budgetShare > 1) {

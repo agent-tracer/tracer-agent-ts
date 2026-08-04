@@ -6,7 +6,7 @@ export interface ToolPacingDecision {
 }
 
 export interface ToolPacing {
-    /** 예산이 다해 도구를 더 열지 않는 시점인지 그때그때 본다. */
+    /** 도구를 여는 자리마다 예산이 다해 더 열지 않는 시점인지 본다. */
     readonly landing: () => boolean;
     /** 그때까지 쓴 모델 호출 턴이다. */
     readonly modelTurns: () => number;

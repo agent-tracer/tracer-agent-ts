@@ -23,7 +23,7 @@ export interface ErrorSubtypeContract {
     readonly provider: Readonly<Record<string, ProviderErrorSubtypeVerdict>>;
 }
 
-/** 상위 분류가 거느린 하위 종류를 판정과 함께 편다. */
+/** 상위 분류가 거느린 하위 종류를 판정과 함께 나열한다. */
 export function flattenErrorSubtypeClasses(
     contract: ErrorSubtypeContract,
 ): readonly (ErrorSubtypeClass & { readonly subtype: string })[] {
@@ -51,7 +51,7 @@ export const AGENT_ERROR_SUBTYPE = {
 
 export type AgentErrorSubtype = (typeof AGENT_ERROR_SUBTYPE)[keyof typeof AGENT_ERROR_SUBTYPE];
 
-// 공급자가 붙여 온 이름을 그대로 통과시키는 값이라 이 실행기는 내지 않고 판정만 받은다.
+// 공급자가 붙여 온 이름을 그대로 통과시키는 값이라 이 실행기는 내지 않고 판정만 받는다.
 export const PROVIDER_ERROR_SUBTYPE = {
     authentication: "authentication_error",
     permission: "permission_error",

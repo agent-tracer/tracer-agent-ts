@@ -79,7 +79,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             }
         }
 
-        // 이미 실행한 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산을 감당하는지로 다음 호출 가능 여부를 예측한다.
+        // 이미 실행한 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산 안에 드는지로 다음 호출 가능 여부를 예측한다.
         let runningCostUsd = 0;
         let peakCallCostUsd = 0;
         let landing = false;
@@ -142,7 +142,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 // 부분 메시지가 켜졌을 때만 나오며 어시스턴트 텍스트 조각을 도착하는 대로 전송한다.
                 if (msg.type === "stream_event") {
                     if (sink !== undefined) {
-                        // 사고 블록과 도구 인자 스트리밍은 텍스트를 안 내지만 실행이 나아가고 있다는 신호다.
+                        // 사고 블록과 도구 인자 스트리밍은 텍스트를 내지 않지만 실행이 나아가고 있다는 신호다.
                         sink.onProgress?.();
                         const delta = partialAssistantDeltaText(msg.event);
                         if (delta.length > 0) sink.onAssistantDelta(delta);

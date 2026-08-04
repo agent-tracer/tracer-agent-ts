@@ -1,16 +1,16 @@
 import { taskQueueName } from "~agent-worker/support/task.queue.js";
 import { taskQueuePrefix } from "~agent-worker/config/task.queue.js";
 
-/** 대화 실행의 워크플로와 액티비티가 진행 중인 큐이며 접수와 워커가 함께 쓴다. */
+/** 대화 실행의 워크플로와 액티비티가 실행되는 큐이며 접수와 워커가 함께 쓴다. */
 export const CHAT_EXECUTION_TASK_QUEUE = taskQueueName(taskQueuePrefix(), "chat");
 
-/** 잡 워크플로와 짧은 액티비티가 진행 중인 큐이며 접수와 워커가 함께 쓴다. */
+/** 잡 워크플로와 짧은 액티비티가 실행되는 큐이며 접수와 워커가 함께 쓴다. */
 export const JOB_TASK_QUEUE = taskQueueName(taskQueuePrefix(), "jobs");
 
-/** 최대 15분인 생성 액티비티가 짧은 액티비티의 슬롯을 굶기지 않도록 분리한 큐다. */
+/** 최대 15분인 생성 액티비티가 짧은 액티비티의 슬롯을 막지 않도록 분리한 큐다. */
 export const GENERATE_TASK_QUEUE = taskQueueName(taskQueuePrefix(), "generate");
 
-/** 스레드 안의 실행을 하나씩 접는 스레드 워크플로의 이름이다. */
+/** 스레드 안의 실행을 하나씩 실행하는 스레드 워크플로의 이름이다. */
 export const CHAT_THREAD_WORKFLOW = "chatThreadWorkflow";
 
 /** 스레드 워크플로가 실행 하나마다 띄우는 자식 워크플로의 이름이다. */

@@ -18,7 +18,7 @@ export function leaseExpiryFrom(now: Date): Date {
     return new Date(now.getTime() + JOB_LEASE_TTL_MS);
 }
 
-/** 리스를 놓친 실행기가 자기 것으로 착각하지 않도록 쥔 사람과 수명을 함께 낸다. */
+/** 리스를 놓친 실행기가 자기 것으로 착각하지 않도록 리스를 가진 실행기와 수명을 함께 낸다. */
 export function leaseOf(owner: string | null, expiresAt: Date | null, requester: string, now: Date): JobLease {
     const alive = expiresAt !== null && expiresAt.getTime() > now.getTime();
     return {

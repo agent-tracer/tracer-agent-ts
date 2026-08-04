@@ -128,7 +128,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const checked = validateCleanupSuggestions(decision.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
         if (checked.errors.length === 0) return buildCleanupOutput(ctx, segments, checked.valid, decision.modelUsed);
 
-        // 예약된 몫마저 소진되 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
+        // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
 
         const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);

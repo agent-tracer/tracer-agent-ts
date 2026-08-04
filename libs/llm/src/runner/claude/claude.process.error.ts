@@ -1,7 +1,7 @@
 import { logWarn } from "@tracer-agent/platform";
 import { redactText } from "~llm/support/redaction.js";
 
-/** 진단에 필요한 것은 꼬리이므로 이만큼만 들고 있고 앞쪽은 전송한다. */
+/** 진단에 필요한 것은 꼬리이므로 이만큼만 들고 있고 앞쪽은 버린다. */
 const MAX_CHARS = 4000;
 
 /** 하위 Claude 프로세스의 오류 출력을 모아 두었다가 실행이 그 프로세스 탓으로 끝났을 때만 남긴다. */

@@ -31,7 +31,7 @@ export interface EnqueueJobOptions {
     readonly idempotencyKey?: string;
 }
 
-/** 잡 하나를 접수해 원장에 적고 워크플로가 진행 중인 종류면 실행을 기동한다. */
+/** 잡 하나를 접수해 원장에 적고 워크플로가 실행하는 종류면 실행을 기동한다. */
 @Injectable()
 export class EnqueueJobUseCase {
     constructor(
@@ -54,7 +54,7 @@ export class EnqueueJobUseCase {
     ): Promise<{ readonly job: JobDto }> {
         if (kind === JOB_KIND.ruleGeneration) await this.validateRuleAnchor(userId, input);
         if (kind === JOB_KIND.recipeScan) await this.validateScanAnchor(userId, input);
-        // 로컬 자격으로 진행 중인 이미지는 API 키가 필요 없어 접수 검사를 건너뛴다.
+        // 로컬 자격으로 실행되는 이미지는 API 키가 필요 없어 접수 검사를 건너뛴다.
         if (kind !== JOB_KIND.ruleGeneration && !this.localCliAuth) {
             const apiKey = await this.settings.findByScopeAndKey(userId, JOB_API_KEY_SETTING);
             if (apiKey === null || apiKey.length === 0) {

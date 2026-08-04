@@ -74,7 +74,7 @@ export function pushRouteSelected(segments: RunSegment[], nodeName: string, cont
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.routeSelected, content);
 }
 
-/** 검증이 걸어낸 사유를 궤적에 남긴다. */
+/** 검증이 걸러낸 사유를 궤적에 남긴다. */
 export function pushValidationFailed(segments: RunSegment[], nodeName: string, content: string): void {
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
 }

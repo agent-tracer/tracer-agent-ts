@@ -19,7 +19,7 @@ import {
 const { reservation, wallClock } = loadExecutionBudgetContract();
 const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
 
-// 첫 실행이 예산을 거의 다 써도 수리가 도구를 쥔 채 출력을 낼 최소 여지는 남긴다.
+// 첫 실행이 예산을 거의 다 써도 수리가 도구를 가진 채 출력을 낼 최소 여지는 남긴다.
 export const REPAIR_RESERVED_TURNS = reservation.repair.turns;
 export const REPAIR_RESERVED_BUDGET_SHARE = reservation.repair.budgetShare;
 
@@ -33,7 +33,7 @@ export const MIN_SYNTHESIS_TURNS = reservation.synthesisFloor.turns;
 /** 조율자가 진전 없이 머무는 상한이다. */
 export const SURVEY_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.survey);
 
-/** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 진행 중인 것을 막지 않는다. */
+/** 전문가가 진전 없이 머무는 상한이며 몫이 큰 전문가가 자연히 더 오래 실행되는 것을 막지 않는다. */
 export const PROBE_WALL_CLOCK_CEILING_MS = deadlineFractionMs(RECIPE_LIMITS.deadlineMs, wallClock.probe);
 
 /** 종합과 수리가 진전 없이 머무는 상한이다. */
