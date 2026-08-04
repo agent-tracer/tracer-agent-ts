@@ -1,13 +1,15 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
+import type { CleanupBatch, CleanupCandidate } from "./cleanup.candidate.model.js";
 import type { InspectReport } from "./cleanup.dispatch.schema.js";
-import { CLEANUP_TOOL_CONTRACT } from "./cleanup.tool.schema.js";
+import { CLEANUP_TOOL_CONTRACT, TRIAGE_CANDIDATE_LIST_LIMIT } from "./cleanup.tool.schema.js";
 
 export const CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "task-cleanup.investigator.system" as const;
 export const CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY = "task-cleanup.investigator.repair" as const;
 export const CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY = "task-cleanup.triage.system" as const;
 export const CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY = "task-cleanup.inspect.system" as const;
+export const CLEANUP_TRIAGE_USER_TEMPLATE_KEY = "task-cleanup.triage.user" as const;
 
 
 // 프롬프트 캐시는 접두사 일치라 시스템 프롬프트에 요청마다 바뀌는 값이 섞이면 매 요청 무효화된다.
@@ -93,11 +95,34 @@ export function buildCleanupTriageSystemPrompt(prompt: AgentPrompt): string {
     ].join("\n");
 }
 
-export function buildCleanupTriagePrompt(candidateCount: number): string {
-    return [
-        `Candidates in this batch: ${candidateCount}`,
-        "Call list_candidate_tasks to see them before deciding.",
-    ].join("\n");
+/** 서버가 선별한 후보를 요청이 직접 실어, 조율자가 되읽지 않고 고르게 한다. */
+export function buildCleanupTriagePrompt(
+    prompt: AgentPrompt,
+    batch: CleanupBatch,
+    limit: number = TRIAGE_CANDIDATE_LIST_LIMIT,
+): { readonly text: string; readonly listed: readonly CleanupCandidate[] } {
+    const slot = (name: string): string => prompt.slot(CLEANUP_TRIAGE_USER_TEMPLATE_KEY, name);
+    const listed = batch.candidates.slice(0, limit);
+    const lines = [`Candidates in this batch: ${batch.candidates.length}`];
+    if (listed.length > 0) {
+        lines.push("", slot("candidateList"), ...listed.map(candidateLine));
+    }
+    if (batch.candidates.length > listed.length || batch.batchTruncated) {
+        lines.push("", slot("candidateOverflow"));
+    }
+    return { text: lines.join("\n"), listed };
+}
+
+/** 후보 하나가 조율자에게 보이는 한 줄이며 제목은 구분자를 담을 수 있어 뒤에 둔다. */
+function candidateLine(candidate: CleanupCandidate): string {
+    const reasons = candidate.candidateReasons.join(", ");
+    return (
+        `- ${candidate.id} | ${candidate.status}` +
+        ` | events: ${candidate.hasEvents ? "yes" : "no"}` +
+        ` | last: ${candidate.lastEventAt ?? "none"}` +
+        ` | reasons: ${reasons}` +
+        ` | title: ${candidate.visibleTitle}`
+    );
 }
 
 export function buildCleanupInspectSystemPrompt(prompt: AgentPrompt): string {

@@ -33,7 +33,7 @@ flowchart TD
 
 | 단계 | 입력 | 도구 | 출력 |
 | --- | --- | --- | --- |
-| `triage` | 정리 기준, 시간 범위, 최대 제안 수 | `list_candidate_tasks` | inspect assignment와 후보 ledger |
+| `triage` | 요청이 실어 준 후보 배치, 최대 제안 수 | 없음 | inspect assignment와 후보 ledger |
 | `inspect` | 후보 task ID, 보관 기준 | `get_task_events` | `InspectReport`와 후보별 ledger |
 | `decide` | triage·inspect 보고서, 언어, 제안 제한 | 없음 (`CLEANUP_COORDINATOR_TOOLS = []`) | `CleanupDecision` |
 | `repair` | 직전 결정, 검증 오류 | 없음 | 재검증 가능한 제안 목록 |
@@ -58,7 +58,7 @@ sequenceDiagram
 
 ## 도구 타입
 
-Cleanup MCP server 이름은 `monitor-task-cleanup`이다. triage는 `list_candidate_tasks`만 사용하고, inspect는 `get_task_events`만 사용한다. decide는 도구를 사용하지 않으므로 `cleanup.sdk.query.ts`는 해당 호출에서 `mcpServers`를 생략한다.
+Cleanup MCP server 이름은 `monitor-task-cleanup`이다. triage는 도구를 갖지 않고 요청이 실어 준 후보 배치만 보며, inspect는 `get_task_events`만 사용한다. decide는 도구를 사용하지 않으므로 `cleanup.sdk.query.ts`는 해당 호출에서 `mcpServers`를 생략한다.
 
 | 정책 | 적용 내용 |
 | --- | --- |
@@ -71,7 +71,6 @@ Cleanup MCP server 이름은 `monitor-task-cleanup`이다. triage는 `list_candi
 
 ```mermaid
 flowchart TD
-    TRIAGE[triage query] --> LT[list_candidate_tasks]
     LT --> LEDGER1[triage provenance ledger]
     LEDGER1 --> INSPECT[inspect query]
     INSPECT --> ET[get_task_events]

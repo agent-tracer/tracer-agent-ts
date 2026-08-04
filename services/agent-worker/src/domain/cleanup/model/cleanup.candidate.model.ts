@@ -72,34 +72,11 @@ export function buildCleanupCandidates(input: BuildCleanupCandidatesInput): read
     return candidates;
 }
 
-/** 후보 목록 도구가 내주는 한 페이지다. */
-export interface CleanupCandidatePage {
+/** 서버가 이번 스캔 대상으로 미리 자격 심사한 후보 배치다. */
+export interface CleanupBatch {
     readonly candidates: readonly CleanupCandidate[];
-    readonly truncated: boolean;
-    readonly nextCursor?: string;
-    readonly total: number;
-    readonly moreCandidatesOutsideBatch: boolean;
-}
-
-/** 후보 목록을 커서로 잘라 한 페이지를 낸다. */
-export function toCleanupCandidatePage(
-    candidates: readonly CleanupCandidate[],
-    limit: number,
-    batchTruncated: boolean,
-    cursor?: string,
-): CleanupCandidatePage {
-    const start = cursor !== undefined ? Number(cursor) : 0;
-    const from = Number.isFinite(start) && start > 0 ? start : 0;
-    const page = candidates.slice(from, from + limit);
-    const nextIndex = from + page.length;
-    const truncated = nextIndex < candidates.length;
-    return {
-        candidates: page,
-        truncated,
-        ...(truncated ? { nextCursor: String(nextIndex) } : {}),
-        total: candidates.length,
-        moreCandidatesOutsideBatch: batchTruncated,
-    };
+    /** 서버 조회 상한에 걸려 이번 배치가 후보 전체를 담지 못했는지 여부다. */
+    readonly batchTruncated: boolean;
 }
 
 function countActiveChildren(parentIds: readonly string[]): Map<string, number> {

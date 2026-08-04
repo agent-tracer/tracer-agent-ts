@@ -17,7 +17,7 @@ export interface CleanupTriageRun {
     readonly ledger: CleanupProvenanceLedger;
 }
 
-/** 선별이 후보 목록 도구만 가지고 무엇을 조사할지 정하게 하며, 노출한 후보를 자기 장부에 남긴다. */
+/** 선별이 요청에 실린 후보 목록만 보고 무엇을 조사할지 정하게 하며, 실어 준 후보를 자기 장부에 남긴다. */
 export async function runCleanupTriage(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,
@@ -26,9 +26,12 @@ export async function runCleanupTriage(
 ): Promise<CleanupTriageRun> {
     const ledger = new CleanupProvenanceLedger();
     const systemPrompt = buildCleanupTriageSystemPrompt(ctx.prompt);
+    // 요청이 실어 준 후보가 곧 조율자가 본 후보이므로 노출 목록을 여기서 결정적으로 세운다.
+    const triage = buildCleanupTriagePrompt(ctx.prompt, batch);
+    ledger.recordCandidates(triage.listed);
     const result = await runCleanupQuery(ctx, {
         label: `${TASK_CLEANUP_SPEC.name}:triage`,
-        prompt: buildCleanupTriagePrompt(batch.candidates.length),
+        prompt: triage.text,
         systemPrompt,
         toolNames: TRIAGE_TOOL_NAMES,
         handlers: buildCleanupToolHandlers(ctx.input.userId, deps, batch, ledger),

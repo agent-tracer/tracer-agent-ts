@@ -1,21 +1,15 @@
 import { type ToolHandlers, withToolTelemetry } from "@tracer-agent/llm";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { clampInt } from "~agent-worker/support/clamp.js";
-import {
-    toCleanupCandidatePage,
-    type CleanupCandidate,
-} from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
+import type { CleanupBatch } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
 import { toCleanupEventPage, type CleanupSlimEvent } from "~agent-worker/domain/cleanup/model/cleanup.event.model.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import {
-    DEFAULT_CANDIDATE_LIMIT,
     DEFAULT_EVENT_LIMIT,
     DEFAULT_EVENT_ORDER,
     EVENT_ORDER,
-    MAX_CANDIDATE_LIMIT,
     MAX_EVENT_LIMIT,
     parseGetTaskEventsArgs,
-    parseListCandidateTasksArgs,
     TASK_CLEANUP_TOOL,
 } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import type { CleanupEvent, CleanupEventReaderPort, CleanupTaskReaderPort } from "~agent-worker/domain/cleanup/port/cleanup.reader.port.js";
@@ -28,12 +22,8 @@ export interface CleanupToolDeps {
     readonly events: CleanupEventReaderPort;
 }
 
-/** 이번 실행의 후보 배치이며 도구가 모델에게 그대로 내준다. */
-export interface CleanupToolBatch {
-    readonly candidates: readonly CleanupCandidate[];
-    /** 서버 조회 상한에 걸려 이번 배치가 후보 전체를 담지 못했는지 여부다. */
-    readonly batchTruncated: boolean;
-}
+/** 이번 실행의 후보 배치이며 요청이 조율자에게 그대로 실어 준다. */
+export type CleanupToolBatch = CleanupBatch;
 
 /** 사용자 범위와 후보 배치와 실행 단위 근거 장부를 고정한 cleanup 슬라이스 소유의 도구 핸들러를 만든다. */
 export function buildCleanupToolHandlers(
@@ -44,19 +34,6 @@ export function buildCleanupToolHandlers(
 ): ToolHandlers {
     const candidateIds = new Set(batch.candidates.map((candidate) => candidate.id));
     return {
-        [TASK_CLEANUP_TOOL.listCandidateTasks]: async (raw) => {
-            const { limit, cursor } = parseListCandidateTasksArgs(raw);
-            return withToolTelemetry(
-                { toolName: TASK_CLEANUP_TOOL.listCandidateTasks, agentName: AGENT_NAME, parameters: { limit, cursor } },
-                () => {
-                    const size = clampInt(limit, DEFAULT_CANDIDATE_LIMIT, 1, MAX_CANDIDATE_LIMIT);
-                    const page = toCleanupCandidatePage(batch.candidates, size, batch.batchTruncated, cursor);
-                    ledger.recordCandidates(page.candidates);
-                    return Promise.resolve(JSON.stringify(page));
-                },
-            );
-        },
-
         [TASK_CLEANUP_TOOL.getTaskEvents]: async (raw) => {
             const { taskId, limit, cursor, order } = parseGetTaskEventsArgs(raw);
             if (!candidateIds.has(taskId)) return `Task ${taskId} not found.`;

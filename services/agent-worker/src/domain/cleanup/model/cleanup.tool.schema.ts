@@ -14,7 +14,6 @@ import { AGENT } from "~agent-worker/support/agent.const.js";
 import { readAgentTools } from "~agent-worker/support/contract.js";
 
 export const TASK_CLEANUP_TOOL = {
-    listCandidateTasks: "list_candidate_tasks",
     getTaskEvents: "get_task_events",
 } as const;
 
@@ -44,17 +43,6 @@ export const MAX_EVENT_LIMIT = contractIntMax(
     TASK_CLEANUP_TOOL.getTaskEvents,
     "limit",
 );
-export const DEFAULT_CANDIDATE_LIMIT = contractIntDefault(
-    CLEANUP_TOOL_CONTRACT,
-    TASK_CLEANUP_TOOL.listCandidateTasks,
-    "limit",
-);
-export const MAX_CANDIDATE_LIMIT = contractIntMax(
-    CLEANUP_TOOL_CONTRACT,
-    TASK_CLEANUP_TOOL.listCandidateTasks,
-    "limit",
-);
-
 /** 한 실행이 낼 수 있는 제안의 상한이다. */
 export const CLEANUP_MAX_SUGGESTIONS = contractLimit(CLEANUP_TOOL_CONTRACT, "maxSuggestions");
 
@@ -70,9 +58,12 @@ export const MAX_REDISPATCH_ROUNDS = contractLimit(CLEANUP_TOOL_CONTRACT, "maxRe
 /** 후보 하나에 배정할 수 있는 검토 몫의 상한이다. */
 export const MAX_INSPECT_WEIGHT = contractLimit(CLEANUP_TOOL_CONTRACT, "maxInspectWeight");
 
-const listCandidateTasksShape = contractToolShape(
-    CLEANUP_TOOL_CONTRACT.tools[TASK_CLEANUP_TOOL.listCandidateTasks]!,
+/** 조율자 요청이 싣는 후보 수의 상한이다. */
+export const TRIAGE_CANDIDATE_LIST_LIMIT = contractLimit(
+    CLEANUP_TOOL_CONTRACT,
+    "triageCandidateListLimit",
 );
+
 const getTaskEventsShape = contractToolShape(
     CLEANUP_TOOL_CONTRACT.tools[TASK_CLEANUP_TOOL.getTaskEvents]!,
 );
@@ -83,20 +74,11 @@ export const TASK_CLEANUP_TOOLS: readonly LlmToolDefinition[] =
 
 export const TASK_CLEANUP_TOOL_NAMES: readonly string[] = TASK_CLEANUP_TOOLS.map((spec) => spec.name);
 
-export interface ListCandidateTasksArgs {
-    readonly limit?: number;
-    readonly cursor?: string;
-}
-
 export interface GetTaskEventsArgs {
     readonly taskId: string;
     readonly limit?: number;
     readonly cursor?: string;
     readonly order?: EventOrder;
-}
-
-export function parseListCandidateTasksArgs(raw: unknown): ListCandidateTasksArgs {
-    return z.object(listCandidateTasksShape).parse(raw);
 }
 
 export function parseGetTaskEventsArgs(raw: unknown): GetTaskEventsArgs {
