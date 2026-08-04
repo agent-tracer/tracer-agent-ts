@@ -24,7 +24,7 @@ import {
 import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.spec.js";
 import type { TitleSuggestionsList } from "~agent-worker/domain/title/model/title.suggestion.schema.js";
 import { TITLE_SUGGESTION_TOOL_NAMES } from "~agent-worker/domain/title/model/title.tool.schema.js";
-import { validateTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
+import { normalizeTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
 import type {
     GenerateTitleSuggestionsInput,
     GenerateTitleSuggestionsOutput,
@@ -98,8 +98,8 @@ export class TitleAgentAdapter implements TitleAgentPort {
         budget.settle(firstLease, { costUsd: first.costUsd, numTurns: first.numTurns });
         const runs: RunSegment[] = [{ run: first, nodeName: AGENT_NODE.investigate }];
 
-        const errors = validateTitleSuggestions(first.data.suggestions, input.context.title);
-        if (errors.length === 0) return toOutput(input, runs, first.data.suggestions);
+        const firstPass = normalizeTitleSuggestions(first.data.suggestions, input.context.title);
+        if (firstPass.errors.length === 0) return toOutput(input, runs, firstPass.kept);
 
         // 예약된 몫마저 소진되 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) return toOutput(input, runs, []);
@@ -110,7 +110,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
             repaired = await this.runOnce(
                 input,
                 handlers,
-                buildTitleRepairPrompt(prompt, basePrompt, first.data, errors),
+                buildTitleRepairPrompt(prompt, basePrompt, first.data, firstPass.errors),
                 repairLease,
                 systemPrompt,
             );
@@ -122,8 +122,8 @@ export class TitleAgentAdapter implements TitleAgentPort {
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         runs.push({ run: repaired, nodeName: AGENT_NODE.repair });
 
-        const remaining = validateTitleSuggestions(repaired.data.suggestions, input.context.title);
-        return toOutput(input, runs, remaining.length === 0 ? repaired.data.suggestions : []);
+        const repairedPass = normalizeTitleSuggestions(repaired.data.suggestions, input.context.title);
+        return toOutput(input, runs, repairedPass.errors.length === 0 ? repairedPass.kept : []);
     }
 
     private runOnce(

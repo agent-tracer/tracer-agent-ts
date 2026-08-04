@@ -93,7 +93,7 @@ title-suggestion.investigator.repair
 
 ## 미들웨어와 출력 타입
 
-Title query는 `allowedTools`에 `get_task_events`만 넣고, `ClaudeQueryRunner`의 공통 deadline·landing hook·redaction·trajectory 수집을 적용한다. `runStructuredQuery`가 JSON과 zod schema를 검증한 후 `validateTitleSuggestions`가 제목 도메인 규칙을 확인한다. 검증 실패가 repair lease를 소진하면 task를 변경하지 않고 빈 결과를 반환한다.
+Title query는 `allowedTools`에 `get_task_events`만 넣고, `ClaudeQueryRunner`의 공통 deadline·landing hook·redaction·trajectory 수집을 적용한다. `runStructuredQuery`가 JSON과 zod schema를 검증한 후 `normalizeTitleSuggestions`가 되풀이와 중복과 자리표시자 후보를 지우고 남은 수가 모자랄 때만 사유를 낸다. 그 사유가 repair lease를 소진하면 task를 변경하지 않고 빈 결과를 반환한다.
 
 ```mermaid
 flowchart TD
@@ -102,7 +102,7 @@ flowchart TD
     RUN --> TOOL[get_task_events]
     TOOL --> RUN
     RUN --> ZOD[titleSuggestionsListSchema]
-    ZOD --> DOMAIN[validateTitleSuggestions]
+    ZOD --> DOMAIN[normalizeTitleSuggestions]
     DOMAIN -->|pass| RESULT[title candidates]
     DOMAIN -->|fail| REPAIR{repair lease?}
     REPAIR -- yes --> RUN

@@ -11,7 +11,7 @@ import type {
     TitleSuggestionPrep,
 } from "~agent-worker/domain/title/model/title.job.model.js";
 import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.spec.js";
-import { validateTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
+import { normalizeTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
 import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
@@ -55,8 +55,8 @@ export class SuggestTitleUsecase {
         }
 
         // 실행기가 자기 수리 회차 안에서 이미 본 제약이지만 같은 판정을 통과한 제목만 저장한다.
-        const rejected = validateTitleSuggestions(output.suggestions, prep.currentTitle);
-        const suggestions = rejected.length === 0 ? output.suggestions : [];
+        const normalized = normalizeTitleSuggestions(output.suggestions, prep.currentTitle);
+        const suggestions = normalized.errors.length === 0 ? normalized.kept : [];
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
         const { attempts, costUsd } = await this.repository.foldSuccessAttempt(
@@ -74,7 +74,7 @@ export class SuggestTitleUsecase {
             jobSteps,
             attempt: run.attempt,
             attempts,
-            observation: rejected.length === 0
+            observation: normalized.errors.length === 0
                 ? output.observation
                 : {
                     ...output.observation,
