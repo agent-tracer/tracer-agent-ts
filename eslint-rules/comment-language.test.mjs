@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { findFigurative, malformedKorean } from "./comment-language.mjs";
+import { REGISTER_WORDS } from "../scripts/check-commit-msg.mjs";
+import { FIGURATIVE, findFigurative, malformedKorean } from "./comment-language.mjs";
+
+const surfacesOf = (table) => table.map(([pattern, plain]) => [pattern.source, plain]);
 
 describe("주석 어휘 검사기", () => {
   it("은유의 활용형을 잡고 대신 쓸 동사를 알린다", () => {
@@ -30,6 +33,10 @@ describe("주석 어휘 검사기", () => {
     assert.equal(malformedKorean("이 스레드만 조회한다"), null);
     assert.equal(malformedKorean("노드 이름과 실행을 한 객체에 모은다"), null);
     assert.equal(malformedKorean("갱신이 끊긴 실행을 대기 자리로 되돌린다"), null);
+  });
+
+  it("커밋 메시지 검사기와 같은 표를 쓴다", () => {
+    assert.deepEqual(surfacesOf(FIGURATIVE), surfacesOf(REGISTER_WORDS));
   });
 
   it("받침 있는 말 뒤의 목적격 조사를 잡는다", () => {
