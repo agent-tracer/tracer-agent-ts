@@ -4,8 +4,9 @@ import { ClaimRuleJobUseCase } from "~agent-api/domain/job/application/command/c
 import { ReleaseRuleJobUseCase } from "~agent-api/domain/job/application/command/release.rule.job.usecase.js";
 import { RenewRuleJobLeaseUseCase } from "~agent-api/domain/job/application/command/renew.rule.job.lease.usecase.js";
 import { SettleRuleJobUseCase } from "~agent-api/domain/job/application/command/settle.rule.job.usecase.js";
-import { JOB_STATUS, type JobStatus } from "~agent-api/domain/job/model/job.const.js";
+import { JOB_STATUS } from "~agent-api/domain/job/model/job.const.js";
 import { JobLeaseHeldError, LeaseOwnerMissingError } from "~agent-api/domain/job/model/job.errors.js";
+import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
 import { MONITOR_LEASE_OWNER_HEADER } from "~agent-api/domain/job/model/job.lease.const.js";
 import { failureBodySchema, reportBodySchema, type FailureBody, type ReportBody } from "./job.lease.schema.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
@@ -85,7 +86,8 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
         @Body(new SchemaValidationPipe(reportBodySchema)) body: ReportBody,
     ) {
-        return this.settle(user, owner, id, { status: JOB_STATUS.completed, result: { ...body } });
+        const { usage, steps, ...result } = body;
+        return this.settle(user, owner, id, { status: JOB_STATUS.completed, result, usage, steps });
     }
 
     @Post(":id/fail")
@@ -96,7 +98,12 @@ export class JobCommandController {
         @Param("id", pathParamPipe) id: string,
         @Body(new SchemaValidationPipe(failureBodySchema)) body: FailureBody,
     ) {
-        return this.settle(user, owner, id, { status: JOB_STATUS.failed, error: body.message });
+        return this.settle(user, owner, id, {
+            status: JOB_STATUS.failed,
+            error: body.message,
+            usage: body.usage,
+            steps: body.steps,
+        });
     }
 
     @Post(":id/release")
@@ -115,7 +122,7 @@ export class JobCommandController {
         user: string | undefined,
         owner: string | undefined,
         id: string,
-        outcome: { status: JobStatus; result?: Record<string, unknown>; error?: string },
+        outcome: JobSettlement,
     ) {
         const settled = await this.settleRuleJob.execute(resolveUserId(user), id, leaseOwnerOf(owner), outcome, new Date());
         if (settled === "not-found") throw new NotFoundException("Job execution not found");

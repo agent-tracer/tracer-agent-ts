@@ -6,7 +6,8 @@ import { ClaimRuleJobUseCase } from "./claim.rule.job.usecase.js";
 import { SettleRuleJobUseCase } from "./settle.rule.job.usecase.js";
 
 const NOW = new Date("2026-08-02T00:00:00.000Z");
-const DONE = { status: JOB_STATUS.completed, result: { rules: [] } };
+const USAGE = { model: "claude", durationMs: 10, costUsd: 0.1, numTurns: 1 };
+const DONE = { status: JOB_STATUS.completed, result: { rules: [] }, usage: USAGE, steps: [] };
 
 function harness() {
     const jobs = new InMemoryJobRepository();

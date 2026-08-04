@@ -1,7 +1,7 @@
+import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import { Job } from "~agent-api/domain/job/model/job.model.js";
 import type {
-    JobLeaseOutcome,
     JobHistoryPage,
     JobHistoryQuery,
     JobRepositoryPort,
@@ -118,7 +118,7 @@ export class InMemoryJobRepository implements JobRepositoryPort {
         return Promise.resolve(true);
     }
 
-    settleWithLease(id: string, owner: string, _outcome: JobLeaseOutcome, _now: Date): Promise<boolean> {
+    settleWithLease(id: string, owner: string, _outcome: JobSettlement, _now: Date): Promise<boolean> {
         if (this.leases.get(id)?.owner !== owner) return Promise.resolve(false);
         this.leases.delete(id);
         return Promise.resolve(true);

@@ -1,18 +1,24 @@
-import type { QueryDeepPartialEntity, Repository } from "typeorm";
+import type { DataSource, EntityManager, QueryDeepPartialEntity, Repository } from "typeorm";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
 import type {
-    JobLeaseOutcome,
     JobHistoryPage,
     JobHistoryQuery,
     JobRepositoryPort,
 } from "~agent-api/domain/job/port/job.repository.port.js";
-import type { JobEntity} from "./job.entity.js";
+import type { JobExecutionStep, JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
+import type { JobIdGeneratorPort } from "~agent-api/domain/job/port/job.id.generator.port.js";
+import { JobEntity } from "./job.entity.js";
+import { JobStepEntity } from "./job.step.entity.js";
 import { toJob, toJobRow } from "./job.entity.js";
 import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 
 export class TypeOrmJobRepository implements JobRepositoryPort {
-    constructor(private readonly repo: Repository<JobEntity>) {}
+    constructor(
+        private readonly repo: Repository<JobEntity>,
+        private readonly dataSource: DataSource,
+        private readonly ids: JobIdGeneratorPort,
+    ) {}
 
     async findById(id: string): Promise<Job | null> {
         const row = await this.repo.findOne({ where: { id } });
@@ -112,24 +118,69 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
         return (result.affected ?? 0) > 0;
     }
 
-    async settleWithLease(id: string, owner: string, outcome: JobLeaseOutcome, now: Date): Promise<boolean> {
-        const result = await this.repo
+    async settleWithLease(id: string, owner: string, outcome: JobSettlement, now: Date): Promise<boolean> {
+        // 궤적이 종결과 한 트랜잭션에 있어야 종결만 남고 단계가 사라지는 상태가 생기지 않는다.
+        return this.dataSource.transaction(async (manager) => {
+            const row = await manager.findOne(JobEntity, { where: { id } });
+            const result = await manager
+                .createQueryBuilder()
+                .update(JobEntity)
+                .set({
+                    status: outcome.status,
+                    ...(outcome.result !== undefined ? { result: outcome.result } : {}),
+                    ...(outcome.error !== undefined ? { error: outcome.error } : {}),
+                    usage: outcome.usage,
+                    leaseOwner: null,
+                    leaseExpiresAt: null,
+                    completedAt: now,
+                    updatedAt: now,
+                })
+                .where("id = :id", { id })
+                .andWhere("status = :running", { running: JOB_STATUS.running })
+                .andWhere("lease_owner = :owner", { owner })
+                .execute();
+            if ((result.affected ?? 0) === 0 || row === null) return false;
+            await this.insertSteps(manager, row, outcome.steps, now);
+            return true;
+        });
+    }
+
+    /** 실행기가 남긴 궤적을 그 잡의 시도 회차로 단계 원장에 적는다. */
+    private async insertSteps(
+        manager: EntityManager,
+        job: JobEntity,
+        steps: readonly JobExecutionStep[],
+        now: Date,
+    ): Promise<void> {
+        if (steps.length === 0) return;
+        await manager
             .createQueryBuilder()
-            .update()
-            .set({
-                status: outcome.status,
-                ...(outcome.result !== undefined ? { result: outcome.result } : {}),
-                ...(outcome.error !== undefined ? { error: outcome.error } : {}),
-                leaseOwner: null,
-                leaseExpiresAt: null,
-                completedAt: now,
-                updatedAt: now,
-            } as QueryDeepPartialEntity<JobEntity>)
-            .where("id = :id", { id })
-            .andWhere("status = :running", { running: JOB_STATUS.running })
-            .andWhere("lease_owner = :owner", { owner })
+            .insert()
+            .into(JobStepEntity)
+            .values(steps.map((step) => ({
+                id: this.ids.next(),
+                jobId: job.id,
+                userId: job.userId,
+                attempt: job.attempts,
+                seq: step.seq,
+                role: step.role,
+                content: step.content,
+                truncated: step.truncated,
+                toolCalls: step.toolCalls.length > 0 ? [...step.toolCalls] : null,
+                toolName: step.toolName ?? null,
+                toolCallId: step.toolCallId ?? null,
+                inputTokens: step.inputTokens ?? null,
+                outputTokens: step.outputTokens ?? null,
+                cacheReadTokens: step.cacheReadTokens ?? null,
+                cacheCreationTokens: step.cacheCreationTokens ?? null,
+                stopReason: step.stopReason ?? null,
+                nodeName: step.nodeName ?? null,
+                eventKind: step.eventKind ?? null,
+                durationMs: step.durationMs ?? null,
+                createdAt: now,
+            })) as QueryDeepPartialEntity<JobStepEntity>[])
+            .orIgnore()
             .execute();
-        return (result.affected ?? 0) > 0;
     }
 
     async releaseLease(id: string, owner: string, now: Date): Promise<boolean> {

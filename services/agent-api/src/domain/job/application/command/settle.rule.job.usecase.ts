@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { JOB_REPOSITORY, type JobLeaseOutcome, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
+import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
+import { JOB_REPOSITORY, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
 
 /** 리스를 쥔 실행기가 산출물이나 실패를 싣고 잡을 종결한다. */
 @Injectable()
@@ -10,7 +11,7 @@ export class SettleRuleJobUseCase {
         userId: string,
         id: string,
         owner: string,
-        outcome: JobLeaseOutcome,
+        outcome: JobSettlement,
         now: Date,
     ): Promise<"settled" | "lease-lost" | "not-found"> {
         const job = await this.jobs.findById(id);
