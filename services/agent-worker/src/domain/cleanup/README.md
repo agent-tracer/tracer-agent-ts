@@ -105,7 +105,7 @@ flowchart LR
     RU --> RQ
 ```
 
-모델 출력은 `TriagePlan`, `InspectReport`, `CleanupDecision` schema로 파싱한다. 이후 `validateCleanupSuggestions`가 task 식별자·제안 내용·근거와 같은 도메인 제약을 검증한다. repair 후에도 오류가 남으면 유효한 제안만 반환하거나 빈 목록으로 종료한다.
+모델 출력은 `TriagePlan`, `InspectReport`, `CleanupDecision` schema로 파싱한다. 이후 `validateCleanupSuggestions`가 도메인 제약을 본다. 겹친 제안과 상한을 넘은 꼬리는 다시 물어도 같은 답이 오므로 사유 없이 지우고, 근거가 어긋난 제안만 모델이 고칠 사유로 남긴다. repair 후에도 오류가 남으면 유효한 제안만 반환하거나 빈 목록으로 종료한다.
 
 `buildCleanupSystemPrompt`가 조립하는 coordinator 의 system prompt 다. triage 와 inspect 는 각자 template 을 갖는다.
 
