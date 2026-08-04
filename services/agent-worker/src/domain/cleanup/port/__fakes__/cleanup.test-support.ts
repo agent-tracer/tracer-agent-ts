@@ -152,7 +152,7 @@ export class InMemoryCleanupRepository implements CleanupRepositoryPort {
     async commitCleanup(input: CleanupCommit): Promise<{ readonly suggestionsCreated: number } | null> {
         if (!this.commitWins) return null;
         this.commits.push(input);
-        return { suggestionsCreated: input.suggestionsCreated };
+        return { suggestionsCreated: input.suggestions.length };
     }
 
     async failJob(jobId: string, message: string): Promise<CleanupJobSnapshot | null> {

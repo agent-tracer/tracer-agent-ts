@@ -35,16 +35,17 @@ export class FinalizeTaskCleanupUsecase {
         const now = this.clock.now();
         const generated = input.output;
         // 산출물이 먼저 자리를 잡아야 재시도가 잡 종결 뒤에 제안을 잃지 않는다.
-        const suggestionsCreated = await this.output.createSuggestions({
+        const suggestions = generated?.suggestions ?? [];
+        await this.output.createSuggestions({
             userId: input.userId,
             jobId: input.jobId,
-            suggestions: generated?.suggestions ?? [],
+            suggestions,
         });
         const settled = await this.repository.commitCleanup({
             jobId: input.jobId,
             userId: input.userId,
             tasksScanned: input.tasksScanned,
-            suggestionsCreated,
+            suggestions,
             steps: generated?.jobSteps ?? [],
             attempt: generated?.attempt ?? 1,
             usage: generated !== null ? buildJobUsage(generated) : {},

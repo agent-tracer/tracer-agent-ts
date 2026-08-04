@@ -89,7 +89,7 @@ export class CleanupRepositoryAdapter implements CleanupRepositoryPort {
                 if (job === null || job.isTerminal()) throw new JobTransitionLostError(input.jobId);
                 await insertSteps(manager, job.id, input.userId, input.steps, input.attempt, input.now);
                 job.complete(
-                    { suggestionsCreated: input.suggestionsCreated, tasksScanned: input.tasksScanned },
+                    { suggestions: input.suggestions, tasksScanned: input.tasksScanned },
                     input.usage,
                     input.now,
                 );
@@ -99,7 +99,7 @@ export class CleanupRepositoryAdapter implements CleanupRepositoryPort {
                 if (input.observation !== null) {
                     await observations(manager).record(input.userId, input.observation, input.now);
                 }
-                return { suggestionsCreated: input.suggestionsCreated };
+                return { suggestionsCreated: input.suggestions.length };
             });
         } catch (error) {
             if (isJobTransitionLost(error)) return null;

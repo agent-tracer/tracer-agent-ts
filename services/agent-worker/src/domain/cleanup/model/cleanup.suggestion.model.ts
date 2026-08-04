@@ -1,11 +1,8 @@
 import type { CleanupCandidate } from "./cleanup.candidate.model.js";
 import type { CleanupSuggestionPayload } from "./cleanup.suggestion.schema.js";
 
-/** 산출물 창구로 보낼 수 있는 형태로 조립된 보관 제안이며 식별자와 대조할 값은 창구가 정한다. */
-export interface GeneratedCleanupSuggestion {
-    readonly taskId: string;
-    readonly rationale: string;
-}
+/** 산출물 창구로 보낼 수 있는 형태로 조립된 보관 제안이며 모양은 계약의 에이전트 산출과 같다. */
+export type GeneratedCleanupSuggestion = CleanupSuggestionPayload;
 
 /** 후보 목록에 없는 태스크 인용과 같은 태스크의 중복 제안을 제거한다. */
 export function assembleCleanupSuggestions(
@@ -21,7 +18,7 @@ export function assembleCleanupSuggestions(
         const candidate = candidatesById.get(suggestion.taskId);
         if (candidate === undefined || seen.has(suggestion.taskId)) continue;
         seen.add(suggestion.taskId);
-        assembled.push({ taskId: suggestion.taskId, rationale: suggestion.rationale });
+        assembled.push(suggestion);
     }
     return assembled;
 }

@@ -24,7 +24,7 @@ function batch() {
     return {
         userId: "local",
         jobId: "job-1",
-        suggestions: [{ taskId: "t1", rationale: "이벤트가 없다" }],
+        suggestions: [{ kind: "archive" as const, taskId: "t1", rationale: "이벤트가 없다", evidenceEventIds: ["e1"] }],
     };
 }
 

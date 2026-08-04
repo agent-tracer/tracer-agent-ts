@@ -1,5 +1,6 @@
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
 import type { CleanupTaskSnapshot } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
+import type { GeneratedCleanupSuggestion } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.model.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
 /** 잡의 실행 중 상태를 보는 최소 표현이다. */
@@ -33,8 +34,8 @@ export interface CleanupCommit {
     readonly jobId: string;
     readonly userId: string;
     readonly tasksScanned: number;
-    /** 산출물 창구가 이미 만든 제안의 수이며 잡의 결과에 그대로 실린다. */
-    readonly suggestionsCreated: number;
+    /** 에이전트가 낸 제안이며 잡의 결과에 그대로 실린다. */
+    readonly suggestions: readonly GeneratedCleanupSuggestion[];
     readonly steps: readonly GeneratedJobStep[];
     readonly attempt: number;
     readonly usage: Record<string, unknown>;
