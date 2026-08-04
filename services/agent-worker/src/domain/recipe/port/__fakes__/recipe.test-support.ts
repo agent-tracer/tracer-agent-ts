@@ -158,7 +158,7 @@ export class InMemoryRecipeRepository implements RecipeRepositoryPort {
     async commitScan(input: RecipeScanCommit): Promise<{ readonly candidatesCreated: number } | null> {
         if (!this.commitWins) return null;
         this.commits.push(input);
-        return { candidatesCreated: input.candidatesCreated };
+        return { candidatesCreated: input.recipes.length };
     }
 
     async failJob(jobId: string, message: string): Promise<RecipeJobSnapshot | null> {

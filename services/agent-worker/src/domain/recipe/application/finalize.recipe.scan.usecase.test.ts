@@ -20,6 +20,7 @@ function output(): RecipeScanGenerateOutput {
         usage: null,
         attempt: 1,
         recipes: [],
+        provenance: { eventIdsByTask: {}, turnIdsByTask: {}, ruleIds: [], recipeRevs: {} },
         jobSteps: [],
         observation: recipeObservation(),
     };

@@ -1,3 +1,4 @@
+import type { ProvenanceSnapshot } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
     AgentExecutionFailure,
     assignStepIds,
@@ -35,6 +36,7 @@ export interface RecipeScanPrep {
 
 export interface RecipeScanGenerateOutput extends AgentUsageSummary {
     readonly recipes: readonly GeneratedRecipeCandidate[];
+    readonly provenance: ProvenanceSnapshot;
     readonly jobSteps: readonly GeneratedJobStep[];
     readonly observation: AgentRunObservation;
     readonly usage: AgentQueryUsage | null;
@@ -97,6 +99,7 @@ export class ScanRecipeUsecase {
             numTurns: output.numTurns,
             usage: output.usage,
             recipes,
+            provenance: output.provenance,
             jobSteps,
             attempt: run.attempt,
             attempts,

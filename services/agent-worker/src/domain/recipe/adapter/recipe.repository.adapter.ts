@@ -110,7 +110,7 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
                 if (job === null || job.isTerminal()) throw new JobTransitionLostError(input.jobId);
                 await insertSteps(manager, job.id, input.userId, input.steps, input.attempt, input.now);
                 job.complete(
-                    { candidatesCreated: input.candidatesCreated, sourceTaskId: input.sourceTaskId },
+                    { recipes: input.recipes, provenance: input.provenance },
                     input.usage,
                     input.now,
                 );
@@ -118,7 +118,7 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
                     throw new JobTransitionLostError(job.id);
                 }
                 await observations(manager).record(input.userId, input.observation, input.now);
-                return { candidatesCreated: input.candidatesCreated };
+                return { candidatesCreated: input.recipes.length };
             });
         } catch (error) {
             if (isJobTransitionLost(error)) return null;

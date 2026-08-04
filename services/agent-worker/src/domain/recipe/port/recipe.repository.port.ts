@@ -1,3 +1,5 @@
+import type { GeneratedRecipeCandidate } from "~agent-worker/domain/recipe/model/recipe.candidate.model.js";
+import type { ProvenanceSnapshot } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
@@ -28,9 +30,10 @@ export interface RecipeFailedAttempt {
 export interface RecipeScanCommit {
     readonly jobId: string;
     readonly userId: string;
-    readonly sourceTaskId: string;
     /** 산출물 창구가 이미 만든 후보의 수이며 잡의 결과에 그대로 실린다. */
-    readonly candidatesCreated: number;
+    /** 에이전트가 낸 후보와 그 후보가 인용할 수 있었던 장부이며 잡의 결과에 그대로 실린다. */
+    readonly recipes: readonly GeneratedRecipeCandidate[];
+    readonly provenance: ProvenanceSnapshot;
     readonly steps: readonly GeneratedJobStep[];
     readonly attempt: number;
     readonly usage: Record<string, unknown>;

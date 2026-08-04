@@ -1,3 +1,4 @@
+import type { ProvenanceSnapshot } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import type { IClock } from "@tracer-agent/platform";
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
@@ -17,6 +18,7 @@ import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 
 export interface RecipeScanFinalizeOutput extends AgentUsageSummary {
     readonly recipes: readonly GeneratedRecipeCandidate[];
+    readonly provenance: ProvenanceSnapshot;
     readonly jobSteps: readonly GeneratedJobStep[];
     readonly observation: AgentRunObservation;
 }
@@ -41,7 +43,7 @@ export class FinalizeRecipeScanUsecase {
 
     async execute(input: RecipeScanFinalizeInput): Promise<void> {
         // 산출물이 먼저 자리를 잡아야 재시도가 잡 종결 뒤에 후보를 잃지 않는다.
-        const candidatesCreated = await this.output.createCandidates({
+        await this.output.createCandidates({
             userId: input.userId,
             language: input.language,
             sourceJobId: input.jobId,
@@ -52,8 +54,8 @@ export class FinalizeRecipeScanUsecase {
         const settled = await this.repository.commitScan({
             jobId: input.jobId,
             userId: input.userId,
-            sourceTaskId: input.sourceTaskId,
-            candidatesCreated,
+            recipes: input.output.recipes,
+            provenance: input.output.provenance,
             steps: input.output.jobSteps,
             attempt: input.output.attempt,
             usage: buildJobUsage(input.output),
