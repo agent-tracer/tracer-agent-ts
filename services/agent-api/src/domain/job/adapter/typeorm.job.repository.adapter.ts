@@ -161,7 +161,8 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
                 id: this.ids.next(),
                 jobId: job.id,
                 userId: job.userId,
-                attempt: job.attempts,
+                // 계약이 회차를 1부터 세므로 리스만 쥔 잡의 첫 시도를 1로 적는다.
+                attempt: Math.max(job.attempts, 1),
                 seq: step.seq,
                 role: step.role,
                 content: step.content,
