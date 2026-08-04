@@ -18,7 +18,7 @@ interface RecipeScanCases {
 
 const { executionBudget, resultExample } = readAgentCases<RecipeScanCases>(AGENT.recipeScan.id);
 const SAMPLE_CANDIDATE = resultExample.recipes[0]!;
-const SAMPLE_REDISPATCH = { probe: "timeline", weight: 1, question: "무엇을 더 조사해야 하는가" } as const;
+const SAMPLE_REDISPATCH = { probe: "timeline", depth: "shallow", question: "무엇을 더 조사해야 하는가" } as const;
 
 describe("종합 산출의 배타", () => {
     it.each(executionBudget.outputExclusivity.cases)("$name", (testCase) => {

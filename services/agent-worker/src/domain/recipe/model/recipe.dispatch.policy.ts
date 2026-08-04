@@ -6,7 +6,6 @@ import {
 import { deadlineFractionMs } from "~agent-worker/support/llm/agent.deadline.js";
 import { RECIPE_FEATURE } from "./recipe.const.js";
 import {
-    MAX_PROBE_WEIGHT,
     MAX_VERDICT_CHARS,
     type ProbeReport,
     type RecipeProbeName,
@@ -43,8 +42,8 @@ export const SYNTHESIS_WALL_CLOCK_MS = deadlineFractionMs(RECIPE_LIMITS.deadline
 /** 달러 몫이 아주 작은 전문가도 이만큼은 받아 조사를 시작할 수 있다. */
 export const PROBE_MIN_WALL_CLOCK_FRACTION = wallClock.probeMinFraction.value;
 
-/** weight 상한이 곧 전문가 하나가 받을 수 있는 턴 백스톱이며 조사 깊이는 달러 몫이 정한다. */
-export const RECIPE_WORKER_MAX_TURNS = MAX_PROBE_WEIGHT;
+/** 전문가 하나가 받을 수 있는 턴 백스톱이며 값은 계약이 갖는다. */
+export const RECIPE_WORKER_MAX_TURNS = RECIPE_TOOL_CONTRACT.orchestration.workerMaxTurns;
 
 /** 계획이 규모를 모른 채 서지 않도록 조율자가 요약 하나를 가진다. */
 export const RECIPE_SURVEY_TOOLS: readonly RecipeScanToolName[] = RECIPE_TOOL_CONTRACT.orchestration.surveyTools;

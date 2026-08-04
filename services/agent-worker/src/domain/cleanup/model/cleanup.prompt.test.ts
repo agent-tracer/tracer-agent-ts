@@ -16,8 +16,8 @@ import {
     CLEANUP_TRIAGE_SYSTEM_TEMPLATE_KEY,
     resolveCleanupPromptPin,
 } from "./cleanup.prompt.js";
-import { MAX_INSPECT_WEIGHT, MAX_REDISPATCH_ROUNDS } from "./cleanup.dispatch.schema.js";
 import { CLEANUP_MAX_EVIDENCE_EVENT_IDS } from "./cleanup.tool.schema.js";
+import { MAX_REDISPATCH_ROUNDS } from "./cleanup.dispatch.schema.js";
 
 const DECLARED = readAgentPrompt(AGENT.taskCleanup.id);
 const LIMITS = readAgentTools(AGENT.taskCleanup.id).limits ?? {};
@@ -97,7 +97,6 @@ describe("정리 제안 프롬프트", () => {
 
     it("스키마가 강제하는 상한과 계약의 상한이 같다", () => {
         expect(CLEANUP_MAX_EVIDENCE_EVENT_IDS).toBe(LIMITS["maxEvidenceEventIds"]);
-        expect(MAX_INSPECT_WEIGHT).toBe(LIMITS["maxInspectWeight"]);
         expect(MAX_REDISPATCH_ROUNDS).toBe(LIMITS["maxRedispatchRounds"]);
     });
 });

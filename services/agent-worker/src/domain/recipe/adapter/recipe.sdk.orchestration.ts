@@ -16,6 +16,7 @@ import {
   dispatchPlanSchema,
   type DispatchPlan,
   type ProbeReport,
+    probeDepthShare,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
 import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
@@ -88,7 +89,7 @@ export async function runRecipeSurveyPhase(
     await stages?.record(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, run.data);
     segments.push(toRunSegment(run, AGENT_NODE.survey));
     const chosen =
-      run.data.probes.map(({ probe, weight }) => `${probe}:${weight}`).join(", ") || "no specialists";
+      run.data.probes.map(({ probe, depth }) => `${probe}:${depth}`).join(", ") || "no specialists";
     pushRouteSelected(segments, AGENT_NODE.survey, `survey -> ${chosen}`);
     return { plan: run.data, modelUsed: run.modelUsed };
   } catch (error) {
@@ -113,7 +114,7 @@ export async function dispatchRecipeProbes(
   round = 0,
 ): Promise<ProbeReport[]> {
   const leases = budget.leaseMany(
-    plan.probes.map(({ weight }) => weight),
+    plan.probes.map(({ depth }) => probeDepthShare(depth)),
     1,
   );
   const runs = await Promise.all(

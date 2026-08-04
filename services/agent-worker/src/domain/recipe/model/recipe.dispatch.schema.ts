@@ -6,9 +6,15 @@ import {
     type ProbeAssignment,
     type RecipeProbeName,
 } from "./recipe.scan.schema.js";
-import { MAX_PROBE_WEIGHT, MAX_REDISPATCH_PROBES, MAX_REDISPATCH_ROUNDS } from "./recipe.tool.schema.js";
+import { MAX_REDISPATCH_PROBES, MAX_REDISPATCH_ROUNDS, probeDepthShare } from "./recipe.tool.schema.js";
 
-export { MAX_PROBE_WEIGHT, MAX_REDISPATCH_PROBES, MAX_REDISPATCH_ROUNDS, RECIPE_PROBE_NAMES, probeAssignmentSchema };
+export {
+    MAX_REDISPATCH_PROBES,
+    MAX_REDISPATCH_ROUNDS,
+    RECIPE_PROBE_NAMES,
+    probeAssignmentSchema,
+    probeDepthShare,
+};
 export type { ProbeAssignment, RecipeProbeName };
 
 // 조사를 조율자와 전문가로 나눌 때만 쓰는 내부 계획과 보고 스키마이며, 최종 출력이 계약으로
@@ -45,6 +51,6 @@ export type RecipeExcerpt = z.infer<typeof recipeExcerptSchema>;
 export type ProbeReport = z.infer<typeof probeReportSchema>;
 export type RecipeSynthesis = z.infer<typeof recipeSynthesisSchema>;
 
-export function totalPlanWeight(plan: DispatchPlan): number {
-    return plan.probes.reduce((sum, probe) => sum + probe.weight, 0);
+export function totalPlanShare(plan: DispatchPlan): number {
+    return plan.probes.reduce((sum, probe) => sum + probeDepthShare(probe.depth), 0);
 }

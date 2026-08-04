@@ -21,7 +21,6 @@ import {
 } from "./recipe.prompt.js";
 import type { ProbeAssignment } from "./recipe.dispatch.schema.js";
 import {
-    MAX_PROBE_WEIGHT,
     MAX_REDISPATCH_PROBES,
     MAX_REDISPATCH_ROUNDS,
 } from "./recipe.dispatch.schema.js";
@@ -114,7 +113,6 @@ describe("레시피 조사 프롬프트", () => {
         expect(RECIPE_CANDIDATE_LIMIT).toBe(LIMITS["recipeCandidateLimit"]);
         expect(MAX_REDISPATCH_PROBES).toBe(LIMITS["maxRedispatchProbes"]);
         expect(MAX_REDISPATCH_ROUNDS).toBe(LIMITS["maxRedispatchRounds"]);
-        expect(MAX_PROBE_WEIGHT).toBe(LIMITS["maxProbeWeight"]);
     });
 });
 

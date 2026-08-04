@@ -27,13 +27,13 @@ flowchart TD
     FINAL --> DONE[recipe candidates + provenance]
 ```
 
-`runRecipeSurveyPhase`, `dispatchRecipeProbes`, `synthesizeRecipe`가 단계 조정을 담당한다. probe는 `Promise.all`로 병렬 실행하지만 각 probe는 weighted lease를 받으며, 전체 실행 예산을 초과하지 않는다.
+`runRecipeSurveyPhase`, `dispatchRecipeProbes`, `synthesizeRecipe`가 단계 조정을 담당한다. probe는 `Promise.all`로 병렬 실행하지만 각 probe는 계획이 고른 depth의 몫만큼 lease를 받으며, 전체 실행 예산을 초과하지 않는다.
 
 ## 노드와 이동
 
 | 단계 | 입력 | 도구 | 출력과 다음 이동 |
 | --- | --- | --- | --- |
-| `survey` | 작업 요약, 목표, 언어, 남은 turn | 없음 | `DispatchPlan`; probe가 없으면 빈 결과 |
+| `survey` | 작업 요약, 목표, 언어, 남은 turn | 없음 | 전문가와 depth를 담은 `DispatchPlan`; probe가 없으면 빈 결과 |
 | `probe` | 전문 역할, 작업 ID, 조사 지시 | `get_task_summary`, `get_task_events`, `list_rules`, `search_events`, `find_similar_tasks`, `search_recipes` 중 일부 | `ProbeReport`와 provenance ledger |
 | `investigate` | probe report, 공유 ledger, 후보 예산 | 없음 | `RecipeSynthesis`; 필요하면 `redispatch` |
 | `repair` | 직전 출력, 검증 오류, 언어 | 없음 또는 단계별 제한 도구 | 재검증 가능한 `RecipeSynthesis` |

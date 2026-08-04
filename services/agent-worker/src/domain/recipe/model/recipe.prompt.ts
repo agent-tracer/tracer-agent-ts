@@ -137,7 +137,7 @@ function listed(ids: readonly string[], limit: number, presorted = false): strin
 function renderRecipePlan(plan: DispatchPlan | null): string {
     if (plan === null || plan.probes.length === 0) return "";
     const lines = plan.probes.map(
-        (probe) => `- ${probe.probe} (weight ${probe.weight}): ${probe.question}`,
+        (probe) => `- ${probe.probe} (${probe.depth}): ${probe.question}`,
     );
     return "\n\nYour own plan for this investigation:\n" + lines.join("\n");
 }

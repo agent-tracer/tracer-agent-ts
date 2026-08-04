@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { MAX_PROBE_WEIGHT, MAX_REDISPATCH_PROBES, RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
+import { DISPATCH_DEPTHS } from "@tracer-agent/llm";
+import { MAX_REDISPATCH_PROBES, RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 
 export const RECIPE_PROBE_NAMES = ["timeline", "rules", "repetition"] as const;
 
@@ -10,7 +11,7 @@ export const MAX_PROBE_QUESTION_CHARS = 300;
 /** 전문가에게 추가 조사를 맡기는 배정 하나이며 최종 출력의 redispatch 칸이 이 모양을 담는다. */
 export const probeAssignmentSchema = z.object({
     probe: z.enum(RECIPE_PROBE_NAMES),
-    weight: z.number().int().min(1).max(MAX_PROBE_WEIGHT),
+    depth: z.enum(DISPATCH_DEPTHS),
     question: z.string().trim().min(1).max(MAX_PROBE_QUESTION_CHARS),
 });
 

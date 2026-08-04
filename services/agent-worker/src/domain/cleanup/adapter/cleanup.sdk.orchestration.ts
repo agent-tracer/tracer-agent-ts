@@ -4,6 +4,7 @@ import { agentFailureAccounting } from "~agent-worker/support/llm/agent.accounti
 import { AGENT_NODE, fanOutNode, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import { buildCleanupUserPrompt } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
 import type { InspectReport, TriagePlan } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
+import { inspectDepthShare } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import type { GenerateCleanupSuggestionsInput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
 import type { CleanupToolBatch, CleanupToolDeps } from "./cleanup.tools.js";
@@ -49,7 +50,7 @@ export async function dispatchCleanupInspections(
 ): Promise<InspectReport[]> {
     const candidateIds = new Set(batch.candidates.map((candidate) => candidate.id));
     const assignments = plan.inspect.filter((assignment) => candidateIds.has(assignment.taskId));
-    const leases = budget.leaseMany(assignments.map((assignment) => assignment.weight), 1);
+    const leases = budget.leaseMany(assignments.map((assignment) => inspectDepthShare(assignment.depth)), 1);
     const runs = await Promise.all(
         assignments.map((assignment, index) => runCleanupInspect(ctx, deps, batch, assignment, leases[index]!)),
     );

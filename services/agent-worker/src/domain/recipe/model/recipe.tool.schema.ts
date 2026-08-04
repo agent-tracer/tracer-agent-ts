@@ -5,7 +5,9 @@ import {
     contractLimit,
     contractToolDefinitions,
     contractToolShape,
+    depthShares,
     type ContractToolFile,
+    type DispatchDepth,
     type LlmToolDefinition,
     type ToolFailureTexts,
 } from "@tracer-agent/llm";
@@ -31,6 +33,7 @@ export type RecipeProbeName = "timeline" | "rules" | "repetition";
 export interface RecipeToolContract extends ContractToolFile {
     readonly orchestration: {
         readonly workerMaxTurns: number;
+        readonly dispatchDepth: Readonly<Record<string, number>>;
         readonly surveyTools: readonly RecipeScanToolName[];
         readonly coordinatorTools: readonly RecipeScanToolName[];
         readonly roles: Readonly<Record<RecipeProbeName, readonly RecipeScanToolName[]>>;
@@ -82,8 +85,10 @@ export const MAX_REDISPATCH_PROBES = contractLimit(RECIPE_TOOL_CONTRACT, "maxRed
 /** 조율자가 종합 대신 전문가를 다시 부를 수 있는 라운드 수이며 무한 순환을 이 값으로 막는다. */
 export const MAX_REDISPATCH_ROUNDS = contractLimit(RECIPE_TOOL_CONTRACT, "maxRedispatchRounds");
 
-/** 전문가 하나에 배정할 수 있는 조사 몫의 상한이다. */
-export const MAX_PROBE_WEIGHT = contractLimit(RECIPE_TOOL_CONTRACT, "maxProbeWeight");
+/** 전문가가 고른 깊이가 예산 배분에서 받는 몫이며 값은 계약이 갖는다. */
+export function probeDepthShare(depth: DispatchDepth): number {
+    return depthShares(RECIPE_TOOL_CONTRACT.orchestration.dispatchDepth, "recipe-scan.dispatchDepth")[depth];
+}
 
 /** 조율자 요청이 한 줄에 적는 인용 가능한 식별자 수의 상한이다. */
 export const CITABLE_ID_LIST_LIMIT = contractLimit(RECIPE_TOOL_CONTRACT, "citableIdListLimit");

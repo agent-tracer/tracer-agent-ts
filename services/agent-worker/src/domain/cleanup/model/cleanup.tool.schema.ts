@@ -5,7 +5,9 @@ import {
     contractLimit,
     contractToolDefinitions,
     contractToolShape,
+    depthShares,
     type ContractToolFile,
+    type DispatchDepth,
     type LlmToolDefinition,
     type ToolFailureTexts,
 } from "@tracer-agent/llm";
@@ -19,8 +21,16 @@ export const TASK_CLEANUP_TOOL = {
 
 export type TaskCleanupToolName = (typeof TASK_CLEANUP_TOOL)[keyof typeof TASK_CLEANUP_TOOL];
 
+/** 정리 도구 선언이며 검토 몫을 정하는 깊이를 오케스트레이션 절이 갖는다. */
+export interface CleanupToolContract extends ContractToolFile {
+    readonly orchestration: {
+        readonly workerMaxTurns: number;
+        readonly inspectDepth: Readonly<Record<string, number>>;
+    };
+}
+
 /** 두 구현체가 함께 읽는 도구 계약이며 값은 계약 저장소가 소유한다. */
-export const CLEANUP_TOOL_CONTRACT: ContractToolFile = readAgentTools(AGENT.taskCleanup.id);
+export const CLEANUP_TOOL_CONTRACT: CleanupToolContract = readAgentTools(AGENT.taskCleanup.id);
 
 export const EVENT_ORDER = { asc: "asc", desc: "desc" } as const;
 export type EventOrder = (typeof EVENT_ORDER)[keyof typeof EVENT_ORDER];
@@ -55,8 +65,10 @@ export const CLEANUP_MAX_EVIDENCE_EVENT_IDS = contractLimit(
 /** 조율자가 후보를 다시 조회하게 할 수 있는 라운드 수이며 무한 반복을 이 값으로 막는다. */
 export const MAX_REDISPATCH_ROUNDS = contractLimit(CLEANUP_TOOL_CONTRACT, "maxRedispatchRounds");
 
-/** 후보 하나에 배정할 수 있는 검토 몫의 상한이다. */
-export const MAX_INSPECT_WEIGHT = contractLimit(CLEANUP_TOOL_CONTRACT, "maxInspectWeight");
+/** 검토자가 고른 깊이가 예산 배분에서 받는 몫이며 값은 계약이 갖는다. */
+export function inspectDepthShare(depth: DispatchDepth): number {
+    return depthShares(CLEANUP_TOOL_CONTRACT.orchestration.inspectDepth, "task-cleanup.inspectDepth")[depth];
+}
 
 /** 조율자 요청이 싣는 후보 수의 상한이다. */
 export const TRIAGE_CANDIDATE_LIST_LIMIT = contractLimit(
