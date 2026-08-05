@@ -2,7 +2,6 @@ import { Inject, Injectable } from "@nestjs/common";
 import { JOB_API_KEY_SETTING, JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import {
     IneligibleScanAnchorError,
-    InvalidRuleAnchorError,
     JobIdempotencyConflictError,
     LlmKeyMissingError,
 } from "~agent-api/domain/job/model/job.errors.js";
@@ -14,7 +13,6 @@ import { JOB_EVENT_LOG, type JobEventLog } from "~agent-api/domain/job/port/job.
 import { JOB_ID_GENERATOR, type JobIdGeneratorPort } from "~agent-api/domain/job/port/job.id.generator.port.js";
 import { JOB_REPOSITORY, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
 import { LOCAL_CLI_AUTH, type LocalCliAuthPort } from "~agent-api/domain/job/port/local.cli.auth.port.js";
-import { RULE_ANCHOR_READER, type RuleAnchorReaderPort } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
 import {
     SCAN_ANCHOR_READER,
     type ScanAnchorReaderPort,
@@ -36,7 +34,6 @@ export interface EnqueueJobOptions {
 export class EnqueueJobUseCase {
     constructor(
         @Inject(JOB_REPOSITORY) private readonly jobs: JobRepositoryPort,
-        @Inject(RULE_ANCHOR_READER) private readonly anchors: RuleAnchorReaderPort,
         @Inject(SCAN_ANCHOR_READER) private readonly scanAnchors: ScanAnchorReaderPort,
         @Inject(JOB_SETTING_READER) private readonly settings: JobSettingReaderPort,
         @Inject(WORKFLOW_DISPATCHER) private readonly dispatcher: WorkflowDispatcherPort,
@@ -52,10 +49,9 @@ export class EnqueueJobUseCase {
         input: Record<string, unknown>,
         options: EnqueueJobOptions = {},
     ): Promise<{ readonly job: JobDto }> {
-        if (kind === JOB_KIND.ruleGeneration) await this.validateRuleAnchor(userId, input);
         if (kind === JOB_KIND.recipeScan) await this.validateScanAnchor(userId, input);
         // 로컬 자격으로 실행되는 이미지는 API 키가 필요 없어 접수 검사를 건너뛴다.
-        if (kind !== JOB_KIND.ruleGeneration && !this.localCliAuth) {
+        if (!this.localCliAuth) {
             const apiKey = await this.settings.findByScopeAndKey(userId, JOB_API_KEY_SETTING);
             if (apiKey === null || apiKey.length === 0) {
                 this.jobLog.llmKeyMissing({ userId, kind });
@@ -77,22 +73,12 @@ export class EnqueueJobUseCase {
         );
         const saved = await this.saveJob(job, idempotencyKey, inputHash);
         if (saved.created) this.jobLog.enqueued({ userId, jobId: saved.job.id, kind });
-        if (!saved.job.runsLocally() && (saved.created || saved.job.status === JOB_STATUS.pending)) {
+        if (saved.created || saved.job.status === JOB_STATUS.pending) {
             await this.dispatcher.start(kind, saved.job.id, userId, saved.job.input);
         }
         return { job: mapJob(saved.job) };
     }
 
-    private async validateRuleAnchor(userId: string, input: Record<string, unknown>): Promise<void> {
-        const taskId = readRequiredText(input["taskId"]);
-        const anchorEventId = readRequiredText(input["anchorEventId"]);
-        if (taskId === null || anchorEventId === null) throw new InvalidRuleAnchorError();
-        // 창구가 남의 근거를 없는 것으로 내므로 소유자 검사는 그 자리가 갖는다.
-        const anchor = await this.anchors.findById(userId, anchorEventId);
-        if (anchor === null || anchor.taskId !== taskId || !anchor.userMessage) {
-            throw new InvalidRuleAnchorError();
-        }
-    }
 
     /** 자격이 없는 앵커는 접수가 거절해 잡 행도 워커 실행도 서지 않는다. */
     private async validateScanAnchor(userId: string, input: Record<string, unknown>): Promise<void> {

@@ -5,8 +5,7 @@ const jobKindSchema = z.enum([
     JOB_KIND.titleSuggestion,
     JOB_KIND.recipeScan,
     JOB_KIND.taskCleanup,
-    JOB_KIND.ruleGeneration,
-]);
+    ]);
 
 export const latestQuerySchema = z.object({ kind: jobKindSchema, taskId: z.string().optional() });
 export const listQuerySchema = z.object({ kind: jobKindSchema, status: z.enum([JOB_STATUS.pending]).optional() });

@@ -47,16 +47,6 @@ describe("CancelJobUseCase", () => {
         }]);
     });
 
-    it("로컬 실행 잡은 워크플로를 부르지 않는다", async () => {
-        const { useCase, dispatcher } = makeHarness(
-            Job.create("job-1", "local", JOB_KIND.ruleGeneration, { taskId: "task-1" }, NOW),
-        );
-
-        await useCase.execute("local", "job-1", NOW);
-
-        expect(dispatcher.canceled).toEqual([]);
-    });
-
     it("남의 잡은 존재 여부도 드러내지 않는다", async () => {
         const { useCase } = makeHarness();
 

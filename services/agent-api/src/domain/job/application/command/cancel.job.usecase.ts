@@ -22,9 +22,7 @@ export class CancelJobUseCase {
         if (!job.isCancelable()) throw new InvariantViolationError("job.not-cancelable");
 
         // 전이를 먼저 하면 취소에 실패했을 때 취소됐다고 기록해 둔 채 유료 실행이 계속된다.
-        if (!job.runsLocally()) {
-            await this.dispatcher.cancel(job.kind, job.id);
-        }
+        await this.dispatcher.cancel(job.kind, job.id);
 
         const canceled = await this.jobs.transitionToCanceled(job.id, now);
         if (!canceled) throw new InvariantViolationError("job.not-cancelable");

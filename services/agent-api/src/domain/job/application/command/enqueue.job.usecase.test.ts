@@ -4,7 +4,6 @@ import { JOB_KIND } from "~agent-api/domain/job/model/job.const.js";
 import { FakeJobSettingReader } from "~agent-api/domain/job/port/__fakes__/fake.job.setting.reader.js";
 import { FixedClock } from "~agent-api/domain/job/port/__fakes__/fixed.clock.js";
 import { InMemoryJobRepository } from "~agent-api/domain/job/port/__fakes__/in-memory.job.repository.js";
-import { InMemoryRuleAnchorReader } from "~agent-api/domain/job/port/__fakes__/in-memory.rule.anchor.reader.js";
 import { InMemoryScanAnchorReader } from "~agent-api/domain/job/port/__fakes__/in-memory.scan.anchor.reader.js";
 import { IneligibleScanAnchorError } from "~agent-api/domain/job/model/job.errors.js";
 import type { ScanAnchor } from "~agent-api/domain/job/port/scan.anchor.reader.port.js";
@@ -28,12 +27,6 @@ function makeHarness(options: { readonly apiKey?: string | null; readonly localC
     const dispatcher = new RecordingWorkflowDispatcher();
     const jobLog = new RecordingJobEventLog();
     const settings = new FakeJobSettingReader(options.apiKey === undefined ? "sk-test" : options.apiKey);
-    const anchors = new InMemoryRuleAnchorReader();
-    anchors.seed(
-        "local",
-        { id: "e1", taskId: "task-1", userMessage: true },
-        { id: "e2", taskId: "task-1", userMessage: false },
-    );
     const scanAnchors = new InMemoryScanAnchorReader();
     scanAnchors.seed(
         "local",
@@ -43,7 +36,6 @@ function makeHarness(options: { readonly apiKey?: string | null; readonly localC
     return {
         useCase: new EnqueueJobUseCase(
             jobs,
-            anchors,
             scanAnchors,
             settings,
             dispatcher,
@@ -80,32 +72,12 @@ describe("EnqueueJobUseCase", () => {
         expect(stored?.backend).toBe(AGENT_BACKEND);
     });
 
-    it("워크플로를 기동하지 않는 종류도 원장에 축을 갖는다", async () => {
-        const { useCase } = makeHarness();
-
-        const { job } = await useCase.execute("local", JOB_KIND.ruleGeneration, {
-            taskId: "task-1",
-            anchorEventId: "e1",
-        });
-
-        expect(job.backend).toBe(AGENT_BACKEND);
-    });
-
     it("입력에 실린 태스크를 컬럼으로 올린다", async () => {
         const { useCase } = makeHarness();
 
         const { job } = await useCase.execute("local", JOB_KIND.recipeScan, { taskId: "task-1" });
 
         expect(job.taskId).toBe("task-1");
-    });
-
-    it("로컬 실행 종류는 워크플로를 기동하지 않는다", async () => {
-        const { useCase, dispatcher } = makeHarness();
-
-        const { job } = await useCase.execute("local", JOB_KIND.ruleGeneration, { taskId: "task-1", anchorEventId: "e1" });
-
-        expect(job.executor).toBe("local");
-        expect(dispatcher.started).toEqual([]);
     });
 
     it("모델 자격이 없으면 접수를 거절한다", async () => {
@@ -121,28 +93,6 @@ describe("EnqueueJobUseCase", () => {
 
         await expect(useCase.execute("local", JOB_KIND.recipeScan, { taskId: "task-1" })).resolves.toBeDefined();
         expect(settings.requested).toEqual([]);
-    });
-
-    it("규칙 생성은 모델 자격을 묻지 않는다", async () => {
-        const { useCase, settings } = makeHarness({ apiKey: null });
-
-        await expect(useCase.execute("local", JOB_KIND.ruleGeneration, { taskId: "task-1", anchorEventId: "e1" }))
-            .resolves.toBeDefined();
-        expect(settings.requested).toEqual([]);
-    });
-
-    it("남의 근거에 매달린 규칙 생성을 거절한다", async () => {
-        const { useCase } = makeHarness();
-
-        await expect(useCase.execute("other", JOB_KIND.ruleGeneration, { taskId: "task-1", anchorEventId: "e1" }))
-            .rejects.toMatchObject({ code: "job.invalid-rule-anchor" });
-    });
-
-    it("사용자 발화가 아닌 근거를 거절한다", async () => {
-        const { useCase } = makeHarness();
-
-        await expect(useCase.execute("local", JOB_KIND.ruleGeneration, { taskId: "task-1", anchorEventId: "e2" }))
-            .rejects.toMatchObject({ code: "job.invalid-rule-anchor" });
     });
 
     it("같은 멱등키와 같은 입력이면 접수를 하나로 접는다", async () => {
@@ -187,7 +137,6 @@ describe("스캔 앵커의 자격", () => {
         if (anchor !== null) scanAnchors.seed("local", { ...ANCHOR, ...anchor });
         const useCase = new EnqueueJobUseCase(
             new InMemoryJobRepository(),
-            new InMemoryRuleAnchorReader(),
             scanAnchors,
             new FakeJobSettingReader("sk-test"),
             new RecordingWorkflowDispatcher(),

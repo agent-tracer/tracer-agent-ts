@@ -6,14 +6,9 @@ import { JobStepEntity } from "~agent-api/domain/job/adapter/job.step.entity.js"
 import { JobUlidGenerator } from "~agent-api/domain/job/adapter/job.ulid.generator.js";
 import { JobWorkflowDispatcher } from "~agent-api/domain/job/adapter/job.workflow.dispatcher.js";
 import { KafkaJobStatusNotifier } from "~agent-api/domain/job/adapter/kafka.job.status.notifier.js";
-import { RuleAnchorReaderAdapter } from "~agent-api/domain/job/adapter/rule.anchor.reader.adapter.js";
 import { StructuredJobEventLogAdapter } from "~agent-api/domain/job/adapter/structured.job.event.log.adapter.js";
 import { TypeOrmJobRepository } from "~agent-api/domain/job/adapter/typeorm.job.repository.adapter.js";
 import { TypeOrmJobStepRepository } from "~agent-api/domain/job/adapter/typeorm.job.step.repository.adapter.js";
-import { ClaimRuleJobUseCase } from "~agent-api/domain/job/application/command/claim.rule.job.usecase.js";
-import { ReleaseRuleJobUseCase } from "~agent-api/domain/job/application/command/release.rule.job.usecase.js";
-import { RenewRuleJobLeaseUseCase } from "~agent-api/domain/job/application/command/renew.rule.job.lease.usecase.js";
-import { SettleRuleJobUseCase } from "~agent-api/domain/job/application/command/settle.rule.job.usecase.js";
 import { CancelJobUseCase } from "~agent-api/domain/job/application/command/cancel.job.usecase.js";
 import { EnqueueJobUseCase } from "~agent-api/domain/job/application/command/enqueue.job.usecase.js";
 import { IssueJobExecutionEnvelopeUseCase } from "~agent-api/domain/job/application/command/issue.job.execution.envelope.usecase.js";
@@ -34,7 +29,6 @@ import { JOB_STEP_REPOSITORY } from "~agent-api/domain/job/port/job.step.reposit
 import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.js";
 import { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { TRACER_API_WINDOW } from "~agent-api/config/tracer.api.token.js";
-import { RULE_ANCHOR_READER } from "~agent-api/domain/job/port/rule.anchor.reader.port.js";
 import { SCAN_ANCHOR_READER } from "~agent-api/domain/job/port/scan.anchor.reader.port.js";
 import { ScanAnchorReaderAdapter } from "~agent-api/domain/job/adapter/scan.anchor.reader.adapter.js";
 import { JOB_SETTING_READER } from "~agent-api/domain/job/port/setting.reader.port.js";
@@ -46,10 +40,6 @@ export const jobFeature = {
     controllers: [JobQueryController, JobCommandController, JobInternalController],
     providers: [
         CancelJobUseCase,
-        ClaimRuleJobUseCase,
-        RenewRuleJobLeaseUseCase,
-        SettleRuleJobUseCase,
-        ReleaseRuleJobUseCase,
         EnqueueJobUseCase,
         IssueJobExecutionEnvelopeUseCase,
         GetJobStepsUseCase,
@@ -68,8 +58,6 @@ export const jobFeature = {
             provide: TRACER_API_WINDOW,
             useFactory: (): TracerApiWindow => new TracerApiWindow(resolveTracerApiBaseUrl()),
         },
-        RuleAnchorReaderAdapter,
-        { provide: RULE_ANCHOR_READER, useExisting: RuleAnchorReaderAdapter },
         ScanAnchorReaderAdapter,
         { provide: SCAN_ANCHOR_READER, useExisting: ScanAnchorReaderAdapter },
         { provide: JOB_CLOCK, useClass: SystemClock },

@@ -25,13 +25,6 @@ describe("잡 실행 데드라인", () => {
         }
     });
 
-    it("로컬 실행기가 가져가는 종류는 계약도 데드라인을 적지 않는다", () => {
-        for (const kind of JOB_KINDS) {
-            if (JOB_EXECUTOR[kind] !== "local") continue;
-            expect(kinds[kind]?.deadlineMs).toBeUndefined();
-        }
-    });
-
     it("실행 주체를 계약과 같게 안다", () => {
         for (const kind of JOB_KINDS) expect(JOB_EXECUTOR[kind]).toBe(kinds[kind]?.executor);
     });

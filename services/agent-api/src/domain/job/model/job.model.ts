@@ -10,7 +10,6 @@ import {
     type JobStatus,
 } from "~agent-api/domain/job/model/job.const.js";
 
-const LOCAL_EXECUTOR: JobExecutor = "local";
 
 export interface JobIdempotency {
     readonly key: string;
@@ -108,9 +107,6 @@ export class Job {
         return isCancelableJobStatus(this.status);
     }
 
-    runsLocally(): boolean {
-        return this.executor === LOCAL_EXECUTOR;
-    }
 
     isOwnedBy(userId: string): boolean {
         return this.userId === userId;

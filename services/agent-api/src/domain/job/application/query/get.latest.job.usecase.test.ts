@@ -24,7 +24,7 @@ describe("GetLatestJobUseCase", () => {
     });
 
     it("다른 종류를 물으면 비운다", async () => {
-        const { job } = await makeUseCase().execute("local", JOB_KIND.ruleGeneration, "task-1");
+        const { job } = await makeUseCase().execute("local", JOB_KIND.taskCleanup, "task-1");
 
         expect(job).toBeNull();
     });

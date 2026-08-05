@@ -6,7 +6,6 @@ export const JOB_IDEMPOTENCY_KEYS = {
     [JOB_KIND.titleSuggestion]: ["taskId"],
     [JOB_KIND.recipeScan]: ["taskId", "userPrompt", "language", "trigger"],
     [JOB_KIND.taskCleanup]: ["filters.maxSuggestions"],
-    [JOB_KIND.ruleGeneration]: ["taskId", "anchorEventId", "focus", "maxRules", "intent"],
 } as const satisfies Record<JobKind, readonly string[]>;
 
 /** 두 구현체가 같은 바이트를 만들도록 그 종류가 정한 칸만 정해진 순서로 적는다. */

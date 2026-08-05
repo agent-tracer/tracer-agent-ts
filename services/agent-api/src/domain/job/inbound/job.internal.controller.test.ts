@@ -17,11 +17,11 @@ describe("JobInternalController", () => {
         expect(envelope).toEqual({ model: "claude-haiku-4-5" });
     });
 
-    it("워크플로가 태우지 않는 종류를 거절한다", () => {
+    it("계약이 적은 종류는 모두 실행 봉투를 받는다", () => {
         const pipe = new SchemaValidationPipe(jobEnvelopeKindSchema);
 
-        expect(() => pipe.transform(JOB_KIND.ruleGeneration, METADATA)).toThrow();
         expect(pipe.transform(JOB_KIND.recipeScan, METADATA)).toBe(JOB_KIND.recipeScan);
+        expect(() => pipe.transform("chat.turn", METADATA)).toThrow();
     });
 
     it("사용자를 싣지 않은 본문을 거절한다", () => {
