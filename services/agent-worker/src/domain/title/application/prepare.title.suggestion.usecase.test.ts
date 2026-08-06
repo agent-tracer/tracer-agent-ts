@@ -75,6 +75,15 @@ describe("PrepareTitleSuggestionUsecase", () => {
         expect(prep.model).toBe("claude-sonnet-5");
     });
 
+    it("이 기능이 허용하지 않은 모델 설정은 싣지 않는다", async () => {
+        const { repository, usecase } = setup();
+        repository.settings.set(`user-1/${TITLE_SETTING_KEY.anthropicModel}`, "claude-opus-5");
+
+        const prep = await usecase.execute({ jobId: "job-1", taskId: "task-1" });
+
+        expect(prep.model).toBeUndefined();
+    });
+
     it("단가표가 모르는 모델 설정은 싣지 않는다", async () => {
         const { repository, usecase } = setup();
         repository.settings.set(`user-1/${TITLE_SETTING_KEY.anthropicModel}`, "gpt-9");

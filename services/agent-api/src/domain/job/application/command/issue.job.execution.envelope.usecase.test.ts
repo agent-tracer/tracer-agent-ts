@@ -66,6 +66,23 @@ describe("IssueJobExecutionEnvelopeUseCase", () => {
         expect(envelope.deadlineMs).toBe(300000);
     });
 
+    it("그 기능이 허용하지 않은 모델 설정은 기본 모델로 본다", async () => {
+        // 예산은 허용 목록을 전제로 잡히므로 목록 밖 모델을 실으면 상한에 닿아 끝난다.
+        const settings = new FakeJobSettingReader("sk-test").set("anthropic.model", "claude-opus-5");
+
+        const envelope = await new IssueJobExecutionEnvelopeUseCase(settings)
+            .execute(JOB_KIND.titleSuggestion, "local");
+
+        expect(envelope.model).toBe("claude-haiku-4-5");
+    });
+
+    it("턴 상한은 폭주만 끊도록 넉넉하고 비용은 달러가 조인다", async () => {
+        const envelope = await makeUseCase().execute(JOB_KIND.titleSuggestion, "local");
+
+        expect(envelope.limits.maxTurns).toBeGreaterThanOrEqual(10);
+        expect(envelope.limits.budgetUsd).toBe(0.2);
+    });
+
     it("단가표가 모르는 모델 설정은 그 기능의 기본 모델로 본다", async () => {
         const settings = new FakeJobSettingReader("sk-test").set("anthropic.model", "gpt-9");
 

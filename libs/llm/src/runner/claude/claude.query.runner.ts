@@ -8,6 +8,7 @@ import { GEN_AI_PROVIDER } from "~llm/observability/semconv.const.js";
 import { withGenAiClientTelemetry } from "~llm/observability/telemetry.js";
 import { TrajectoryRecorder } from "~llm/observability/trajectory.js";
 import { estimateCostUsd } from "~llm/pricing/pricing.js";
+import { landingReserveCalls, providerBudgetBackstop } from "~llm/runner/landing.directive.js";
 import type { AgentQueryRequest, AgentQueryResult, IQueryRunner } from "~llm/runner/llm.runner.js";
 import { redactText } from "~llm/support/redaction.js";
 import { logWarn } from "@tracer-agent/platform";
@@ -129,7 +130,9 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                 settingSources: this.useLocalCliAuth ? ["user"] : [],
                 skills: this.useLocalCliAuth ? "all" : [],
                 ...(request.effort !== undefined ? { effort: request.effort } : {}),
-                ...(request.maxBudgetUsd !== undefined ? { maxBudgetUsd: request.maxBudgetUsd } : {}),
+                ...(request.maxBudgetUsd !== undefined
+                    ? { maxBudgetUsd: providerBudgetBackstop(request.maxBudgetUsd) }
+                    : {}),
                 ...(options?.fallbackModel !== undefined ? { fallbackModel: options.fallbackModel } : {}),
                 stderr: (data) => stderr.append(data),
                 hooks: { PreToolUse: [{ hooks: [paceToolUse] }] },
@@ -193,7 +196,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                         }
                         runningCostUsd += callCost;
                         peakCallCostUsd = Math.max(peakCallCostUsd, callCost);
-                        landing = runningCostUsd + peakCallCostUsd >= request.maxBudgetUsd;
+                        landing = runningCostUsd + peakCallCostUsd * landingReserveCalls() >= request.maxBudgetUsd;
                     }
                     continue;
                 }

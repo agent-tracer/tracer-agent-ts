@@ -44,7 +44,7 @@ export class PrepareTitleSuggestionUsecase {
             await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.outputLanguage),
         );
         // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
-        const model = chosenJobModel(await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicModel));
+        const model = chosenJobModel(await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicModel), AGENT.titleSuggestion.id);
         const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id));
 
         const now = this.clock.now();

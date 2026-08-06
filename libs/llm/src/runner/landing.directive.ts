@@ -11,3 +11,13 @@ export function progressNotice(used: number, total: number): string {
     const { template } = loadExecutionBudgetContract().pacing.progressNotice;
     return template.replace("{used}", String(used)).replace("{total}", String(total));
 }
+
+/** 도구를 닫은 뒤에도 마무리 호출 하나가 남으므로 그 몫을 미리 뗀다. */
+export function landingReserveCalls(): number {
+    return loadExecutionBudgetContract().pacing.landingReserve.calls;
+}
+
+/** 공급자에게 넘기는 상한이며 실행을 조이는 자리보다 위에 두어 폭주만 끊게 한다. */
+export function providerBudgetBackstop(maxBudgetUsd: number): number {
+    return maxBudgetUsd * loadExecutionBudgetContract().pacing.landingReserve.providerBackstop;
+}

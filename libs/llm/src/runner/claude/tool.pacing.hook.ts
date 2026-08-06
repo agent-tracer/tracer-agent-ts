@@ -1,4 +1,4 @@
-import type { PreToolUseHookSpecificOutput } from "@anthropic-ai/claude-agent-sdk";
+import type { HookInput, PreToolUseHookSpecificOutput } from "@anthropic-ai/claude-agent-sdk";
 import { landingDirective, progressNotice } from "~llm/runner/landing.directive.js";
 
 export interface ToolPacingDecision {
@@ -14,12 +14,19 @@ export interface ToolPacing {
     readonly hasOutputSchema: boolean;
 }
 
-/** 도구를 여는 자리마다 남은 몫을 알리고 예산이 다하면 그 도구만 막아 마무리 지시를 준다. */
-export function toolPacingHook(pacing: ToolPacing): () => Promise<ToolPacingDecision> {
+/** 산출을 내는 도구는 답 자체이므로 예산이 다해도 막지 않는다. */
+const OUTPUT_TOOL = "StructuredOutput";
+
+function toolNameOf(input: HookInput): string | undefined {
+    return "tool_name" in input ? input.tool_name : undefined;
+}
+
+/** 도구를 여는 자리마다 남은 몫을 알리고 예산이 다하면 조사 도구만 막아 마무리 지시를 준다. */
+export function toolPacingHook(pacing: ToolPacing): (input: HookInput) => Promise<ToolPacingDecision> {
     const directive = landingDirective(pacing.hasOutputSchema);
-    return () =>
+    return (input) =>
         Promise.resolve(
-            pacing.landing()
+            pacing.landing() && toolNameOf(input) !== OUTPUT_TOOL
                 ? {
                     hookSpecificOutput: {
                         hookEventName: "PreToolUse" as const,

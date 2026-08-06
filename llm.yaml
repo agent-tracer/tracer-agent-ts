@@ -63,16 +63,16 @@ features:
   title-suggestion:
     default: claude-haiku-4-5
     fallback: claude-haiku-4-5
-    allowed: [claude-haiku-4-5, claude-sonnet-4-6]
+    allowed: [claude-haiku-4-5, claude-sonnet-4-6, claude-sonnet-5]
     limits:
       budgetUsd: 0.2
-      maxTurns: 4
+      maxTurns: 12
       maxOutputTokens: 4000
       deadlineMs: 300000
   task-cleanup:
     default: claude-haiku-4-5
     fallback: claude-haiku-4-5
-    allowed: [claude-haiku-4-5, claude-sonnet-4-6]
+    allowed: [claude-haiku-4-5, claude-sonnet-4-6, claude-sonnet-5]
     limits:
       budgetUsd: 0.5
       maxTurns: 16

@@ -1,4 +1,4 @@
-import { isPricedModel } from "@tracer-agent/llm";
+import { featureModels, isPricedModel } from "@tracer-agent/llm";
 export const OUTPUT_LANGUAGE = {
     auto: "auto",
     ko: "ko",
@@ -30,8 +30,9 @@ export function normalizeOutputLanguage(raw: string | null | undefined): OutputL
     return isOutputLanguage(normalized) ? normalized : OUTPUT_LANGUAGE.auto;
 }
 
-/** 설정이 고른 모델이며 단가표가 모르는 값은 그 기능의 기본 모델에 맡긴다. */
-export function chosenJobModel(raw: string | null): string | undefined {
+// 예산은 허용 목록을 전제로 잡히므로 목록 밖 모델을 실으면 상한에 닿아 끝난다.
+export function chosenJobModel(raw: string | null, feature: string): string | undefined {
     const trimmed = raw?.trim() ?? "";
-    return trimmed.length > 0 && isPricedModel(trimmed) ? trimmed : undefined;
+    if (trimmed.length === 0 || !isPricedModel(trimmed)) return undefined;
+    return featureModels(feature)?.allowed.includes(trimmed) === true ? trimmed : undefined;
 }

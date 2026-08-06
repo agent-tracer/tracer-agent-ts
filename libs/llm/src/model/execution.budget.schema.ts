@@ -44,6 +44,15 @@ const pacingSchema = z.object({
         placeholders: z.array(z.string().min(1)).nonempty(),
         reason: z.string().min(1),
     }),
+    landingReserve: z.object({
+        calls: z.number().int().positive(),
+        meaning: z.string().min(1),
+        rule: z.string().min(1),
+        reason: z.string().min(1),
+        providerBackstop: z.number().positive(),
+        providerBackstopMeaning: z.string().min(1),
+        providerBackstopReason: z.string().min(1),
+    }),
     landingDirective: z.object({
         when: z.string().min(1),
         structured: z.string().min(1),

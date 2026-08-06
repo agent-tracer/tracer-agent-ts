@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { featureLimits, featureModels, isPricedModel, wireModelRates } from "@tracer-agent/llm";
+import { featureLimits, featureModels, wireModelRates } from "@tracer-agent/llm";
 import {
     JOB_API_KEY_SETTING,
     JOB_FEATURE_BY_KIND,
@@ -24,10 +24,10 @@ export class IssueJobExecutionEnvelopeUseCase {
         const feature = JOB_FEATURE_BY_KIND[kind];
         const models = featureModels(feature)!;
         const limits = featureLimits(feature);
-        // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 종류가 그대로 갖는다.
+        // 예산은 허용 목록을 전제로 잡히므로 목록 밖 모델을 실으면 상한에 닿아 끝난다.
         const chosen = await this.settings.findByScopeAndKey(userId, JOB_MODEL_SETTING);
         return {
-            model: chosen !== null && isPricedModel(chosen) ? chosen : models.default,
+            model: chosen !== null && models.allowed.includes(chosen) ? chosen : models.default,
             fallbackModel: models.fallback ?? null,
             apiKey,
             modelRates: wireModelRates(),

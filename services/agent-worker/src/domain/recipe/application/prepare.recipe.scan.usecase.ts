@@ -62,7 +62,7 @@ export class PrepareRecipeScanUsecase {
                 ?? await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.outputLanguage),
         );
         // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
-        const model = chosenJobModel(await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.anthropicModel));
+        const model = chosenJobModel(await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.anthropicModel), AGENT.recipeScan.id);
         const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id));
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
