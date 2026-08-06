@@ -38,3 +38,4 @@ export * from "./tool/contract.tool.schema.js";
 export * from "./tool/mcp.tool.prefix.js";
 export * from "./tool/tool.failure.js";
 export * from "./tool/dispatch.depth.js";
+export { offeredModelIds } from "~llm/pricing/model.choices.js";
