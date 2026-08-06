@@ -158,6 +158,7 @@ trajectory 수집과 redaction과 fallback model을 적용한다.
 | budget lease | probe마다 가중 lease를 받고 전체 실행 예산을 넘지 않는다 |
 | redispatch | 조사 범위가 부족하고 예산과 횟수가 남았을 때만 probe를 추가한다 |
 | structured validation | zod schema 검증 뒤 `validateRecipeCandidates`가 도메인 규칙을 확인한다 |
+| empty result reason | 후보 없이 끝난 실행이 왜 비었는지를 `empty_result` 노드의 궤적 한 줄로 남긴다 |
 
 출력 타입은 `DispatchPlan` → `ProbeReport` → `RecipeSynthesis` 순서로 좁혀진다. 최종
 `RecipeSynthesis`가 검증을 통과해야 recipe 후보와 provenance가 된다.
@@ -184,5 +185,6 @@ stateDiagram-v2
 - `adapter/recipe.sdk.query.ts`: Claude SDK query spec과 MCP 연결
 - `adapter/recipe.tools.ts`: 계약 도구와 provenance handler
 - `model/recipe.dispatch.policy.ts`: 전문 역할별 도구 선택
+- `model/recipe.outcome.model.ts`: 빈 결과의 사유 어휘와 판정
 - `model/recipe.prompt.ts`: 단계별 prompt 조립
 - `inbound/recipe.workflow.ts`: Temporal workflow

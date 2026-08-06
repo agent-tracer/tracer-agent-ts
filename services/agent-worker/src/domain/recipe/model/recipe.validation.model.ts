@@ -58,10 +58,13 @@ function validateRecipeCandidate(
     provenance: ProvenanceSnapshot,
 ): readonly string[] {
     const errors: string[] = [];
-    const anchor = candidate.contributing_slices.find((slice) => slice.taskId === anchorTaskId);
-    if (anchor === undefined) {
+    // 같은 앵커 태스크를 여러 조각으로 쪼갠 후보도 있으므로 첫 조각이 아니라 그 조각들의 합집합을 본다.
+    const anchorEventIds = candidate.contributing_slices
+        .filter((slice) => slice.taskId === anchorTaskId)
+        .flatMap((slice) => slice.eventIds);
+    if (!candidate.contributing_slices.some((slice) => slice.taskId === anchorTaskId)) {
         errors.push(`contributing_slices must include anchor task ${anchorTaskId}.`);
-    } else if (anchor.eventIds.length === 0) {
+    } else if (anchorEventIds.length === 0) {
         errors.push("The anchor contributing slice must cite at least one anchor event ID.");
     }
 
@@ -98,6 +101,19 @@ function validateRecipeCandidate(
         const unknown = unsupported(pitfall.evidence, (id) => isEventVerifiedAnyTask(provenance, id));
         if (unknown.length > 0) {
             errors.push(`Pitfall ${index + 1} cites unsupported event IDs: ${unknown.join(", ")}.`);
+        }
+    });
+    candidate.recovery.forEach((recovery, index) => {
+        const unknown = unsupported(recovery.evidence, (id) => isEventVerifiedAnyTask(provenance, id));
+        if (unknown.length > 0) {
+            errors.push(`Recovery ${index + 1} cites unsupported event IDs: ${unknown.join(", ")}.`);
+        }
+    });
+    // 근거를 적지 않은 단계는 관측되지 않았다는 뜻이므로 검사할 것이 없다.
+    candidate.steps.forEach((step, index) => {
+        const unknown = unsupported(step.evidence, (id) => isEventVerifiedAnyTask(provenance, id));
+        if (unknown.length > 0) {
+            errors.push(`Step ${index + 1} cites unsupported event IDs: ${unknown.join(", ")}.`);
         }
     });
 

@@ -37,6 +37,8 @@ const stepSchema = z.object({
     order: z.number().int().min(1).max(50),
     action: z.string().trim().min(1).max(200),
     rationale: z.string().trim().max(300).nullish(),
+    // 모든 단계가 이벤트로 관측되지는 않으므로 근거는 비어도 되고, 실린 근거만 원장과 대조한다.
+    evidence: z.array(z.string().trim().min(1)).max(50).default([]),
     verify: verifySchema.nullish(),
 });
 
@@ -52,9 +54,19 @@ const pitfallSchema = z.object({
     evidence: z.array(z.string().trim().min(1)).min(1).max(50),
 });
 
+/** correction이 이미 symptom→action 쌍이므로 같은 근거 요구를 그대로 물려받는다. */
+const recoverySchema = z.object({
+    symptom: z.string().trim().min(1).max(500),
+    action: z.string().trim().min(1).max(500),
+    evidence: z.array(z.string().trim().min(1)).min(1).max(50),
+    stepOrder: z.number().int().min(1).max(50).nullish(),
+});
+
 const touchedFileSchema = z.object({
     path: z.string().trim().min(1).max(500),
     role: z.enum(["read", "write", "both"]),
+    why: z.string().trim().max(200).nullish(),
+    loadWhen: z.string().trim().max(200).nullish(),
 });
 
 const sliceSchema = z.object({
@@ -67,10 +79,15 @@ const candidateSchema = z.object({
     title: z.string().trim().min(1).max(120),
     intent: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(400),
+    // 적용 조건과 입출력은 궤적이 실제로 보여 준 것만 적으므로 없는 실행에서는 빈 채로 선다.
+    use_when: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
     summary_md: z.string().trim().min(1).max(4000),
     request: z.string().trim().min(1).max(2000),
+    inputs: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
+    outputs: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
     corrections: z.array(correctionSchema).max(20).default([]),
     pitfalls: z.array(pitfallSchema).max(20).default([]),
+    recovery: z.array(recoverySchema).max(10).default([]),
     governing_rules: z.array(z.string().trim().min(1)).max(50).default([]),
     revises_recipe_id: z.string().trim().min(1).max(200).nullish(),
     // 절차의 순서가 곧 의미이므로 order는 1부터 빈칸 없이 이어져야 한다.
@@ -100,6 +117,7 @@ export const recipeCandidatesListSchema = z
 export type RecipeStepPayload = z.infer<typeof stepSchema>;
 export type RecipeCorrectionPayload = z.infer<typeof correctionSchema>;
 export type RecipePitfallPayload = z.infer<typeof pitfallSchema>;
+export type RecipeRecoveryPayload = z.infer<typeof recoverySchema>;
 export type RecipeTouchedFilePayload = z.infer<typeof touchedFileSchema>;
 export type RecipeSlicePayload = z.infer<typeof sliceSchema>;
 export type RecipeCandidatePayload = z.infer<typeof candidateSchema>;

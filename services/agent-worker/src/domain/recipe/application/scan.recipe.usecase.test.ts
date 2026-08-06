@@ -35,8 +35,12 @@ function candidate(overrides: Partial<RecipeCandidatePayload> = {}): RecipeCandi
         description: "설명",
         summary_md: "- 요약",
         request: "요청",
+        use_when: [],
+        inputs: [],
+        outputs: [],
         corrections: [],
         pitfalls: [],
+        recovery: [],
         governing_rules: [],
         steps: [],
         touched_files: [{ path: "src/a.ts", role: "write" }],
@@ -73,6 +77,45 @@ describe("ScanRecipeUsecase", () => {
             { taskId: "task-1", turnIds: ["turn-1"], eventIds: ["evt-1"] },
         ]);
         expect(agent.calls[0]?.apiKey).toBe("sk-test");
+    });
+
+    it("적용 조건과 입출력은 그대로 옮기고 복구와 단계의 근거는 장부로 거른다", async () => {
+        const repository = seedRepository();
+        repository.ownedTaskIds.add("task-1");
+        const agent = new FakeRecipeAgent(emptyOutput({
+            recipes: [candidate({
+                use_when: ["빌드가 타입 오류로 멈춘 뒤"],
+                inputs: ["실패한 빌드 로그"],
+                outputs: ["통과한 빌드"],
+                recovery: [
+                    { symptom: "같은 오류가 남는다", action: "산출을 지운다", evidence: ["evt-1", "evt-ghost"] },
+                    { symptom: "근거가 없다", action: "무시한다", evidence: ["evt-ghost"] },
+                ],
+                steps: [{ order: 1, action: "타입 오류를 읽는다", evidence: ["evt-1", "evt-ghost"] }],
+                touched_files: [{ path: "src/a.ts", role: "write", why: "오류가 난 자리다", loadWhen: "첫 단계" }],
+            })],
+            provenance: {
+                eventIdsByTask: { "task-1": ["evt-1"] },
+                turnIdsByTask: {},
+                ruleIds: [],
+                recipeRevs: {},
+            },
+        }));
+        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+
+        const assembled = (await target.execute(prep(), attemptRun())).recipes[0]!;
+
+        expect(assembled.useWhen).toEqual(["빌드가 타입 오류로 멈춘 뒤"]);
+        expect(assembled.inputs).toEqual(["실패한 빌드 로그"]);
+        expect(assembled.outputs).toEqual(["통과한 빌드"]);
+        expect(assembled.touchedFiles).toEqual([
+            { path: "src/a.ts", role: "write", why: "오류가 난 자리다", loadWhen: "첫 단계" },
+        ]);
+        // 근거가 하나도 남지 않은 복구는 지적과 같이 빠지고, 단계는 근거만 잃고 남는다.
+        expect(assembled.recovery).toEqual([
+            { symptom: "같은 오류가 남는다", action: "산출을 지운다", evidence: ["evt-1"] },
+        ]);
+        expect(assembled.steps).toEqual([{ order: 1, action: "타입 오류를 읽는다", evidence: ["evt-1"] }]);
     });
 
     it("사용자 소유가 아닌 태스크만 인용한 후보는 제외한다", async () => {

@@ -36,6 +36,8 @@ import type {
   GenerateRecipeCandidatesOutput,
   RecipeAgentPort,
 } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
+import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
+import type { RecipeEmptyResultSignals } from "~agent-worker/domain/recipe/model/recipe.outcome.model.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeStageResumeSource } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { RecipeToolDeps } from "./recipe.tools.js";
@@ -50,7 +52,7 @@ import {
   synthesizeRecipe,
   toRunSegment,
 } from "./recipe.sdk.orchestration.js";
-import { buildRecipeOutput } from "./recipe.sdk.output.js";
+import { buildEmptyRecipeOutput, buildRecipeOutput } from "./recipe.sdk.output.js";
 import {
   AGENT_NODE,
   pushValidationFailed,
@@ -123,7 +125,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
 
     const segments: RunSegment[] = [];
     const stages = this.stages?.forJob(input.jobId) ?? null;
-    const { plan, modelUsed } = await runRecipeSurveyPhase(
+    const { plan, modelUsed, degraded } = await runRecipeSurveyPhase(
       ctx,
       this.deps,
       budget,
@@ -136,7 +138,9 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     const coordinatorLedger = new ProvenanceLedger();
     // 전문가가 없으면 근거 장부가 비어 있으므로 빈 결과를 반환한다.
     if (plan.probes.length === 0)
-      return buildRecipeOutput(ctx, segments, [], modelUsed, coordinatorLedger);
+      return buildEmptyRecipeOutput(ctx, segments, modelUsed, coordinatorLedger, {
+        surveyCallFails: degraded,
+      });
 
     const reports = await dispatchRecipeProbes(
       ctx,
@@ -204,25 +208,23 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
         validateRecipeCandidates(synthesis.data.recipes, input.taskId, coordinatorLedger.snapshot()),
       ),
     );
+    const exhausted = reports.some((report) => report.exhausted);
     if (errors.length > 0) pushValidationFailed(segments, VALIDATE_NODE, errors.join("; "));
     if (errors.length === 0)
-      return buildRecipeOutput(
+      return this.landed(
         ctx,
         segments,
         synthesis.data.recipes,
         synthesis.modelUsed,
         coordinatorLedger,
+        { probeExhausted: exhausted },
       );
 
     // 예약한 턴이 없으면 수리를 시도하지 않고 빈 결과를 반환한다.
     if (repairLease.maxTurns <= 0)
-      return buildRecipeOutput(
-        ctx,
-        segments,
-        [],
-        synthesis.modelUsed,
-        coordinatorLedger,
-      );
+      return buildEmptyRecipeOutput(ctx, segments, synthesis.modelUsed, coordinatorLedger, {
+        repairExhausted: true,
+      });
 
     const investigatePrompt = buildRecipeUserPrompt(
       ctx.prompt,
@@ -247,13 +249,9 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     } catch (error) {
       // 수리 호출이 예산을 소진하면 잡을 실패시키지 않고 빈 결과를 반환한다.
       if (isBudgetExhaustedFailure(error))
-        return buildRecipeOutput(
-          ctx,
-          segments,
-          [],
-          synthesis.modelUsed,
-          coordinatorLedger,
-        );
+        return buildEmptyRecipeOutput(ctx, segments, synthesis.modelUsed, coordinatorLedger, {
+          repairExhausted: true,
+        });
       throw error;
     }
     budget.settle(repairLease, {
@@ -269,13 +267,28 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     );
     if (remaining.length > 0) pushValidationFailed(segments, VALIDATE_NODE, remaining.join("; "));
     recordValidationFailure(AGENT.recipeScan.id, remaining.length === 0);
-    return buildRecipeOutput(
-      ctx,
-      segments,
-      remaining.length === 0 ? repaired.data.recipes : [],
-      repaired.modelUsed,
-      coordinatorLedger,
-    );
+    // 수리한 산출까지 검증을 통과하지 못하면 이 실행은 생성이 실패한 채로 끝난다.
+    if (remaining.length > 0)
+      return buildEmptyRecipeOutput(ctx, segments, repaired.modelUsed, coordinatorLedger, {
+        repairExhausted: true,
+      });
+    return this.landed(ctx, segments, repaired.data.recipes, repaired.modelUsed, coordinatorLedger, {
+      probeExhausted: exhausted,
+    });
+  }
+
+  /** 검증을 통과한 산출이며 후보가 하나도 서지 않았으면 왜 비었는지를 함께 남긴다. */
+  private landed(
+    ctx: RecipeQueryContext,
+    segments: RunSegment[],
+    recipes: readonly RecipeCandidatePayload[],
+    modelUsed: string,
+    ledger: ProvenanceLedger,
+    signals: RecipeEmptyResultSignals,
+  ): GenerateRecipeCandidatesOutput {
+    if (recipes.length === 0)
+      return buildEmptyRecipeOutput(ctx, segments, modelUsed, ledger, signals);
+    return buildRecipeOutput(ctx, segments, recipes, modelUsed, ledger);
   }
 }
 

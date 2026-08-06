@@ -1,4 +1,9 @@
-import { attemptedRepair, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
+import { attemptedRepair, pushEmptyResult, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
+import {
+    recipeEmptyResultReason,
+    renderEmptyResultReason,
+    type RecipeEmptyResultSignals,
+} from "~agent-worker/domain/recipe/model/recipe.outcome.model.js";
 import { mergeAgentTrajectory } from "@tracer-agent/llm";
 import type { RecipeCandidatePayload } from "~agent-worker/domain/recipe/model/recipe.scan.schema.js";
 import type { GenerateRecipeCandidatesOutput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
@@ -10,6 +15,21 @@ import {
     recipeModelName,
   type RecipeQueryContext,
 } from "./recipe.sdk.query.js";
+
+/** 빈 결과의 사유를 남기는 자리이며 어느 단계에서 비었든 이 한 이름으로 궤적에 선다. */
+const EMPTY_RESULT_NODE = "empty_result";
+
+/** 후보 없이 끝나는 실행이며 왜 비었는지를 궤적에 남긴 뒤 빈 산출을 만든다. */
+export function buildEmptyRecipeOutput(
+  ctx: RecipeQueryContext,
+  segments: RunSegment[],
+  modelUsed: string,
+  ledger: ProvenanceLedger,
+  signals: RecipeEmptyResultSignals,
+): GenerateRecipeCandidatesOutput {
+  pushEmptyResult(segments, EMPTY_RESULT_NODE, renderEmptyResultReason(recipeEmptyResultReason(signals)));
+  return buildRecipeOutput(ctx, segments, [], modelUsed, ledger);
+}
 
 export function buildRecipeOutput(
   ctx: RecipeQueryContext,

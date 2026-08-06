@@ -60,6 +60,13 @@ function restoredProbeRun(stored: ProbeStageOutput): RecipeProbeRun {
     };
 }
 
+/** 계획 단계가 낸 결과이며 degraded는 계획 호출이 실패해 빈 계획으로 낮췄음을 뜻한다. */
+export interface RecipeSurveyPhase {
+    readonly plan: DispatchPlan;
+    readonly modelUsed: string;
+    readonly degraded: boolean;
+}
+
 export async function runRecipeSurveyPhase(
   ctx: RecipeQueryContext,
   deps: RecipeToolDeps,
@@ -68,10 +75,11 @@ export async function runRecipeSurveyPhase(
   segments: RunSegment[],
   availableTurns: number,
   stages: RecipeStageResumePort | null = null,
-): Promise<{ readonly plan: DispatchPlan; readonly modelUsed: string }> {
+): Promise<RecipeSurveyPhase> {
   const fallback = {
     plan: { probes: [] } as DispatchPlan,
     modelUsed: recipeModelName(ctx.input),
+    degraded: false,
   };
   if (lease.maxTurns <= 0) return fallback;
   const restored = await stages?.restore(
@@ -80,7 +88,8 @@ export async function runRecipeSurveyPhase(
     dispatchPlanSchema,
   );
   // 앞선 시도가 이미 세운 계획이 있으면 조율자를 다시 부르지 않는다.
-  if (restored != null) return { plan: restored, modelUsed: recipeModelName(ctx.input) };
+  if (restored != null)
+    return { plan: restored, modelUsed: recipeModelName(ctx.input), degraded: false };
   try {
     const run = await withNodeTrajectory(segments, AGENT_NAME, AGENT_NODE.survey, () =>
       runRecipeSurvey(ctx, deps, availableTurns, lease),
@@ -91,7 +100,7 @@ export async function runRecipeSurveyPhase(
     const chosen =
       run.data.probes.map(({ probe, depth }) => `${probe}:${depth}`).join(", ") || "no specialists";
     pushRouteSelected(segments, AGENT_NODE.survey, `survey -> ${chosen}`);
-    return { plan: run.data, modelUsed: run.modelUsed };
+    return { plan: run.data, modelUsed: run.modelUsed, degraded: false };
   } catch (error) {
     const accounting = agentFailureAccounting(error, recipeModelName(ctx.input));
     budget.settle(lease, {
@@ -99,7 +108,8 @@ export async function runRecipeSurveyPhase(
       numTurns: accounting.numTurns,
     });
     segments.push({ accounting, steps: [], nodeName: AGENT_NODE.survey });
-    return fallback;
+    // 계획 호출이 실패해 빈 계획으로 낮춘 실행은 저장할 패턴이 없던 실행과 사유가 다르다.
+    return { ...fallback, degraded: true };
   }
 }
 

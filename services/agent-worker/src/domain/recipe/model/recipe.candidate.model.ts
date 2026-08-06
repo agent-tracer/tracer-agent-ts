@@ -10,6 +10,7 @@ import type {
     RecipeCandidatePayload,
     RecipeCorrectionPayload,
     RecipePitfallPayload,
+    RecipeRecoveryPayload,
     RecipeSlicePayload,
     RecipeStepPayload,
     RecipeTouchedFilePayload,
@@ -22,8 +23,12 @@ export interface GeneratedRecipeCandidate {
     readonly description: string;
     readonly summaryMd: string;
     readonly request: string;
+    readonly useWhen: readonly string[];
+    readonly inputs: readonly string[];
+    readonly outputs: readonly string[];
     readonly corrections: readonly RecipeCorrectionPayload[];
     readonly pitfalls: readonly RecipePitfallPayload[];
+    readonly recovery: readonly RecipeRecoveryPayload[];
     readonly governingRules: readonly string[];
     readonly steps: readonly RecipeStepPayload[];
     readonly touchedFiles: readonly RecipeTouchedFilePayload[];
@@ -38,9 +43,16 @@ interface ProvenanceFilterResult {
     readonly contributingSlices: readonly RecipeSlicePayload[];
     readonly corrections: readonly RecipeCorrectionPayload[];
     readonly pitfalls: readonly RecipePitfallPayload[];
+    readonly recovery: readonly RecipeRecoveryPayload[];
+    readonly steps: readonly RecipeStepPayload[];
     readonly governingRules: readonly string[];
     readonly parentRecipeId?: string;
     readonly parentRecipeSeenRev?: number;
+}
+
+/** 이 실행의 장부가 확인한 이벤트 인용만 남긴다. */
+function verifiedEvidence(provenance: ProvenanceSnapshot, evidence: readonly string[]): string[] {
+    return evidence.filter((eventId) => isEventVerifiedAnyTask(provenance, eventId));
 }
 
 /** 사용자 소유가 아닌 태스크 인용과 이 실행의 장부에 없는 ID 인용을 제거한다. */
@@ -59,18 +71,23 @@ export function filterCandidateByProvenance(
     if (contributingSlices.length === 0) return null;
 
     const corrections = candidate.corrections
-        .map((correction) => ({
-            ...correction,
-            evidence: correction.evidence.filter((eventId) => isEventVerifiedAnyTask(provenance, eventId)),
-        }))
+        .map((correction) => ({ ...correction, evidence: verifiedEvidence(provenance, correction.evidence) }))
         .filter((correction) => correction.evidence.length > 0);
 
     const pitfalls = candidate.pitfalls
-        .map((pitfall) => ({
-            ...pitfall,
-            evidence: pitfall.evidence.filter((eventId) => isEventVerifiedAnyTask(provenance, eventId)),
-        }))
+        .map((pitfall) => ({ ...pitfall, evidence: verifiedEvidence(provenance, pitfall.evidence) }))
         .filter((pitfall) => pitfall.evidence.length > 0);
+
+    // 복구는 지적과 같은 근거를 요구하므로 근거가 남지 않은 항목은 지적과 같이 뺀다.
+    const recovery = candidate.recovery
+        .map((entry) => ({ ...entry, evidence: verifiedEvidence(provenance, entry.evidence) }))
+        .filter((entry) => entry.evidence.length > 0);
+
+    // 단계는 근거 없이도 서므로 인용만 걸러 내고 단계 자체는 남긴다.
+    const steps = candidate.steps.map((step) => ({
+        ...step,
+        evidence: verifiedEvidence(provenance, step.evidence),
+    }));
 
     const governingRules = candidate.governing_rules.filter((ruleId) => isRuleVerified(provenance, ruleId));
 
@@ -81,6 +98,8 @@ export function filterCandidateByProvenance(
         contributingSlices,
         corrections,
         pitfalls,
+        recovery,
+        steps,
         governingRules,
         ...(parentRecipeId !== undefined && seenRev !== undefined
             ? { parentRecipeId, parentRecipeSeenRev: seenRev }
@@ -104,10 +123,14 @@ export function assembleRecipeCandidates(
             description: candidate.description,
             summaryMd: candidate.summary_md,
             request: candidate.request,
+            useWhen: candidate.use_when,
+            inputs: candidate.inputs,
+            outputs: candidate.outputs,
             corrections: filtered.corrections,
             pitfalls: filtered.pitfalls,
+            recovery: filtered.recovery,
             governingRules: filtered.governingRules,
-            steps: candidate.steps,
+            steps: filtered.steps,
             touchedFiles: candidate.touched_files,
             contributingSlices: filtered.contributingSlices,
             rationale: candidate.rationale,
