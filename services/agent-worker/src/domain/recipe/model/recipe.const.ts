@@ -18,6 +18,7 @@ export type RecipeScanTrigger = (typeof RECIPE_SCAN_TRIGGER)[keyof typeof RECIPE
 /** 이 슬라이스가 읽는 설정 항목이며 값은 추적 서비스의 설정 표가 소유한다. */
 export const RECIPE_SETTING_KEY = {
     anthropicApiKey: "anthropic.api_key",
+    anthropicModel: "anthropic.model",
     outputLanguage: "claude.outputLanguage",
 } as const;
 

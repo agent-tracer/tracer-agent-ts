@@ -1,3 +1,4 @@
+import { isPricedModel } from "@tracer-agent/llm";
 export const OUTPUT_LANGUAGE = {
     auto: "auto",
     ko: "ko",
@@ -27,4 +28,10 @@ export function normalizeOutputLanguage(raw: string | null | undefined): OutputL
     if (!raw) return OUTPUT_LANGUAGE.auto;
     const normalized = raw.trim().toLowerCase();
     return isOutputLanguage(normalized) ? normalized : OUTPUT_LANGUAGE.auto;
+}
+
+/** 설정이 고른 모델이며 단가표가 모르는 값은 그 기능의 기본 모델에 맡긴다. */
+export function chosenJobModel(raw: string | null): string | undefined {
+    const trimmed = raw?.trim() ?? "";
+    return trimmed.length > 0 && isPricedModel(trimmed) ? trimmed : undefined;
 }

@@ -66,6 +66,24 @@ describe("PrepareTitleSuggestionUsecase", () => {
         expect(prep.prompt.promptVersion).toBe("v0.0.1");
     });
 
+    it("설정이 고른 모델을 고정값에 싣는다", async () => {
+        const { repository, usecase } = setup();
+        repository.settings.set(`user-1/${TITLE_SETTING_KEY.anthropicModel}`, "claude-sonnet-5");
+
+        const prep = await usecase.execute({ jobId: "job-1", taskId: "task-1" });
+
+        expect(prep.model).toBe("claude-sonnet-5");
+    });
+
+    it("단가표가 모르는 모델 설정은 싣지 않는다", async () => {
+        const { repository, usecase } = setup();
+        repository.settings.set(`user-1/${TITLE_SETTING_KEY.anthropicModel}`, "gpt-9");
+
+        const prep = await usecase.execute({ jobId: "job-1", taskId: "task-1" });
+
+        expect(prep.model).toBeUndefined();
+    });
+
     it("잡을 실행 상태로 올렸음을 알린다", async () => {
         const { notification, usecase } = setup();
 

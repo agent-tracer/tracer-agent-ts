@@ -1,6 +1,9 @@
 /** 사용자 설정에서 모델 자격을 찾는 키다. */
 export const JOB_API_KEY_SETTING = "anthropic.api_key";
 
+/** 잡이 쓸 모델을 사용자가 고르는 설정이며 값은 계약의 설정 표가 소유한다. */
+export const JOB_MODEL_SETTING = "anthropic.model";
+
 /** 사용자가 접수할 수 있는 잡의 종류이며 값은 계약의 잡 어휘가 소유한다. */
 export const JOB_KIND = {
     titleSuggestion: "title.suggestion",

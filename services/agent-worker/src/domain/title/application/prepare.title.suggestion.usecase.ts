@@ -1,6 +1,6 @@
 import type { IClock } from "@tracer-agent/platform";
 import { AGENT } from "~agent-worker/support/agent.const.js";
-import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
+import { chosenJobModel, normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { TITLE_SETTING_KEY } from "~agent-worker/domain/title/model/title.const.js";
 import {
@@ -43,6 +43,8 @@ export class PrepareTitleSuggestionUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.outputLanguage),
         );
+        // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
+        const model = chosenJobModel(await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicModel));
         const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id));
 
         const now = this.clock.now();
@@ -63,6 +65,7 @@ export class PrepareTitleSuggestionUsecase {
             userId: job.userId,
             taskId: input.taskId,
             language,
+            ...(model !== undefined ? { model } : {}),
             currentTitle: found.context.title,
             context: found.context,
             prompt,

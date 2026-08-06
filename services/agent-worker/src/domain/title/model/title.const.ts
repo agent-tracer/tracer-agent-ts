@@ -7,5 +7,6 @@ export const TITLE_JOB_KIND = "title.suggestion";
 /** 이 슬라이스가 읽는 설정 항목이며 값은 추적 서비스의 설정 표가 소유한다. */
 export const TITLE_SETTING_KEY = {
     anthropicApiKey: "anthropic.api_key",
+    anthropicModel: "anthropic.model",
     outputLanguage: "claude.outputLanguage",
 } as const;

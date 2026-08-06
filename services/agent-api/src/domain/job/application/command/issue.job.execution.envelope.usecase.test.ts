@@ -36,11 +36,43 @@ describe("IssueJobExecutionEnvelopeUseCase", () => {
         });
     });
 
-    it("사용자 설정에서 그 사용자의 자격만 찾는다", async () => {
+    it("사용자 설정에서 그 사용자의 자격과 모델을 찾는다", async () => {
         const settings = new FakeJobSettingReader("sk-test");
         await new IssueJobExecutionEnvelopeUseCase(settings).execute(JOB_KIND.taskCleanup, "alice");
 
-        expect(settings.requested).toEqual([{ scope: "alice", key: "anthropic.api_key" }]);
+        expect(settings.requested).toEqual([
+            { scope: "alice", key: "anthropic.api_key" },
+            { scope: "alice", key: "anthropic.model" },
+        ]);
+    });
+
+    it("설정이 고른 모델로 그 기능의 기본 모델을 덮는다", async () => {
+        const settings = new FakeJobSettingReader("sk-test").set("anthropic.model", "claude-sonnet-5");
+
+        const envelope = await new IssueJobExecutionEnvelopeUseCase(settings)
+            .execute(JOB_KIND.titleSuggestion, "local");
+
+        expect(envelope.model).toBe("claude-sonnet-5");
+    });
+
+    it("모델을 덮어도 한도와 대체 모델은 그 기능이 갖는다", async () => {
+        const settings = new FakeJobSettingReader("sk-test").set("anthropic.model", "claude-sonnet-5");
+
+        const envelope = await new IssueJobExecutionEnvelopeUseCase(settings)
+            .execute(JOB_KIND.titleSuggestion, "local");
+
+        expect(envelope.fallbackModel).toBe("claude-haiku-4-5");
+        expect(envelope.limits.budgetUsd).toBe(0.2);
+        expect(envelope.deadlineMs).toBe(300000);
+    });
+
+    it("단가표가 모르는 모델 설정은 그 기능의 기본 모델로 본다", async () => {
+        const settings = new FakeJobSettingReader("sk-test").set("anthropic.model", "gpt-9");
+
+        const envelope = await new IssueJobExecutionEnvelopeUseCase(settings)
+            .execute(JOB_KIND.titleSuggestion, "local");
+
+        expect(envelope.model).toBe("claude-haiku-4-5");
     });
 
     it("모델 자격이 없으면 발급을 거절한다", async () => {

@@ -7,6 +7,7 @@ export const CLEANUP_JOB_KIND = "task.cleanup";
 /** 이 슬라이스가 읽는 설정 항목이며 값은 추적 서비스의 설정 표가 소유한다. */
 export const CLEANUP_SETTING_KEY = {
     anthropicApiKey: "anthropic.api_key",
+    anthropicModel: "anthropic.model",
     outputLanguage: "claude.outputLanguage",
     maxSuggestions: "taskCleanup.maxSuggestions",
 } as const;

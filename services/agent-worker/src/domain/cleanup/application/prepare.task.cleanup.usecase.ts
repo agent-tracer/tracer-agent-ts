@@ -1,6 +1,6 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
-import { normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
+import { chosenJobModel, normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { clampInt } from "~agent-worker/support/clamp.js";
 import { buildCleanupCandidates, type CleanupCandidate } from "../model/cleanup.candidate.model.js";
@@ -50,6 +50,8 @@ export class PrepareTaskCleanupUsecase {
         const language = normalizeOutputLanguage(
             await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.outputLanguage),
         );
+        // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
+        const model = chosenJobModel(await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.anthropicModel));
         const prompt = resolveCleanupPromptPin(await this.prompts.resolve(AGENT.taskCleanup.id));
 
         const now = this.clock.now();
@@ -77,6 +79,7 @@ export class PrepareTaskCleanupUsecase {
             jobId: job.id,
             userId: job.userId,
             language,
+            ...(model !== undefined ? { model } : {}),
             maxSuggestions,
             candidates,
             truncated: batch.truncated,

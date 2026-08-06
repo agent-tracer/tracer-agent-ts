@@ -1,6 +1,6 @@
 import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
-import { normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
+import { chosenJobModel, normalizeOutputLanguage, type OutputLanguage } from "~agent-worker/support/output.language.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import { RECIPE_SCAN_TRIGGER, RECIPE_SETTING_KEY, type RecipeScanTrigger } from "../model/recipe.const.js";
@@ -61,6 +61,8 @@ export class PrepareRecipeScanUsecase {
             input.language
                 ?? await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.outputLanguage),
         );
+        // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
+        const model = chosenJobModel(await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.anthropicModel));
         const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id));
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
@@ -85,6 +87,7 @@ export class PrepareRecipeScanUsecase {
             userId: job.userId,
             taskId: input.taskId,
             language,
+            ...(model !== undefined ? { model } : {}),
             prompt,
             ...(input.userPrompt !== undefined ? { userPrompt: input.userPrompt } : {}),
         };
