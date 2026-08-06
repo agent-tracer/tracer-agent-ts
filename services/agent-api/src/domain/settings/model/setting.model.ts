@@ -2,7 +2,6 @@
 export const SETTING_KEYS = [
     "anthropic.api_key",
     "anthropic.model",
-    "ruleGen.maxRulesPerTask",
     "taskCleanup.maxSuggestions",
     "claude.outputLanguage",
 ] as const;

@@ -67,7 +67,7 @@ describe("SettingController", () => {
 
 describe("설정 창구의 요청 스키마", () => {
     it("계약이 정한 키를 통과시킨다", () => {
-        expect(settingKeyPipe.transform("ruleGen.maxRulesPerTask", PARAM)).toBe("ruleGen.maxRulesPerTask");
+        expect(() => settingKeyPipe.transform("ruleGen.maxRulesPerTask", PARAM)).toThrow();
     });
 
     it("계약 밖의 키를 거절한다", () => {
