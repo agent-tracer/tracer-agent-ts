@@ -60,6 +60,34 @@ describe("PrepareRecipeScanUsecase", () => {
         expect(prepared.language).toBe(OUTPUT_LANGUAGE.auto);
     });
 
+    it("요청이 언어를 비우면 설정이 정한 출력 언어를 싣는다", async () => {
+        const repository = seedRepository();
+        repository.settings.set(RECIPE_SETTING_KEY.outputLanguage, "ko");
+
+        const prepared = await usecase(repository).target.execute({ jobId: "job-1", taskId: "task-1" });
+
+        expect(prepared.language).toBe(OUTPUT_LANGUAGE.ko);
+    });
+
+    it("요청이 실은 언어를 설정으로 덮지 않는다", async () => {
+        const repository = seedRepository();
+        repository.settings.set(RECIPE_SETTING_KEY.outputLanguage, "ko");
+
+        const prepared = await usecase(repository).target.execute({
+            jobId: "job-1",
+            taskId: "task-1",
+            language: "en",
+        });
+
+        expect(prepared.language).toBe(OUTPUT_LANGUAGE.en);
+    });
+
+    it("요청도 설정도 없으면 auto로 실행한다", async () => {
+        const prepared = await usecase(seedRepository()).target.execute({ jobId: "job-1", taskId: "task-1" });
+
+        expect(prepared.language).toBe(OUTPUT_LANGUAGE.auto);
+    });
+
     it("잡을 찾을 수 없으면 실행하지 않는다", async () => {
         await expect(usecase(new InMemoryRecipeRepository()).target.execute({
             jobId: "job-1",

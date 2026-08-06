@@ -56,7 +56,11 @@ export class PrepareRecipeScanUsecase {
             : anchor.scanEligible;
         if (!eligible) throw new TaskNotScannableError(input.taskId);
 
-        const language = normalizeOutputLanguage(input.language);
+        // 요청이 언어를 실었으면 그 값이 우선하고, 비었으면 설정을 읽는다.
+        const language = normalizeOutputLanguage(
+            input.language
+                ?? await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.outputLanguage),
+        );
         const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id));
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
