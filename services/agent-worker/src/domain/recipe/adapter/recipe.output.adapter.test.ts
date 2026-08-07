@@ -155,7 +155,7 @@ describe("RecipeOutputAdapter", () => {
         expect(draft["touchedFiles"]).toEqual(source.touchedFiles);
     });
 
-    it("계약이 못박은 멱등키를 실어 같은 실행이 후보를 두 벌 만들지 않게 한다", async () => {
+    it("계약이 고정한 멱등키를 실어 같은 실행이 후보를 두 벌 만들지 않게 한다", async () => {
         const { target, sent } = adapterWith({ ok: true, data: { recipes: [] } });
 
         await target.createCandidates({
