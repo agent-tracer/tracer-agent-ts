@@ -129,6 +129,91 @@ flowchart LR
     RUN --> SINK[delta·trajectory·usage sink]
 ```
 
+## 진행 표시와 실시간 전달
+
+사용자가 보는 것은 최종 답변이 아니라 답변이 만들어지는 과정이다. 이 절은 공급자의 신호가
+화면에 닿기까지 무엇을 거치는지 적는다.
+
+### 싱크가 받는 신호와 구간
+
+`DurableChatExecutionSink`는 실행기가 주는 네 신호를 받아 누적 답변과 `phase` 한 칸으로 옮긴다.
+`phase`의 값과 뜻은 계약이 소유하며 이 문서가 목록을 복제하지 않는다.
+
+```
+계약   contract/conformance/cases/chat.query.json
+executionPhase
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> starting
+    starting --> thinking: onProgress
+    thinking --> responding: onAssistantDelta
+    starting --> responding: onAssistantDelta
+    responding --> tool: onToolCall
+    thinking --> tool: onToolCall
+    tool --> thinking: onToolResult
+    responding --> [*]: 종결
+    tool --> [*]: 종결
+```
+
+답변이 흐르는 동안에는 `onProgress`가 와도 `thinking`으로 되돌리지 않는다. 실행기가 텍스트
+조각마다 진행 신호를 함께 주므로, 그대로 받으면 표시가 조각마다 흔들린다. 이 예외는 두 구현체가
+같이 갖는다.
+
+`onToolResult`가 오기 전까지 도구 구간에는 공급자 신호가 하나도 없다. 그래서 서버는 그 구간의
+경과를 갱신할 수 없고, 경과는 화면이 `updatedAt`부터 국소적으로 센다.
+
+### 원장에 닿는 리듬
+
+```mermaid
+sequenceDiagram
+    participant Q as ClaudeQueryRunner
+    participant S as DurableChatExecutionSink
+    participant D as agent-db
+    participant K as Kafka chat.execution.updates
+    participant A as agent-api SSE
+
+    Q->>S: 첫 조각
+    S->>D: checkpointRunning 즉시 (선행 엣지)
+    Note over S: 이후 150ms 동안 받은 것은 묶는다
+    Q->>S: 조각 여럿
+    S->>D: checkpointRunning 한 번
+    D-->>A: 같은 프로세스면 곧바로
+    S->>K: 저장됐을 때만 알린다
+    K-->>A: 다른 replica
+    A->>A: 정본 재조회 후 프레임
+```
+
+- 첫 조각은 스로틀을 기다리지 않고 곧바로 적는다. 뒤쪽 엣지로 묶으면 첫 글자가 그만큼 늦는다.
+- 원장 쓰기는 `tail` 프로미스로 직렬화되므로 모델이 토큰을 소비하는 루프를 막지 않는다.
+- 순번은 보낸 횟수가 아니라 받은 조각을 센다. 늦게 도착한 프레임을 화면이 가릴 때 이 값을 본다.
+- 시도를 여는 `beginAttempt`는 초안을 비우므로 그 직후에도 알린다. 알리지 않으면 화면이 이전
+  시도의 글을 재전송 주기까지 그대로 든다.
+
+### 프레임이 나가는 규칙
+
+`streamChatExecution`은 신호를 받아 정본을 다시 읽고 프레임을 낸다. 신호가 몰려도 이미 기다리는
+조회가 있으면 새로 쌓지 않고, 정본이 그대로면 프레임을 거른다.
+
+**주기 재전송은 이 거르기의 예외다.** 게이트웨이가 유휴로 판단해 연결을 끊지 않도록 정본이 같아도
+반드시 내보낸다. 재전송 주기는 계약이 갖는다.
+
+```mermaid
+flowchart TD
+    SIG[버스 신호] --> Q{기다리는 조회가 있나}
+    Q -->|있다| SKIP[쌓지 않는다]
+    Q -->|없다| READ[정본 재조회]
+    TICK[주기 재전송] --> READ
+    READ --> SAME{직전 프레임과 같나}
+    SAME -->|다르다| SEND[프레임 전송]
+    SAME -->|같고 주기 재전송| SEND
+    SAME -->|같고 신호| DROP[내지 않는다]
+    SEND --> TERM{종결 상태인가}
+    TERM -->|그렇다| CLOSE[연결을 닫는다]
+    TERM -->|아니다| SIG
+```
+
 ## Temporal 워크플로
 
 `chat.thread.workflow.ts`가 스레드 하나를 소유하고 `chat.execution.workflow.ts`가 턴 하나를
