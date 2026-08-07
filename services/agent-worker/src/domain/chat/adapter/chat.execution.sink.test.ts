@@ -6,6 +6,7 @@ import {
     FixedClock,
     RecordingChatExecutionUpdates,
 } from "~agent-worker/domain/chat/port/__fakes__/chat.test-support.js";
+import { readCase, readChatDraftRules } from "~agent-worker/support/contract.js";
 import { ChatExecutionSinkFactory } from "./chat.execution.sink.js";
 
 interface RedactionRule {
@@ -122,5 +123,14 @@ describe("실행이 무엇을 하는 중인지", () => {
         // 사이에 끼어든 진행 신호가 thinking 을 적었다면 가운데에 남았을 자리다.
         expect(executions.phases).toEqual(["responding", "responding"]);
         expect(executions.drafts).toEqual(["답", "답변"]);
+    });
+
+    it("적는 간격과 엣지를 계약에서 파생시킨다", () => {
+        const declared = readCase<{
+            readonly stream: { readonly draft: { readonly intervalMs: number; readonly edge: string } };
+        }>("chat.query").stream.draft;
+
+        expect(readChatDraftRules()).toEqual({ intervalMs: declared.intervalMs, edge: declared.edge });
+        expect(declared.edge).toBe("leading");
     });
 });

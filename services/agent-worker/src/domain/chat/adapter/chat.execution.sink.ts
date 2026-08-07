@@ -1,5 +1,6 @@
 import { redactText } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
+import { readChatDraftRules } from "~agent-worker/support/contract.js";
 import {
     CHAT_EXECUTION_PHASE,
     type ChatExecutionPhase,
@@ -13,7 +14,7 @@ import type {
 } from "~agent-worker/domain/chat/port/chat.execution.sink.port.js";
 import type { ChatExecutionRepositoryPort } from "~agent-worker/domain/chat/port/chat.repository.port.js";
 
-const DRAFT_CHECKPOINT_INTERVAL_MS = 150;
+const DRAFT_RULES = readChatDraftRules();
 
 /** 진행 표시에 남는 도구 한 줄이며 두 구현체가 같은 모양을 쓴다. */
 export function toolMarker(toolName: string): string {
@@ -105,7 +106,7 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
             this.opened = true;
             this.enqueueFlush();
         }
-        this.timer = this.scheduler.schedule(DRAFT_CHECKPOINT_INTERVAL_MS, () => {
+        this.timer = this.scheduler.schedule(DRAFT_RULES.intervalMs, () => {
             this.timer = null;
             if (this.seq > this.savedSeq) this.enqueueFlush();
         });

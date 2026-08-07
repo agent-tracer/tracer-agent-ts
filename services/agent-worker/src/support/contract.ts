@@ -82,6 +82,18 @@ export function readAgentCases<T>(agentName: string): T {
     return readContractJson<T>(`agent/${agentName}/cases.json`);
 }
 
+/** 실행기가 받은 조각을 원장에 적는 리듬이며 두 구현체가 같은 값을 읽는다. */
+export interface ChatDraftRules {
+    readonly intervalMs: number;
+    readonly edge: string;
+}
+
+export function readChatDraftRules(): ChatDraftRules {
+    const declared = readCase<{ readonly stream: { readonly draft: ChatDraftRules } }>("chat.query")
+        .stream.draft;
+    return { intervalMs: declared.intervalMs, edge: declared.edge };
+}
+
 /** 산출물 창구 하나의 요청 본문에 실릴 수 있는 칸이다. */
 export interface TracerOutputWindow {
     readonly method: string;
