@@ -176,7 +176,7 @@ sequenceDiagram
 
     Q->>S: 첫 조각
     S->>D: checkpointRunning 즉시 (선행 엣지)
-    Note over S: 이후 150ms 동안 받은 것은 묶는다
+    Note over S: 이후 계약이 정한 간격 동안 받은 것은 묶는다
     Q->>S: 조각 여럿
     S->>D: checkpointRunning 한 번
     D-->>A: 같은 프로세스면 곧바로
@@ -186,6 +186,7 @@ sequenceDiagram
 ```
 
 - 첫 조각은 스로틀을 기다리지 않고 곧바로 적는다. 뒤쪽 엣지로 묶으면 첫 글자가 그만큼 늦는다.
+  간격과 엣지는 계약이 갖고 `readChatDraftRules`가 읽는다.
 - 원장 쓰기는 `tail` 프로미스로 직렬화되므로 모델이 토큰을 소비하는 루프를 막지 않는다.
 - 순번은 보낸 횟수가 아니라 받은 조각을 센다. 늦게 도착한 프레임을 화면이 가릴 때 이 값을 본다.
 - 시도를 여는 `beginAttempt`는 초안을 비우므로 그 직후에도 알린다. 알리지 않으면 화면이 이전
