@@ -15,6 +15,7 @@ import type { ChatTurnInput, ChatTurnResult } from "~agent-worker/domain/chat/mo
 import type { ChatAgentPort } from "~agent-worker/domain/chat/port/chat.agent.port.js";
 import type {
     ChatExecutionSinkFactoryPort,
+    ChatExecutionUpdatePublisherPort,
     ChatSchedulerPort,
 } from "~agent-worker/domain/chat/port/chat.execution.sink.port.js";
 import type { ChatReplayClientFactory } from "~agent-worker/domain/chat/port/chat.replay.port.js";
@@ -39,6 +40,7 @@ export class GenerateChatExecutionUsecase {
         private readonly clock: IClock,
         private readonly scheduler: ChatSchedulerPort,
         private readonly replayClients: ChatReplayClientFactory,
+        private readonly events: ChatExecutionUpdatePublisherPort,
     ) {}
 
     async execute(
@@ -51,6 +53,8 @@ export class GenerateChatExecutionUsecase {
         if (!(await this.executions.beginAttempt(prepared.executionId, attempt, grant.hash, this.clock.now()))) {
             throw new Error("Chat execution attempt is stale");
         }
+        // 이 쓰기가 초안을 비우므로 알리지 않으면 화면이 이전 시도의 글을 재전송 주기까지 그대로 둔다.
+        this.events.publish(prepared.executionId);
         // 도구가 부를 API의 사용자 범위는 이 시도에 매인 자격이 정하며 시도의 마감과 함께 만료한다.
         const scopeToken = this.scopeTokens.issue(
             { userId: prepared.userId, executionId: prepared.executionId },

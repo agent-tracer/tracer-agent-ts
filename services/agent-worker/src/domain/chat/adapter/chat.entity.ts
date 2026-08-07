@@ -1,5 +1,10 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
-import type { ChatExecutionStatus, ChatMessageRole, ChatStopReason } from "~agent-worker/domain/chat/model/chat.const.js";
+import type {
+    ChatExecutionPhase,
+    ChatExecutionStatus,
+    ChatMessageRole,
+    ChatStopReason,
+} from "~agent-worker/domain/chat/model/chat.const.js";
 import { ChatExecution } from "~agent-worker/domain/chat/model/chat.execution.model.js";
 import { ChatMessage, type ChatToolCall } from "~agent-worker/domain/chat/model/chat.message.model.js";
 import { ChatThread } from "~agent-worker/domain/chat/model/chat.thread.model.js";
@@ -29,6 +34,9 @@ export class ChatExecutionEntity {
 
     @Column({ type: "text" })
     status!: ChatExecutionStatus;
+
+    @Column({ type: "text", default: "starting" })
+    phase!: ChatExecutionPhase;
 
     @Column({ name: "requested_backend", type: "text", nullable: true })
     requestedBackend!: string | null;
@@ -146,6 +154,7 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.clientRequestId = row.clientRequestId;
     execution.inputHash = row.inputHash;
     execution.status = row.status;
+    execution.phase = row.phase;
     execution.requestedBackend = row.requestedBackend;
     execution.model = row.model;
     execution.language = row.language;

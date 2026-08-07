@@ -3,6 +3,7 @@ import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { CONTRACT_ROOT, readContractJson } from "~agent-worker/support/contract.js";
 import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { CHAT_EXECUTION_PHASE } from "~agent-worker/domain/chat/model/chat.const.js";
 import type { ChatExecutionSpend } from "~agent-worker/domain/chat/model/chat.execution.model.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { ChatExecutionEntity } from "./chat.entity.js";
@@ -115,6 +116,7 @@ function invoke(
                 Number(call["attempt"]),
                 String(call["draftText"]),
                 Number(call["draftSeq"]),
+                CHAT_EXECUTION_PHASE.responding,
                 now,
             );
         case "completeRunning":
@@ -181,4 +183,23 @@ describe("대화 실행 상태 기계", () => {
             });
         }
     }
+
+    it("실행이 무엇을 하는 중인지가 원장을 오가며 살아남는다", async () => {
+        const executions = ledger.repository(ChatExecutionEntity);
+        await executions.insert(seedRow({ id: "phase-1", status: "running" }));
+        const repository = new TypeOrmChatExecutionRepository(executions);
+
+        const stored = await repository.checkpointRunning(
+            "phase-1",
+            0,
+            "생각하는 중",
+            1,
+            CHAT_EXECUTION_PHASE.tool,
+            new Date("2026-01-01T00:00:01.000Z"),
+        );
+        const reloaded = await repository.findById("phase-1");
+
+        expect(stored).toBe(true);
+        expect(reloaded?.phase).toBe(CHAT_EXECUTION_PHASE.tool);
+    });
 });

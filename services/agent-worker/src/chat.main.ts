@@ -109,6 +109,7 @@ async function bootstrap(): Promise<void> {
             clock,
             scheduler,
             replayClients,
+            events,
         ),
         new FinalizeChatExecutionUsecase(
             executions,

@@ -1,5 +1,9 @@
 import { redactText } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
+import {
+    CHAT_EXECUTION_PHASE,
+    type ChatExecutionPhase,
+} from "~agent-worker/domain/chat/model/chat.const.js";
 import type { ChatTurnToolCall } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import type {
     ChatExecutionSinkFactoryPort,
@@ -39,14 +43,18 @@ export class ChatExecutionSinkFactory implements ChatExecutionSinkFactoryPort {
 class DurableChatExecutionSink implements ChatExecutionSinkHandle {
     private text = "";
     private seq = 0;
+    private phase: ChatExecutionPhase = CHAT_EXECUTION_PHASE.starting;
     private timer: object | null = null;
     private tail: Promise<void> = Promise.resolve();
 
     readonly sink = {
-        onAssistantDelta: (text: string) => this.push(text),
-        // 도구가 실행되는 동안 draft가 멈추면 화면도 멈춰 사용자가 실행이 끝난 줄 안다.
-        onToolCall: (call: ChatTurnToolCall) => this.push(toolMarker(call.name)),
-        onToolResult: () => undefined,
+        onAssistantDelta: (text: string) => this.push(text, CHAT_EXECUTION_PHASE.responding),
+        // 사고 블록과 도구 인자는 글자를 내지 않으므로 무엇을 하는 중인지만 옮겨 화면이 멈추지 않게 한다.
+        onProgress: () => this.enterPhase(CHAT_EXECUTION_PHASE.thinking),
+        onToolCall: (call: ChatTurnToolCall) =>
+            this.push(toolMarker(call.name), CHAT_EXECUTION_PHASE.tool),
+        // 도구가 실행되는 동안 공급자가 아무 신호도 내지 않으므로 결과가 와야 다음 구간으로 넘어간다.
+        onToolResult: () => this.enterPhase(CHAT_EXECUTION_PHASE.thinking),
         onMemoryUpdated: () => this.events.publish(this.executionId),
     };
 
@@ -71,9 +79,25 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
         this.timer = null;
     }
 
-    private push(delta: string): void {
+    private push(delta: string, phase: ChatExecutionPhase): void {
         this.text += delta;
+        this.phase = phase;
         this.seq += 1;
+        this.scheduleFlush();
+    }
+
+    /** 답변이 흐르는 중에는 사고로 되돌리지 않으므로 표시가 조각마다 흔들리지 않는다. */
+    private enterPhase(phase: ChatExecutionPhase): void {
+        if (this.phase === phase) return;
+        if (phase === CHAT_EXECUTION_PHASE.thinking && this.phase === CHAT_EXECUTION_PHASE.responding) {
+            return;
+        }
+        this.phase = phase;
+        this.seq += 1;
+        this.scheduleFlush();
+    }
+
+    private scheduleFlush(): void {
         if (this.timer !== null) return;
         this.timer = this.scheduler.schedule(DRAFT_CHECKPOINT_INTERVAL_MS, () => {
             this.timer = null;
@@ -84,6 +108,7 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
     private enqueueFlush(): void {
         const text = redactText(this.text);
         const seq = this.seq;
+        const phase = this.phase;
         if (seq === 0) return;
         this.tail = this.tail.catch(() => undefined).then(async () => {
             const saved = await this.executions.checkpointRunning(
@@ -91,6 +116,7 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
                 this.attempt,
                 text,
                 seq,
+                phase,
                 this.clock.now(),
             );
             if (saved) this.events.publish(this.executionId);

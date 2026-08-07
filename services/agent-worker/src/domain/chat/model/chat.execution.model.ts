@@ -1,5 +1,5 @@
 import type { AgentQueryUsage } from "@tracer-agent/llm";
-import type { ChatExecutionStatus, ChatStopReason } from "./chat.const.js";
+import type { ChatExecutionPhase, ChatExecutionStatus, ChatStopReason } from "./chat.const.js";
 
 /** 한 시도가 실행한 모델과 지출이며 종결이 이 값을 실행 원장에 기록한다. */
 export interface ChatExecutionSpend {
@@ -25,6 +25,9 @@ export class ChatExecution {
     inputHash!: string;
 
     status!: ChatExecutionStatus;
+
+    /** 초안이 자라지 않는 구간에도 실행이 무엇을 하는 중인지를 든다. */
+    phase!: ChatExecutionPhase;
 
     /** 이 실행을 접수한 축이며 접수구가 자기 축을 그대로 적으므로 대기와 실행 중에는 비어 있지 않다. */
     requestedBackend!: string | null;

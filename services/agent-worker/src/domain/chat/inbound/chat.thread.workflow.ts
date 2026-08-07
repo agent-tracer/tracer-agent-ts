@@ -8,7 +8,10 @@ import {
     setHandler,
     startChild,
 } from "@temporalio/workflow";
-import type { ChatThreadWorkflowInput } from "~agent-worker/domain/chat/model/chat.workflow.spec.js";
+import {
+    CHAT_THREAD_IDLE_TIMEOUT,
+    type ChatThreadWorkflowInput,
+} from "~agent-worker/domain/chat/model/chat.workflow.spec.js";
 
 /** 스레드 워크플로가 자식을 띄울 때 쓰는 이름과 신호이며 접수가 같은 값으로 신호를 보낸다. */
 const CHAT_EXECUTION_WORKFLOW = "chatExecutionWorkflow";
@@ -36,7 +39,7 @@ export async function chatThreadWorkflow(input: ChatThreadWorkflowInput): Promis
         wake = true;
     });
     for (;;) {
-        const signaled = await condition(() => wake, "5 seconds");
+        const signaled = await condition(() => wake, CHAT_THREAD_IDLE_TIMEOUT);
         if (!signaled) return;
         wake = false;
         let lastFailed: string | null = null;

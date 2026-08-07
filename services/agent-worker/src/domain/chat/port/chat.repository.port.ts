@@ -1,5 +1,5 @@
 import type { AgentRunObservation, JobStepPayload } from "@tracer-agent/llm";
-import type { ChatExecutionClaim } from "~agent-worker/domain/chat/model/chat.const.js";
+import type { ChatExecutionClaim, ChatExecutionPhase } from "~agent-worker/domain/chat/model/chat.const.js";
 import type { ChatExecution, ChatExecutionSpend } from "~agent-worker/domain/chat/model/chat.execution.model.js";
 import type { ChatMessage } from "~agent-worker/domain/chat/model/chat.message.model.js";
 import type { ChatThread } from "~agent-worker/domain/chat/model/chat.thread.model.js";
@@ -17,6 +17,7 @@ export interface ChatExecutionRepositoryPort {
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean>;
     completeRunning(

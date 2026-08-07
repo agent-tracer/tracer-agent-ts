@@ -33,6 +33,25 @@ export const CHAT_EXECUTION_STATUSES = [
 
 export type ChatExecutionStatus = (typeof CHAT_EXECUTION_STATUSES)[number];
 
+/** 실행이 지금 무엇을 하는 중인지이며, 초안이 자라지 않는 구간에도 화면이 살아 있음을 보이게 한다. */
+export const CHAT_EXECUTION_PHASE = {
+    starting: "starting",
+    thinking: "thinking",
+    responding: "responding",
+    tool: "tool",
+    done: "done",
+} as const;
+
+export const CHAT_EXECUTION_PHASES = [
+    CHAT_EXECUTION_PHASE.starting,
+    CHAT_EXECUTION_PHASE.thinking,
+    CHAT_EXECUTION_PHASE.responding,
+    CHAT_EXECUTION_PHASE.tool,
+    CHAT_EXECUTION_PHASE.done,
+] as const;
+
+export type ChatExecutionPhase = (typeof CHAT_EXECUTION_PHASES)[number];
+
 /** 모델이 응답을 멈춘 이유이며 실행 수명을 나타내는 status와 다른 축이다. */
 export const CHAT_STOP_REASON = {
     completed: "completed",

@@ -2,8 +2,10 @@ import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import {
     CHAT_EXECUTION_CLAIM,
+    CHAT_EXECUTION_PHASE,
     CHAT_EXECUTION_STATUS,
     type ChatExecutionClaim,
+    type ChatExecutionPhase,
 } from "~agent-worker/domain/chat/model/chat.const.js";
 import type {
     ChatExecution,
@@ -80,11 +82,12 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean> {
         const result = await this.repo.update(
             { id, status: CHAT_EXECUTION_STATUS.running, attempt, draftSeq: LessThan(draftSeq) },
-            { draftText, draftSeq, updatedAt: now },
+            { draftText, draftSeq, phase, updatedAt: now },
         );
         return result.affected === 1;
     }
@@ -97,7 +100,11 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
     ): Promise<boolean> {
         const result = await this.repo.update(
             { id, status: CHAT_EXECUTION_STATUS.running },
-            spendPatch(assistantMessageId, spend, now, { status: CHAT_EXECUTION_STATUS.completed, completedAt: now }),
+            spendPatch(assistantMessageId, spend, now, {
+                status: CHAT_EXECUTION_STATUS.completed,
+                phase: CHAT_EXECUTION_PHASE.done,
+                completedAt: now,
+            }),
         );
         return result.affected === 1;
     }
@@ -112,7 +119,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo
             .createQueryBuilder()
             .update(ChatExecutionEntity)
-            .set(spendPatch(assistantMessageId, spend, now, {}))
+            .set(spendPatch(assistantMessageId, spend, now, { phase: CHAT_EXECUTION_PHASE.done }))
             .where("id = :id", { id })
             .andWhere("assistant_message_id IS NULL")
             .andWhere(observedTerminalCondition("cancelled"), {
@@ -127,7 +134,13 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         const result = await this.repo
             .createQueryBuilder()
             .update(ChatExecutionEntity)
-            .set({ status: CHAT_EXECUTION_STATUS.failed, error, completedAt: now, updatedAt: now })
+            .set({
+                status: CHAT_EXECUTION_STATUS.failed,
+                phase: CHAT_EXECUTION_PHASE.done,
+                error,
+                completedAt: now,
+                updatedAt: now,
+            })
             .where("id = :id", { id })
             .andWhere(terminalCondition("failed"), {
                 settled: CHAT_EXECUTION_STATUS.queued,

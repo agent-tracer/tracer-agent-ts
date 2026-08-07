@@ -3,6 +3,7 @@ import {
     CHAT_EXECUTION_CLAIM,
     CHAT_EXECUTION_STATUS,
     type ChatExecutionClaim,
+    type ChatExecutionPhase,
 } from "~agent-worker/domain/chat/model/chat.const.js";
 import type {
     ChatExecution,
@@ -89,6 +90,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean> {
         const row = this.rows.get(id);
@@ -102,6 +104,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         }
         row.draftText = draftText;
         row.draftSeq = draftSeq;
+        row.phase = phase;
         row.updatedAt = now;
         return true;
     }

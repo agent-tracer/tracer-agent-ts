@@ -116,11 +116,14 @@ function setup(agent: ChatAgentPort, reader: ChatSettingReaderPort = settings(nu
     const sinks = new RecordingSinkFactory();
     const scheduler = new ManualScheduler();
     const clock = new FixedClock();
+    const published: string[] = [];
+    const events = { publish: (executionId: string) => void published.push(executionId) };
     return {
         executions,
         sinks,
         scheduler,
         clock,
+        published,
         usecase: new GenerateChatExecutionUsecase(
             agent,
             reader,
@@ -131,6 +134,7 @@ function setup(agent: ChatAgentPort, reader: ChatSettingReaderPort = settings(nu
             clock,
             scheduler,
             () => replay,
+            events,
         ),
     };
 }
@@ -146,6 +150,15 @@ describe("GenerateChatExecutionUsecase", () => {
         expect(executions.rows.get("exec-1")?.attempt).toBe(1);
         expect(agent.lastInput?.messages).toHaveLength(1);
         expect(agent.lastInput?.facts).toHaveLength(1);
+    });
+
+    it("시도를 열어 초안을 비우면 곧바로 알려 화면이 이전 시도의 글을 붙들지 않게 한다", async () => {
+        const agent = new FakeChatAgent();
+        const { published, usecase } = setup(agent);
+
+        await usecase.execute(PREPARED, new AbortController().signal, 1);
+
+        expect(published[0]).toBe("exec-1");
     });
 
     it("시도가 뒤처졌으면 실행하지 않는다", async () => {
