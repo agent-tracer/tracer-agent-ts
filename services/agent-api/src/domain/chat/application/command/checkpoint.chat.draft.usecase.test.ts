@@ -8,7 +8,7 @@ import { RecordingChatExecutionUpdates } from "~agent-api/domain/chat/port/__fak
 import { CheckpointChatDraftUseCase } from "./checkpoint.chat.draft.usecase.js";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
-const CHECKPOINT = { executionId: "e1", token: "draft-token", attempt: 1, draftSeq: 1, text: "부분 답변" };
+const CHECKPOINT = { executionId: "e1", token: "draft-token", attempt: 1, draftSeq: 1, text: "부분 답변", phase: "responding" as const };
 
 function runningExecution(): ChatExecution {
     const execution = ChatExecution.create({

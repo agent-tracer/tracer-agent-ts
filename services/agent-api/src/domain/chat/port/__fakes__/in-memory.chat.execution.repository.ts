@@ -1,5 +1,8 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
-import { CHAT_EXECUTION_STATUS } from "~agent-api/domain/chat/model/chat.const.js";
+import {
+    CHAT_EXECUTION_STATUS,
+    type ChatExecutionPhase,
+} from "~agent-api/domain/chat/model/chat.const.js";
 import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import type { ChatExecutionRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 
@@ -69,6 +72,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean> {
         const row = this.rows.get(id);
@@ -80,7 +84,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         ) {
             return Promise.resolve(false);
         }
-        row.checkpoint(attempt, draftText, draftSeq, now);
+        row.checkpoint(attempt, draftText, draftSeq, phase, now);
         return Promise.resolve(true);
     }
 

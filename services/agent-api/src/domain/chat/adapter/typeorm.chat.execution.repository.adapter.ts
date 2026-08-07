@@ -1,6 +1,10 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { In, LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
-import { CHAT_EXECUTION_STATUS } from "~agent-api/domain/chat/model/chat.const.js";
+import {
+    CHAT_EXECUTION_PHASE,
+    CHAT_EXECUTION_STATUS,
+    type ChatExecutionPhase,
+} from "~agent-api/domain/chat/model/chat.const.js";
 import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import type { ChatExecutionRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { ChatExecutionEntity, toChatExecution, toChatExecutionRow } from "./chat.execution.entity.js";
@@ -72,18 +76,24 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean> {
         const result = await this.repo.update(
             { id, status: CHAT_EXECUTION_STATUS.running, attempt, draftSeq: LessThan(draftSeq) },
-            { draftText, draftSeq, updatedAt: now },
+            { draftText, draftSeq, phase, updatedAt: now },
         );
         return result.affected === 1;
     }
 
     async cancelActive(id: string, now: Date): Promise<boolean> {
         const result = await this.repo.createQueryBuilder().update(ChatExecutionEntity)
-            .set({ status: CHAT_EXECUTION_STATUS.canceled, completedAt: now, updatedAt: now })
+            .set({
+                status: CHAT_EXECUTION_STATUS.canceled,
+                phase: CHAT_EXECUTION_PHASE.done,
+                completedAt: now,
+                updatedAt: now,
+            })
             .where("id = :id", { id })
             // running 행은 관측이 취소를 기록했거나 그 실행의 관측이 하나도 없을 때 닫는다.
             .andWhere(`(status = :queued OR (status = :running AND (EXISTS (

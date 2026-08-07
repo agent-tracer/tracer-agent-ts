@@ -30,6 +30,9 @@ export async function streamChatExecution(
     const writer = new SseWriter(response);
     let closed = false;
     let refreshTail = Promise.resolve();
+    let refreshQueued = false;
+    let forceNextFrame = false;
+    let lastFrame: string | null = null;
     let unsubscribe = (): void => undefined;
     let heartbeat: ReturnType<typeof setInterval> | null = null;
     const close = (): void => {
@@ -39,23 +42,35 @@ export async function streamChatExecution(
         unsubscribe();
         writer.close();
     };
-    const send = async (snapshot: ChatExecutionSnapshot): Promise<void> => {
+    const send = async (snapshot: ChatExecutionSnapshot, keepalive: boolean): Promise<void> => {
         if (closed) return;
+        const terminal = isTerminalExecution(snapshot.execution.status);
+        const frame = JSON.stringify(snapshot);
+        // 정본이 그대로면 화면도 그대로이나, 주기 재전송은 게이트웨이 유휴 타임아웃을 막으므로 거르지 않는다.
+        if (frame === lastFrame && !terminal && !keepalive) return;
+        lastFrame = frame;
         await writer.write("snapshot", snapshot);
-        if (isTerminalExecution(snapshot.execution.status)) response.end();
+        if (terminal) response.end();
     };
-    const refresh = (): void => {
+    // 이미 기다리는 조회가 있으면 그 조회가 최신 정본을 읽으므로 신호마다 질의를 쌓지 않는다.
+    const refresh = (keepalive = false): void => {
+        forceNextFrame ||= keepalive;
+        if (refreshQueued) return;
+        refreshQueued = true;
         refreshTail = refreshTail.then(async () => {
-            await send(await watch.snapshot(target.userId, target.threadId, target.executionId));
+            refreshQueued = false;
+            const forced = forceNextFrame;
+            forceNextFrame = false;
+            await send(await watch.snapshot(target.userId, target.threadId, target.executionId), forced);
         }).catch(() => close());
     };
-    unsubscribe = watch.subscribe(target.executionId, refresh);
+    unsubscribe = watch.subscribe(target.executionId, () => refresh());
     // 신호가 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.
     heartbeat = setInterval(() => {
-        if (!closed) refresh();
+        if (!closed) refresh(true);
     }, STREAM_RULES.resendIntervalMs);
     response.once("close", close);
-    refresh();
+    refresh(true);
     await refreshTail;
 }
 

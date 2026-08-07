@@ -143,4 +143,57 @@ describe("streamChatExecution", () => {
 
         expect(response.chunks).toHaveLength(2);
     });
+
+    it("정본이 그대로여도 주기 재전송은 내보내 게이트웨이가 조용한 스트림을 끊지 않게 한다", async () => {
+        const response = new FakeResponse();
+        const watch = watchOf(snapshotOf("running", 1));
+
+        await streamChatExecution(watch as never, response as unknown as Response, TARGET);
+        await vi.advanceTimersByTimeAsync(RULES.resendIntervalMs);
+        response.emit("close");
+
+        expect(response.chunks).toHaveLength(2);
+    });
+
+    it("신호가 와도 정본이 그대로면 프레임을 내지 않는다", async () => {
+        const response = new FakeResponse();
+        const watch = signalableWatch(snapshotOf("running", 1));
+
+        await streamChatExecution(watch as never, response as unknown as Response, TARGET);
+        await watch.signal();
+        response.emit("close");
+
+        expect(response.chunks).toHaveLength(1);
+    });
+
+    it("신호가 몰려도 조회를 쌓지 않고 한 번에 접는다", async () => {
+        const response = new FakeResponse();
+        const watch = signalableWatch(snapshotOf("running", 1));
+        const openingQueries = watch.snapshot.mock.calls.length;
+
+        await streamChatExecution(watch as never, response as unknown as Response, TARGET);
+        const afterOpen = watch.snapshot.mock.calls.length;
+        await watch.signal(5);
+        response.emit("close");
+
+        expect(openingQueries).toBe(0);
+        expect(watch.snapshot.mock.calls.length - afterOpen).toBeLessThan(5);
+    });
 });
+
+/** 구독자를 붙잡아 두어 버스 신호를 흉내 낼 수 있는 조회다. */
+function signalableWatch(current: ChatExecutionSnapshot) {
+    let notify: () => void = () => undefined;
+    const snapshot = vi.fn(async () => current);
+    return {
+        snapshot,
+        subscribe: vi.fn((_executionId: string, listener: () => void) => {
+            notify = listener;
+            return () => undefined;
+        }),
+        async signal(times = 1): Promise<void> {
+            for (let index = 0; index < times; index += 1) notify();
+            await vi.advanceTimersByTimeAsync(0);
+        },
+    };
+}

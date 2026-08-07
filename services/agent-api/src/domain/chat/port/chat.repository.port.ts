@@ -1,3 +1,4 @@
+import type { ChatExecutionPhase } from "~agent-api/domain/chat/model/chat.const.js";
 import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import type { ChatExecutionStep } from "~agent-api/domain/chat/model/chat.execution.step.model.js";
 import type { ChatMessage } from "~agent-api/domain/chat/model/chat.message.model.js";
@@ -47,6 +48,7 @@ export interface ChatExecutionRepositoryPort {
         attempt: number,
         draftText: string,
         draftSeq: number,
+        phase: ChatExecutionPhase,
         now: Date,
     ): Promise<boolean>;
     cancelActive(id: string, now: Date): Promise<boolean>;

@@ -1,5 +1,9 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
-import type { ChatExecutionStatus, ChatStopReason } from "~agent-api/domain/chat/model/chat.const.js";
+import type {
+    ChatExecutionPhase,
+    ChatExecutionStatus,
+    ChatStopReason,
+} from "~agent-api/domain/chat/model/chat.const.js";
 import { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 
 /** 대화 턴 실행 원장의 PostgreSQL 저장 스키마이며 스레드당 running 하나를 부분 유니크 인덱스가 강제한다. */
@@ -34,6 +38,9 @@ export class ChatExecutionEntity {
 
     @Column({ type: "text" })
     status!: ChatExecutionStatus;
+
+    @Column({ type: "text", default: "starting" })
+    phase!: ChatExecutionPhase;
 
     @Column({ name: "requested_backend", type: "text", nullable: true })
     requestedBackend!: string | null;
@@ -99,6 +106,7 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.clientRequestId = row.clientRequestId;
     execution.inputHash = row.inputHash;
     execution.status = row.status;
+    execution.phase = row.phase;
     execution.requestedBackend = row.requestedBackend;
     execution.model = row.model;
     execution.language = row.language;
@@ -129,6 +137,7 @@ export function toChatExecutionRow(execution: ChatExecution): ChatExecutionEntit
     row.clientRequestId = execution.clientRequestId;
     row.inputHash = execution.inputHash;
     row.status = execution.status;
+    row.phase = execution.phase;
     row.requestedBackend = execution.requestedBackend;
     row.model = execution.model;
     row.language = execution.language;

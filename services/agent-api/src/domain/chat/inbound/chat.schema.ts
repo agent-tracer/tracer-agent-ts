@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHAT_LANGUAGE } from "~agent-api/domain/chat/model/chat.const.js";
+import { CHAT_EXECUTION_PHASES, CHAT_LANGUAGE } from "~agent-api/domain/chat/model/chat.const.js";
 
 export const createThreadSchema = z.object({
     title: z.string().trim().min(1).max(200),
@@ -33,6 +33,7 @@ export const checkpointDraftSchema = z.object({
     attempt: z.number().int().min(1),
     draftSeq: z.number().int().min(1),
     text: z.string().max(200_000),
+    phase: z.enum(CHAT_EXECUTION_PHASES),
 });
 
 export type CheckpointDraftPayload = z.infer<typeof checkpointDraftSchema>;

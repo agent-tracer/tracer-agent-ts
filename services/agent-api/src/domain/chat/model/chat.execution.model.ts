@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { InvariantViolationError } from "@tracer-agent/platform";
 import {
+    CHAT_EXECUTION_PHASE,
     CHAT_EXECUTION_STATUS,
+    type ChatExecutionPhase,
     type ChatExecutionStatus,
     type ChatStopReason,
 } from "~agent-api/domain/chat/model/chat.const.js";
@@ -52,6 +54,9 @@ export class ChatExecution {
     inputHash!: string;
 
     status!: ChatExecutionStatus;
+
+    /** 초안이 자라지 않는 구간에도 실행이 무엇을 하는 중인지를 든다. */
+    phase!: ChatExecutionPhase;
 
     /** 이 실행을 접수한 축이며 접수구가 자기 축을 그대로 적으므로 대기와 실행 중에는 비어 있지 않다. */
     requestedBackend!: string | null;
@@ -112,6 +117,7 @@ export class ChatExecution {
         execution.numTurns = null;
         execution.stopReason = null;
         execution.usage = {};
+        execution.phase = CHAT_EXECUTION_PHASE.starting;
         execution.error = null;
         execution.createdAt = input.now;
         execution.updatedAt = input.now;
@@ -140,11 +146,18 @@ export class ChatExecution {
             throw new InvariantViolationError("chat-execution.not-running");
         }
         this.status = CHAT_EXECUTION_STATUS.queued;
+        this.phase = CHAT_EXECUTION_PHASE.starting;
         this.startedAt = null;
         this.updatedAt = now;
     }
 
-    checkpoint(attempt: number, draftText: string, seq: number, now: Date): void {
+    checkpoint(
+        attempt: number,
+        draftText: string,
+        seq: number,
+        phase: ChatExecutionPhase,
+        now: Date,
+    ): void {
         if (this.status !== CHAT_EXECUTION_STATUS.running) {
             throw new InvariantViolationError("chat-execution.not-running");
         }
@@ -152,6 +165,7 @@ export class ChatExecution {
         if (seq <= this.draftSeq) return;
         this.draftText = draftText;
         this.draftSeq = seq;
+        this.phase = phase;
         this.updatedAt = now;
     }
 
@@ -162,6 +176,7 @@ export class ChatExecution {
     cancel(now: Date): void {
         if (this.isTerminal()) throw new InvariantViolationError("chat-execution.already-terminal");
         this.status = CHAT_EXECUTION_STATUS.canceled;
+        this.phase = CHAT_EXECUTION_PHASE.done;
         this.completedAt = now;
         this.updatedAt = now;
     }

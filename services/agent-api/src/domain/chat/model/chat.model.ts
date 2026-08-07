@@ -1,4 +1,5 @@
 import type {
+    ChatExecutionPhase,
     ChatExecutionStatus,
     ChatMessageRole,
     ChatStopReason,
@@ -24,6 +25,8 @@ export interface ChatExecutionDto {
     readonly threadId: string;
     readonly replayAnchorMessageId: string;
     readonly status: ChatExecutionStatus;
+    /** 실행이 지금 무엇을 하는 중인지이며 값의 목록은 계약이 갖는다. */
+    readonly phase: ChatExecutionPhase;
     readonly requestedBackend: string | null;
     readonly draftText: string;
     readonly draftSeq: number;
@@ -95,6 +98,7 @@ export function mapExecution(execution: ChatExecution): ChatExecutionDto {
         threadId: execution.threadId,
         replayAnchorMessageId: execution.replayAnchorMessageId,
         status: execution.status,
+        phase: execution.phase,
         requestedBackend: execution.requestedBackend,
         draftText: execution.draftText,
         draftSeq: execution.draftSeq,

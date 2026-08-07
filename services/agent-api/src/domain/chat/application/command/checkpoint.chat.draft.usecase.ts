@@ -1,4 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import type { ChatExecutionPhase } from "~agent-api/domain/chat/model/chat.const.js";
 import { CHAT_DRAFT_TOKEN, type ChatDraftTokenPort } from "~agent-api/domain/chat/port/chat.draft.token.port.js";
 import {
     CHAT_EXECUTION_UPDATE_PUBLISHER,
@@ -16,6 +17,7 @@ export interface ChatDraftCheckpointInput {
     readonly attempt: number;
     readonly draftSeq: number;
     readonly text: string;
+    readonly phase: ChatExecutionPhase;
 }
 
 /** 실행기가 프로세스 밖에서 보낸 누적 draft를 정본에 반영하고 열린 연결에 알린다. */
@@ -41,6 +43,7 @@ export class CheckpointChatDraftUseCase {
             execution.attempt,
             input.text,
             input.draftSeq,
+            input.phase,
             this.clock.now(),
         );
         if (stored) this.events.publish(input.executionId);
