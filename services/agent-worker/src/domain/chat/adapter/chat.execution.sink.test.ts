@@ -44,6 +44,11 @@ function recordingSink() {
     return { executions, handle: factory.create("exec-1", 1) };
 }
 
+/** 큐에 얹힌 쓰기가 실제로 나갔는지 보려고 대기 중인 작업이 끝나기를 기다린다. */
+function settle(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 // 시간이 흐르지 않는 대역이라 검사점은 flush 가 부를 때만 열린다.
 const IDLE_SCHEDULER: ChatSchedulerPort = {
     schedule: () => ({}),
@@ -81,6 +86,17 @@ describe("실행이 무엇을 하는 중인지", () => {
         expect(executions.drafts).toEqual([""]);
     });
 
+    it("첫 조각은 스로틀을 기다리지 않고 곧바로 적는다", async () => {
+        const { executions, handle } = recordingSink();
+
+        await handle.sink.onAssistantDelta("첫");
+        await settle();
+
+        // 시간이 흐르지 않는 대역이라 뒤쪽 엣지였다면 flush 전까지 아무것도 적히지 않는다.
+        expect(executions.drafts).toEqual(["첫"]);
+        handle.close();
+    });
+
     it("도구를 부르면 도구 구간으로 옮기고 결과가 와야 빠져나온다", async () => {
         const { executions, handle } = recordingSink();
 
@@ -99,9 +115,12 @@ describe("실행이 무엇을 하는 중인지", () => {
         await handle.sink.onAssistantDelta("답");
         await handle.flush();
         handle.sink.onProgress?.();
+        await handle.sink.onAssistantDelta("변");
         await handle.flush();
         handle.close();
 
+        // 사이에 끼어든 진행 신호가 thinking 을 적었다면 가운데에 남았을 자리다.
         expect(executions.phases).toEqual(["responding", "responding"]);
+        expect(executions.drafts).toEqual(["답", "답변"]);
     });
 });

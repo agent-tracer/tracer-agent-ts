@@ -44,6 +44,8 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
     private text = "";
     private seq = 0;
     private phase: ChatExecutionPhase = CHAT_EXECUTION_PHASE.starting;
+    private opened = false;
+    private savedSeq = 0;
     private timer: object | null = null;
     private tail: Promise<void> = Promise.resolve();
 
@@ -55,7 +57,6 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
             this.push(toolMarker(call.name), CHAT_EXECUTION_PHASE.tool),
         // 도구가 실행되는 동안 공급자가 아무 신호도 내지 않으므로 결과가 와야 다음 구간으로 넘어간다.
         onToolResult: () => this.enterPhase(CHAT_EXECUTION_PHASE.thinking),
-        onMemoryUpdated: () => this.events.publish(this.executionId),
     };
 
     constructor(
@@ -97,11 +98,16 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
         this.scheduleFlush();
     }
 
+    /** 첫 조각은 곧바로 적고 그 뒤로만 묶어, 첫 글자가 스로틀만큼 늦지 않게 한다. */
     private scheduleFlush(): void {
         if (this.timer !== null) return;
+        if (!this.opened) {
+            this.opened = true;
+            this.enqueueFlush();
+        }
         this.timer = this.scheduler.schedule(DRAFT_CHECKPOINT_INTERVAL_MS, () => {
             this.timer = null;
-            this.enqueueFlush();
+            if (this.seq > this.savedSeq) this.enqueueFlush();
         });
     }
 
@@ -109,7 +115,8 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
         const text = redactText(this.text);
         const seq = this.seq;
         const phase = this.phase;
-        if (seq === 0) return;
+        if (seq === 0 || seq === this.savedSeq) return;
+        this.savedSeq = seq;
         this.tail = this.tail.catch(() => undefined).then(async () => {
             const saved = await this.executions.checkpointRunning(
                 this.executionId,
