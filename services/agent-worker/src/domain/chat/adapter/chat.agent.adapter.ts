@@ -58,7 +58,7 @@ export class ChatAgentAdapter implements ChatAgentPort {
         const handlers = {
             ...buildChatReadToolHandlers(this.tracerApi, scope),
             ...buildChatReadToolHandlers(this.memoryApi, scope, chatAgentReadToolNames()),
-            ...buildChatMemoryToolHandlers(this.memoryApi, { ...scope, sink }),
+            ...buildChatMemoryToolHandlers(this.memoryApi, scope),
             ...writes.handlers,
         };
         const model = input.model?.trim() || CHAT_SPEC.limits.defaultModel;

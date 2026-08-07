@@ -35,12 +35,6 @@ export interface ChatUserFact {
     readonly content: string;
 }
 
-/** 장기기억 산출물을 서버가 적재한 뒤 사용자에게 알리는 갱신 통지다. */
-export interface ChatMemoryUpdate {
-    readonly key: string;
-    readonly content: string;
-}
-
 /** 턴이 끝나기 전에 부분 산출을 전송하는 싱크이며 확인 대기 행은 이 싱크로 흐르지 않는다. */
 export interface ChatTurnSink {
     /** 보낼 산출물은 없지만 실행이 나아가고 있음을 알리며 멈춤 감시만 이것을 본다. */
@@ -49,8 +43,6 @@ export interface ChatTurnSink {
     onAssistantDelta(text: string): void | Promise<void>;
     onToolCall(call: ChatTurnToolCall): void | Promise<void>;
     onToolResult(result: ChatTurnToolResult): void | Promise<void>;
-    /** 장기기억 산출물을 서버가 적재한 뒤 투명성 통지로 전송한다. */
-    onMemoryUpdated?(update: ChatMemoryUpdate): void | Promise<void>;
 }
 
 /** 한 대화 턴의 실행 입력이다. */

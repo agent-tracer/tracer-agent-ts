@@ -1,5 +1,4 @@
 import type {
-    ChatMemoryUpdate,
     ChatTurnSink,
     ChatTurnToolCall,
     ChatTurnToolResult,
@@ -41,14 +40,6 @@ export class ChatStallWatch {
                 mark();
                 return sink.onToolResult(result);
             },
-            ...(sink.onMemoryUpdated !== undefined
-                ? {
-                    onMemoryUpdated: (update: ChatMemoryUpdate) => {
-                        mark();
-                        return sink.onMemoryUpdated?.(update);
-                    },
-                }
-                : {}),
         };
     }
 
