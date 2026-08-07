@@ -31,6 +31,7 @@ function result(overrides: Partial<AgentQueryResult>): AgentQueryResult {
         actualModel: "claude-sonnet-4-6",
         providerRequestId: null,
         ttftMs: null,
+        startupMs: null,
         ...overrides,
     };
 }

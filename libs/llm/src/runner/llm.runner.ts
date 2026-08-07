@@ -95,6 +95,8 @@ export interface AgentQueryResult {
     readonly providerRequestId: string | null;
     /** 첫 토큰이 도착하기까지의 밀리초이며 스트리밍으로 받지 않은 실행은 잴 자리가 없어 비운다. */
     readonly ttftMs: number | null;
+    /** 질의를 연 뒤 공급자의 첫 메시지가 올 때까지의 밀리초이며 하위 프로세스 기동이 여기에 들어간다. */
+    readonly startupMs: number | null;
 }
 
 /** 프롬프트를 넣으면 구조화 출력을 내는 공급자 실행기다. */

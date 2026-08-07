@@ -26,7 +26,7 @@ function result(overrides: Partial<AgentQueryResult> = {}): AgentQueryResult {
         rawOutput: "raw private answer", structuredOutput: null, durationMs: 60, numTurns: 2,
         costUsd: 0.25, usage: { inputTokens: 10, outputTokens: 4, cacheReadTokens: 3, cacheCreationTokens: 2 },
         steps, errorSummary: null, errorSubtype: null, landed: false, actualModel: "claude-actual",
-        providerRequestId: null, ttftMs: null, ...overrides,
+        providerRequestId: null, ttftMs: null, startupMs: null, ...overrides,
     };
 }
 

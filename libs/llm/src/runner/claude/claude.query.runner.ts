@@ -97,6 +97,8 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         const executablePath = resolveClaudeExecutablePath();
         const permissions = buildQueryPermissions(request.allowedTools, request.disallowedTools);
 
+        // 하위 프로세스 기동과 MCP 초기화가 이 지점과 첫 메시지 사이에 들어가며 ttft_ms 로는 갈라지지 않는다.
+        const queryOpenedAt = this.nowMs();
         const stream = query({
             prompt: request.prompt,
             options: {
@@ -140,8 +142,10 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         });
 
         const sink = request.stream;
+        let startupMs: number | null = null;
         try {
             for await (const msg of stream) {
+                startupMs ??= this.nowMs() - queryOpenedAt;
                 // 부분 메시지가 켜졌을 때만 나오며 어시스턴트 텍스트 조각을 도착하는 대로 전송한다.
                 if (msg.type === "stream_event") {
                     if (sink !== undefined) {
@@ -280,6 +284,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             actualModel,
             providerRequestId,
             ttftMs,
+            startupMs,
         };
 
         if (runTree) {

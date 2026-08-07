@@ -26,5 +26,7 @@ export function logAgentQuery(
         cacheReadTokens: usage?.cacheReadTokens ?? null,
         cacheCreationTokens: usage?.cacheCreationTokens ?? null,
         durationMs: result.durationMs,
+        ttftMs: result.ttftMs,
+        startupMs: result.startupMs,
     });
 }
