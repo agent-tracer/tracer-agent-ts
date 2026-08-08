@@ -20,6 +20,16 @@ export class ChatActiveTurnConflictError extends DomainError {
     }
 }
 
+/** 저장된 문장은 다음 턴의 문맥으로 되돌아오므로 실리지 못한 사유를 그대로 알린다. */
+export class ChatMemoryRejectedError extends DomainError {
+    readonly httpStatus = 400;
+    readonly code = "chat.memory-rejected";
+
+    constructor(rejection: string) {
+        super("Memory content was rejected", [{ type: rejection }]);
+    }
+}
+
 export class ChatExecutionIdempotencyConflictError extends DomainError {
     readonly httpStatus = 409;
     readonly code = "chat.execution-idempotency-conflict";

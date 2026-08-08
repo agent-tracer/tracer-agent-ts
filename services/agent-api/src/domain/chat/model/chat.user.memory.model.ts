@@ -1,3 +1,6 @@
+import { ChatMemoryRejectedError } from "./chat.errors.js";
+import { memoryRejection } from "./chat.memory.policy.js";
+
 export interface ChatUserMemoryCreateInput {
     readonly id: string;
     readonly userId: string;
@@ -22,6 +25,10 @@ export class ChatUserMemory {
     updatedAt!: Date;
 
     static create(input: ChatUserMemoryCreateInput): ChatUserMemory {
+        // 실을 수 없는 내용은 원장에 닿기 전에 막아야 어느 쓰기 경로로 와도 같은 거절을 받는다.
+        const rejection = memoryRejection(input.content);
+        if (rejection !== null) throw new ChatMemoryRejectedError(rejection);
+
         const memory = new ChatUserMemory();
         memory.id = input.id;
         memory.userId = input.userId;
