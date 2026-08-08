@@ -135,4 +135,35 @@ describe("FinalizeChatExecutionUsecase", () => {
         expect(summaryProjection.project).toHaveBeenCalledTimes(1);
         expect(titleProjection.project).toHaveBeenCalledTimes(1);
     });
+
+    it("파생 계산이 끝난 뒤에 종결이 돌아와야 워커가 내려갈 때 사라지지 않는다", async () => {
+        const { executions, summaryProjection, titleProjection, usecase } = setup();
+        executions.add(chatExecution({ status: CHAT_EXECUTION_STATUS.running, attempt: 1 }));
+        let summaryDone = false;
+        let titleDone = false;
+        summaryProjection.project.mockImplementation(async () => {
+            await Promise.resolve();
+            summaryDone = true;
+        });
+        titleProjection.project.mockImplementation(async () => {
+            await Promise.resolve();
+            titleDone = true;
+        });
+
+        await usecase.execute({ executionId: "exec-1", attempt: 1, result: chatTurnResult({}) });
+
+        expect(summaryDone).toBe(true);
+        expect(titleDone).toBe(true);
+    });
+
+    it("파생 계산이 실패해도 이미 적힌 턴을 실패로 되돌리지 않는다", async () => {
+        const { executions, summaryProjection, usecase } = setup();
+        executions.add(chatExecution({ status: CHAT_EXECUTION_STATUS.running, attempt: 1 }));
+        summaryProjection.project.mockRejectedValue(new Error("요약이 터졌다"));
+
+        const finalizing = usecase.execute({ executionId: "exec-1", attempt: 1, result: chatTurnResult({}) });
+
+        await expect(finalizing).resolves.toBeUndefined();
+        expect(executions.rows.get("exec-1")?.status).toBe(CHAT_EXECUTION_STATUS.completed);
+    });
 });

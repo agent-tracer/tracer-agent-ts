@@ -114,20 +114,22 @@ export class FinalizeChatExecutionUsecase {
             this.messages.listByThread(execution.threadId),
         ]);
         if (thread === null) return;
-        void this.summaryProjection.project(thread, history).catch((error: unknown) =>
-            logError({
-                msg: "chat.detached_summary.failed",
-                threadId: execution.threadId,
-                error: errorMessage(error),
-            }),
-        );
-        void this.titleProjection.project(thread, history).catch((error: unknown) =>
-            logError({
-                msg: "chat.detached_title.failed",
-                threadId: execution.threadId,
-                error: errorMessage(error),
-            }),
-        );
+        // 사용자는 이미 답을 받았지만 파생 계산은 이 활동 안에서 끝내야 워커가 내려갈 때 사라지지 않는다.
+        await Promise.all([
+            this.project("summary", execution.threadId, () =>
+                this.summaryProjection.project(thread, history),
+            ),
+            this.project("title", execution.threadId, () => this.titleProjection.project(thread, history)),
+        ]);
+    }
+
+    /** 파생 계산이 실패해도 이미 적힌 턴을 실패로 되돌리지 않도록 이 자리에서 접는다. */
+    private async project(name: string, threadId: string, run: () => Promise<void>): Promise<void> {
+        try {
+            await run();
+        } catch (error) {
+            logError({ msg: "chat.projection.failed", projection: name, threadId, error: errorMessage(error) });
+        }
     }
 }
 
