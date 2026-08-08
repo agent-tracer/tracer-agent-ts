@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readContractJson } from "~agent-worker/support/contract.js";
 import type { ProbeAssignment } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
 import { oneProbePerAxis } from "./recipe.sdk.orchestration.js";
 
@@ -34,5 +35,18 @@ describe("한 라운드가 세우는 전문가 명단", () => {
 
     it("빈 명단은 그대로 빈 채로 낸다", () => {
         expect(oneProbePerAxis([], 0)).toEqual([]);
+    });
+});
+
+interface DispatchPlanContract {
+    readonly uniqueness: { readonly keys: Readonly<Record<string, string>> };
+}
+
+// 유일성을 어느 칸으로 보는지는 계약이 정하므로 이 축이 그 칸을 보고 있는지 대조한다.
+describe("계약이 정한 유일성의 칸", () => {
+    it("레시피는 축 이름으로 자리를 가른다", () => {
+        const declared = readContractJson<DispatchPlanContract>("agent/shared/dispatch.plan.json");
+
+        expect(declared.uniqueness.keys["recipe-scan"]).toBe("probe");
     });
 });
