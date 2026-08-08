@@ -8,12 +8,12 @@ export function canEstimateCost(model: string): boolean {
     return isPricedModel(model);
 }
 
-/** 모델이나 사용량을 모르면 오도하지 않도록 null을 낸다. */
 /** 시도 이력과 지표가 같은 이름을 쓰도록 프로바이더가 답한 판까지 붙은 이름을 별칭으로 되돌린다. */
 export function resolveModelAlias(model: string): string {
     return modelAlias(model) ?? model;
 }
 
+/** 모델이나 사용량을 모르면 오도하지 않도록 null을 낸다. */
 export function estimateCostUsd(model: string, usage: AgentQueryUsage | null): number | null {
     const rate: ModelRate | null = modelRate(model);
     if (rate === null || usage === null) return null;
