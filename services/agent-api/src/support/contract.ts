@@ -99,6 +99,18 @@ export function readChatExecutionStreamRules(): ChatExecutionStreamRules {
         .stream;
 }
 
+/** 원장 연결을 빌리지 못한 창구가 낼 상태와 코드와 문구를 계약이 적은 그대로 담는다. */
+export interface LedgerAvailabilityRule {
+    readonly status: number;
+    readonly code: string;
+    readonly message: string;
+}
+
+/** 고갈에 무엇을 낼지는 계약이 갖고 두 축이 같은 글자를 내야 하므로 값을 여기에 다시 적지 않는다. */
+export function readLedgerAvailability(): LedgerAvailabilityRule {
+    return readContractJson<LedgerAvailabilityRule>("agent/shared/ledger.availability.json");
+}
+
 /** 서비스를 넘어 오가는 알림 토픽의 이름과 봉투와 종류를 계약이 적은 그대로 담는다. */
 export interface NotificationTopicDeclaration {
     readonly name: string;

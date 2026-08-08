@@ -1,4 +1,5 @@
 import { HttpStatus } from "@nestjs/common";
+import { errorMessage, logWarn } from "@tracer-agent/platform";
 import type { Response } from "express";
 import type {
     ChatExecutionSnapshot,
@@ -62,7 +63,11 @@ export async function streamChatExecution(
             const forced = forceNextFrame;
             forceNextFrame = false;
             await send(await watch.snapshot(target.userId, target.threadId, target.executionId), forced);
-        }).catch(() => close());
+        }).catch((error: unknown) => {
+            // 헤더가 이미 나간 뒤라 상태를 바꿀 수 없으므로 이 실패는 관측에만 남고 클라이언트에는 끊긴 스트림으로 보인다.
+            logWarn({ msg: "chat.stream.failed", executionId: target.executionId, error: errorMessage(error) });
+            close();
+        });
     };
     unsubscribe = watch.subscribe(target.executionId, () => refresh());
     // 신호가 유실돼도 이 주기 조회가 정본을 다시 읽어 오므로 버스는 지연만 줄이면 된다.

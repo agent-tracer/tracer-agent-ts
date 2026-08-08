@@ -7,12 +7,16 @@ import {
     DomainError,
     errorMessage,
     isApiErrorEnvelope,
+    isLedgerAcquisitionFailure,
     logError,
     logWarn,
     MONITOR_USER_HEADER,
 } from "@tracer-agent/platform";
+import { readLedgerAvailability } from "~agent-api/support/contract.js";
 
 const INTERNAL_SERVER_ERROR_BODY = createApiErrorEnvelope("internal_server_error", "Internal server error");
+const LEDGER_UNAVAILABLE = readLedgerAvailability();
+const LEDGER_UNAVAILABLE_BODY = createApiErrorEnvelope(LEDGER_UNAVAILABLE.code, LEDGER_UNAVAILABLE.message);
 const STATUS_ERROR_CODES = new Map<number, string>([
     [HttpStatus.BAD_REQUEST, "bad_request"],
     [HttpStatus.UNAUTHORIZED, "unauthorized"],
@@ -35,6 +39,12 @@ export class GlobalExceptionFilter implements ExceptionFilter<unknown> {
             const status = exception.getStatus();
             this.logRequest(request, status, errorMessage(exception));
             response.status(status).json(normalizeHttpExceptionBody(status, exception.getResponse()));
+            return;
+        }
+        if (isLedgerAcquisitionFailure(exception)) {
+            // 원장 연결을 빌리는 창구가 모두 이 자리로 모이므로 창구를 열거하지 않고 한 번에 계약의 어휘로 거절한다.
+            this.logRequest(request, LEDGER_UNAVAILABLE.status, errorMessage(exception));
+            response.status(LEDGER_UNAVAILABLE.status).json(LEDGER_UNAVAILABLE_BODY);
             return;
         }
         if (exception instanceof DomainError) {

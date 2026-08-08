@@ -3,7 +3,10 @@ import { HttpException, HttpStatus, NotFoundException } from "@nestjs/common";
 import { createApiErrorEnvelope, InvariantViolationError } from "@tracer-agent/platform";
 import type { Request, Response } from "express";
 import { describe, expect, it } from "vitest";
+import { readLedgerAvailability } from "~agent-api/support/contract.js";
 import { GlobalExceptionFilter } from "./exception.filter.js";
+
+const AVAILABILITY = readLedgerAvailability();
 
 interface Answered {
     readonly host: ArgumentsHost;
@@ -91,5 +94,40 @@ describe("예외 봉투", () => {
 
         expect(answer.status()).toBe(502);
         expect(JSON.stringify(answer.body())).not.toContain("upstream said no");
+    });
+});
+
+describe("원장 연결을 빌리지 못한 창구", () => {
+    it("계약이 정한 상태와 코드로 거절한다", () => {
+        const answer = caught(new Error("timeout exceeded when trying to connect"));
+
+        expect(answer.status()).toBe(AVAILABILITY.status);
+        expect(answer.body()).toEqual(createApiErrorEnvelope(AVAILABILITY.code, AVAILABILITY.message));
+    });
+
+    it("재시도가 의미 있는 상태로 거절해 알 수 없는 서버 오류와 섞지 않는다", () => {
+        const answer = caught(new Error("timeout exceeded when trying to connect"));
+
+        expect(answer.status()).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+        expect(answer.status()).not.toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+
+    it("드라이버 오류를 한 겹 감싼 모양도 같은 어휘로 거절한다", () => {
+        const wrapped = Object.assign(new Error("query failed"), {
+            driverError: new Error("timeout exceeded when trying to connect"),
+        });
+
+        expect(caught(wrapped).status()).toBe(AVAILABILITY.status);
+    });
+
+    it("원인을 단정하는 문구를 사용자에게 내지 않는다", () => {
+        const message = String((caught(new Error("timeout exceeded when trying to connect")).body().error as { message: string }).message);
+
+        expect(message).not.toContain("pool");
+        expect(message).not.toContain("timeout");
+    });
+
+    it("다른 서버 오류는 여전히 내부 오류로 감춘다", () => {
+        expect(caught(new Error("무언가 잘못됐다")).status()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
 });
