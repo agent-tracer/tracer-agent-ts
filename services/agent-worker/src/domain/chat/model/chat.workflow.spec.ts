@@ -14,6 +14,9 @@ export const CHAT_THREAD_BUSY_MAX_ROUNDS = 45;
 /** 다음 턴을 기다리며 스레드 워크플로가 살아 있는 시간이며 대화 간격보다 짧으면 매 턴이 차가운 시작이 된다. */
 export const CHAT_THREAD_IDLE_TIMEOUT = "2 minutes";
 
+/** 한 스레드 워크플로가 띄울 수 있는 자식 수이며 넘으면 이력을 접고 새 실행으로 이어간다. */
+export const CHAT_THREAD_MAX_CHILDREN = 100;
+
 export interface ChatThreadWorkflowInput {
     readonly threadId: string;
 }
