@@ -10,6 +10,7 @@ import type {
     PreparedChatExecution,
 } from "~agent-worker/domain/chat/model/chat.execution.stage.js";
 import {
+    CHAT_ACTIVITY_LIMITS,
     CHAT_GENERATE_MAX_ATTEMPTS,
     CHAT_THREAD_BUSY_FAILURE,
     CHAT_THREAD_BUSY_MAX_ROUNDS,
@@ -27,21 +28,21 @@ interface ChatExecutionActivities {
 }
 
 const { prepareChatExecution, finalizeChatExecution } = proxyActivities<ChatExecutionActivities>({
-    startToCloseTimeout: "2 minutes",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: CHAT_ACTIVITY_LIMITS.prepareChatExecution.startToClose,
+    retry: { maximumAttempts: CHAT_ACTIVITY_LIMITS.prepareChatExecution.maximumAttempts },
 });
 
 const { generateChatExecution } = proxyActivities<ChatExecutionActivities>({
-    startToCloseTimeout: "15 minutes",
-    heartbeatTimeout: "30 seconds",
+    startToCloseTimeout: CHAT_ACTIVITY_LIMITS.generateChatExecution.startToClose,
+    heartbeatTimeout: CHAT_ACTIVITY_LIMITS.generateChatExecution.heartbeat,
     // 기본값 TRY_CANCEL은 취소 즉시 실패로 접어 그때까지 쓴 답변을 버리므로 최종 상태를 기다린다.
     cancellationType: ActivityCancellationType.WAIT_CANCELLATION_COMPLETED,
     retry: { maximumAttempts: CHAT_GENERATE_MAX_ATTEMPTS },
 });
 
 const { failChatExecution } = proxyActivities<ChatExecutionActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: CHAT_ACTIVITY_LIMITS.failChatExecution.startToClose,
+    retry: { maximumAttempts: CHAT_ACTIVITY_LIMITS.failChatExecution.maximumAttempts },
 });
 
 /** 브라우저와 API 연결 밖에서 대화 실행 하나를 소유하고 실패 상태를 끝까지 기록한다. */

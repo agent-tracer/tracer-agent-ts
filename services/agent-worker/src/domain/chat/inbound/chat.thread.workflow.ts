@@ -9,6 +9,7 @@ import {
     startChild,
 } from "@temporalio/workflow";
 import {
+    CHAT_ACTIVITY_LIMITS,
     CHAT_THREAD_IDLE_TIMEOUT,
     CHAT_THREAD_MAX_CHILDREN,
     type ChatThreadWorkflowInput,
@@ -23,8 +24,8 @@ interface ChatQueueActivities {
 }
 
 const { getNextChatExecution } = proxyActivities<ChatQueueActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: CHAT_ACTIVITY_LIMITS.getNextChatExecution.startToClose,
+    retry: { maximumAttempts: CHAT_ACTIVITY_LIMITS.getNextChatExecution.maximumAttempts },
 });
 
 const enqueueExecution = defineSignal<[string]>(CHAT_EXECUTION_ENQUEUE_SIGNAL);

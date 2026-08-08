@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CHAT_TOOL_CONTRACT } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
+import { CHAT_ACTIVITY_LIMITS } from "~agent-worker/domain/chat/model/chat.workflow.spec.js";
 
 const README = readFileSync(
     path.join(path.dirname(fileURLToPath(import.meta.url)), "README.md"),
@@ -47,5 +48,41 @@ describe("문서가 적은 도구 표", () => {
         const declared = new Set(toolsOnSurface(surface));
 
         for (const example of row(label).examples) expect(declared).toContain(example);
+    });
+});
+
+/** 문서는 사람이 읽는 단위로 적으므로 코드가 쓰는 표기를 그 단위로 옮겨 비교한다. */
+function asKorean(duration: string): string {
+    const found = /^(\d+) (minutes?|seconds?)$/u.exec(duration);
+    if (found === null) throw new Error(`읽을 수 없는 상한이다 — ${duration}`);
+    return `${found[1]}${found[2]?.startsWith("minute") === true ? "분" : "초"}`;
+}
+
+/** 액티비티 표의 한 행에서 상한과 시도 수를 읽는다. */
+function activityRow(name: string): { startToClose: string; attempts: string } {
+    const found = new RegExp(`^\\| \`${name}\` \\| ([^|]+?) \\| ([^|]+?) \\|`, "mu").exec(README);
+    if (found === null) throw new Error(`README 에 ${name} 행이 없다`);
+    return { startToClose: (found[1] ?? "").trim(), attempts: (found[2] ?? "").trim() };
+}
+
+describe("문서가 적은 액티비티 표", () => {
+    it.each(Object.keys(CHAT_ACTIVITY_LIMITS))("%s 의 상한이 코드와 같다", (name) => {
+        const declared = CHAT_ACTIVITY_LIMITS[name as keyof typeof CHAT_ACTIVITY_LIMITS];
+
+        expect(activityRow(name).startToClose).toBe(asKorean(declared.startToClose));
+    });
+
+    it.each(Object.keys(CHAT_ACTIVITY_LIMITS))("%s 의 시도 수가 코드와 같다", (name) => {
+        const declared = CHAT_ACTIVITY_LIMITS[name as keyof typeof CHAT_ACTIVITY_LIMITS];
+        // 생성만 시도 수를 상수로 두고 문서도 그 이름을 적으므로 이름으로 갈래를 구분한다.
+        const expected = name === "generateChatExecution"
+            ? "`CHAT_GENERATE_MAX_ATTEMPTS`"
+            : String(declared.maximumAttempts);
+
+        expect(activityRow(name).attempts).toBe(expected);
+    });
+
+    it("생성 액티비티의 heartbeat 를 적는다", () => {
+        expect(README).toContain(asKorean(CHAT_ACTIVITY_LIMITS.generateChatExecution.heartbeat));
     });
 });

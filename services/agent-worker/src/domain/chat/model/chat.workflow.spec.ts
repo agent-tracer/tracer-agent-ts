@@ -17,6 +17,19 @@ export const CHAT_THREAD_IDLE_TIMEOUT = "2 minutes";
 /** 한 스레드 워크플로가 띄울 수 있는 자식 수이며 넘으면 이력을 접고 새 실행으로 이어간다. */
 export const CHAT_THREAD_MAX_CHILDREN = 100;
 
+/** 액티비티마다의 벽시계 상한과 시도 수이며 워크플로와 실행 구조 문서가 이 한 자리를 읽는다. */
+export const CHAT_ACTIVITY_LIMITS = {
+    prepareChatExecution: { startToClose: "2 minutes", maximumAttempts: 5 },
+    generateChatExecution: {
+        startToClose: "15 minutes",
+        heartbeat: "30 seconds",
+        maximumAttempts: CHAT_GENERATE_MAX_ATTEMPTS,
+    },
+    finalizeChatExecution: { startToClose: "2 minutes", maximumAttempts: 5 },
+    failChatExecution: { startToClose: "1 minute", maximumAttempts: 5 },
+    getNextChatExecution: { startToClose: "1 minute", maximumAttempts: 5 },
+} as const;
+
 export interface ChatThreadWorkflowInput {
     readonly threadId: string;
 }
