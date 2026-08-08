@@ -1,8 +1,15 @@
-import { AGENT_NODE, attemptedRepair } from "~agent-worker/support/llm/run.segment.js";
+import { AGENT_NODE, attemptedRepair, emptyResultStep } from "~agent-worker/support/llm/run.segment.js";
+import {
+    EMPTY_RESULT_NODE,
+    EMPTY_RESULT_REASON,
+    renderEmptyResultReason,
+} from "~agent-worker/support/llm/empty.result.js";
+import { recordModelLanded, recordValidationFailure } from "~agent-worker/support/llm/execution.metrics.js";
 import {
     AGENT_BACKEND,
     buildMcpToolServer,
     isBudgetExhaustedFailure,
+    loadExecutionBudgetContract,
     mcpToolNames,
     mergeAgentTrajectory,
     runStructuredQuery,
@@ -36,9 +43,10 @@ import { buildTitleToolHandlers } from "./title.tools.js";
 
 const MCP_SERVER = `monitor-${TITLE_SUGGESTION_SPEC.name}`;
 
-// 첫 실행이 예산을 거의 다 써도 수리가 도구를 가진 채 출력을 낼 최소 여지는 남긴다.
-const REPAIR_RESERVED_TURNS = 1;
-const REPAIR_RESERVED_BUDGET_SHARE = 0.2;
+// 첫 실행이 예산을 거의 다 써도 수리가 도구를 가진 채 출력을 낼 최소 여지를 남기며 값은 계약이 갖는다.
+const { repair: REPAIR_RESERVATION } = loadExecutionBudgetContract().reservation;
+const REPAIR_RESERVED_TURNS = REPAIR_RESERVATION.turns;
+const REPAIR_RESERVED_BUDGET_SHARE = REPAIR_RESERVATION.budgetShare;
 
 type StructuredRun = StructuredQueryResult<TitleSuggestionsList>;
 
@@ -99,10 +107,13 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const runs: RunSegment[] = [{ run: first, nodeName: AGENT_NODE.investigate }];
 
         const firstPass = normalizeTitleSuggestions(first.data.suggestions, input.context.title);
-        if (firstPass.errors.length === 0) return toOutput(input, runs, firstPass.kept);
+        if (firstPass.errors.length === 0) return toOutput(input, runs, firstPass.kept, true);
 
         // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
-        if (repairLease.maxTurns <= 0) return toOutput(input, runs, []);
+        if (repairLease.maxTurns <= 0) {
+            recordValidationFailure(TITLE_SUGGESTION_SPEC.name, false);
+            return toOutput(input, runs, [], false);
+        }
 
         // 제목이 제약을 어기면 오류를 모델에게 돌려주고 예약해 둔 몫으로 한 번만 다시 받는다.
         let repaired: StructuredRun;
@@ -116,14 +127,19 @@ export class TitleAgentAdapter implements TitleAgentPort {
             );
         } catch (error) {
             // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 종료한다.
-            if (isBudgetExhaustedFailure(error)) return toOutput(input, runs, []);
+            if (isBudgetExhaustedFailure(error)) {
+                recordValidationFailure(TITLE_SUGGESTION_SPEC.name, false);
+                return toOutput(input, runs, [], false);
+            }
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         runs.push({ run: repaired, nodeName: AGENT_NODE.repair });
 
         const repairedPass = normalizeTitleSuggestions(repaired.data.suggestions, input.context.title);
-        return toOutput(input, runs, repairedPass.errors.length === 0 ? repairedPass.kept : []);
+        const passed = repairedPass.errors.length === 0;
+        recordValidationFailure(TITLE_SUGGESTION_SPEC.name, passed);
+        return toOutput(input, runs, passed ? repairedPass.kept : [], passed);
     }
 
     private runOnce(
@@ -177,14 +193,31 @@ export class TitleAgentAdapter implements TitleAgentPort {
     }
 }
 
+/**
+ * 옳은 빈 답과 검증 실패와 예산 소진이 원장에서 같은 모양으로 보이지 않도록, 실제 검증 결과와
+ * 빈 결과의 사유를 함께 실어 산출을 만든다.
+ */
 function toOutput(
     input: GenerateTitleSuggestionsInput,
     runs: readonly RunSegment[],
     suggestions: GenerateTitleSuggestionsOutput["suggestions"],
+    validationPassed: boolean,
 ): GenerateTitleSuggestionsOutput {
     const last = runs[runs.length - 1]!.run;
+    const landed = runs.some(({ run }) => run.landed);
+    if (landed) recordModelLanded(TITLE_SUGGESTION_SPEC.name);
     const accounting = mergeAgentCallAccounting(runs.map(({ run }) => run));
-    const steps = mergeAgentTrajectory(runs.map(({ run, nodeName }) => ({ nodeName, steps: run.steps })));
+    const trajectory = runs.map(({ run, nodeName }) => ({ nodeName, steps: run.steps }));
+    if (suggestions.length === 0) {
+        const reason = validationPassed
+            ? EMPTY_RESULT_REASON.noPattern
+            : EMPTY_RESULT_REASON.generationDegraded;
+        trajectory.push({
+            nodeName: EMPTY_RESULT_NODE,
+            steps: [emptyResultStep(EMPTY_RESULT_NODE, renderEmptyResultReason(reason))],
+        });
+    }
+    const steps = mergeAgentTrajectory(trajectory);
     const modelRequested = input.model?.trim() || TITLE_SUGGESTION_SPEC.limits.defaultModel;
     return {
         suggestions,
@@ -207,9 +240,9 @@ function toOutput(
             costUsd: accounting.costUsd,
             usage: accounting.usage,
             steps,
-            landed: runs.some(({ run }) => run.landed),
+            landed,
             repairAttempted: attemptedRepair(runs),
-            validationPassed: true,
+            validationPassed,
         }),
     };
 }

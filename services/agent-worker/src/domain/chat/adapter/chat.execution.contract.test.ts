@@ -1,7 +1,7 @@
 import path from "node:path";
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { CONTRACT_ROOT, readContractJson } from "~agent-worker/support/contract.js";
-import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform";
+import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform/testing/ledger.container.js";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CHAT_EXECUTION_PHASE } from "~agent-worker/domain/chat/model/chat.const.js";
 import type { ChatExecutionSpend } from "~agent-worker/domain/chat/model/chat.execution.model.js";

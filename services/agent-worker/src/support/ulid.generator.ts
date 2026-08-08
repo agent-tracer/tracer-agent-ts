@@ -6,6 +6,6 @@ export class UlidGenerator implements IdGeneratorPort {
     constructor(private readonly clock?: IClock) {}
 
     next(): string {
-        return this.clock === undefined ? generateUlid() : generateUlid(this.clock.nowMs());
+        return generateUlid(this.clock?.nowMs() ?? Date.now());
     }
 }

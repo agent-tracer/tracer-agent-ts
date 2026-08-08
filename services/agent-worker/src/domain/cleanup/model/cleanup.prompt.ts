@@ -2,7 +2,11 @@ import type { ResolvedAgentPrompt } from "@tracer-agent/llm";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 import type { CleanupBatch, CleanupCandidate } from "./cleanup.candidate.model.js";
-import type { InspectReport } from "./cleanup.dispatch.schema.js";
+import {
+    MAX_INSPECT_EXCERPTS,
+    MAX_INSPECT_REASON_CHARS,
+    type InspectReport,
+} from "./cleanup.dispatch.schema.js";
 import { CLEANUP_TOOL_CONTRACT, TRIAGE_CANDIDATE_LIST_LIMIT } from "./cleanup.tool.schema.js";
 
 export const CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY = "task-cleanup.investigator.system" as const;
@@ -133,8 +137,14 @@ export function buildCleanupInspectSystemPrompt(prompt: AgentPrompt): string {
     ].join("\n");
 }
 
+// 상한을 거절로만 알리면 검토자가 근거를 모으고도 보고가 버려지므로 자기 보고의 상한을 함께 준다.
 export function buildCleanupInspectPrompt(taskId: string, turns: number): string {
-    return [`Task to judge: ${taskId}`, `Turns available: ${turns}`].join("\n");
+    return [
+        `Task to judge: ${taskId}`,
+        `Turns available: ${turns}`,
+        `Keep your reason under ${MAX_INSPECT_REASON_CHARS} characters`
+        + ` and cite at most ${MAX_INSPECT_EXCERPTS} event IDs.`,
+    ].join("\n");
 }
 
 /** 실행에 실을 계약의 판이며 실행은 원장 없이 이 값을 그대로 쓴다. */

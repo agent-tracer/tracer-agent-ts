@@ -37,7 +37,17 @@ import {
     dispatchCleanupInspections,
     runCleanupTriagePhase,
     toRunSegment,} from "./cleanup.sdk.orchestration.js";
-import { buildCleanupOutput } from "./cleanup.sdk.output.js";
+import {
+    buildCleanupOutput,
+    buildEmptyCleanupOutput,
+    type CleanupValidationOutcome,
+} from "./cleanup.sdk.output.js";
+import { EMPTY_RESULT_REASON } from "~agent-worker/support/llm/empty.result.js";
+import { recordModelLanded, recordValidationFailure } from "~agent-worker/support/llm/execution.metrics.js";
+import type { CleanupSuggestionPayload } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.schema.js";
+
+const PASSED: CleanupValidationOutcome = { passed: true };
+const FAILED: CleanupValidationOutcome = { passed: false };
 
 export {
     CLEANUP_COORDINATOR_TOOLS,
@@ -88,7 +98,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         const decisionFloorLease = budget.reserve(MIN_DECISION_TURNS, 0);
 
         const segments: RunSegment[] = [];
-        const { plan, ledger: triageLedger } = await runCleanupTriagePhase(
+        const { plan, ledger: triageLedger, demoted } = await runCleanupTriagePhase(
             ctx, this.deps, batch, budget, triageLease, segments,
         );
 
@@ -126,10 +136,15 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         }
 
         const checked = validateCleanupSuggestions(decision.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
-        if (checked.errors.length === 0) return buildCleanupOutput(ctx, segments, checked.valid, decision.modelUsed);
+        if (checked.errors.length === 0) {
+            return this.settleOutput(ctx, segments, checked.valid, decision.modelUsed, PASSED, demoted);
+        }
 
         // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
-        if (repairLease.maxTurns <= 0) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
+        if (repairLease.maxTurns <= 0) {
+            recordValidationFailure(AGENT.taskCleanup.id, false);
+            return this.settleOutput(ctx, segments, [], decision.modelUsed, FAILED, demoted);
+        }
 
         const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
         const repairPrompt = buildCleanupRepairPrompt(ctx.prompt, decisionPrompt, decision.data, checked.errors);
@@ -138,14 +153,38 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
             repaired = await runCleanupDecision(ctx, this.deps, batch, coordinatorLedger, repairPrompt, repairLease, AGENT_NODE.repair);
         } catch (error) {
             // 예약해 둔 몫으로도 모델이 예산을 다 써버렸으면 잡을 실패시키지 않고 빈 결과로 종료한다.
-            if (isBudgetExhaustedFailure(error)) return buildCleanupOutput(ctx, segments, [], decision.modelUsed);
+            if (isBudgetExhaustedFailure(error)) {
+                recordValidationFailure(AGENT.taskCleanup.id, false);
+                return this.settleOutput(ctx, segments, [], decision.modelUsed, FAILED, demoted);
+            }
             throw error;
         }
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         segments.push(toRunSegment(repaired, AGENT_NODE.repair));
 
         const rechecked = validateCleanupSuggestions(repaired.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
-        return buildCleanupOutput(ctx, segments, rechecked.valid, repaired.modelUsed);
+        const passed = rechecked.errors.length === 0;
+        recordValidationFailure(AGENT.taskCleanup.id, passed);
+        return this.settleOutput(
+            ctx, segments, rechecked.valid, repaired.modelUsed, passed ? PASSED : FAILED, demoted,
+        );
+    }
+
+    /** 옳은 빈 답과 검증 실패와 선별을 낮춘 실행이 원장에서 구분되도록 실제 검증 결과와 빈 결과의 사유를 함께 싣는다. */
+    private settleOutput(
+        ctx: CleanupQueryContext,
+        segments: RunSegment[],
+        suggestions: readonly CleanupSuggestionPayload[],
+        modelUsed: string,
+        validation: CleanupValidationOutcome,
+        demoted: boolean,
+    ): GenerateCleanupSuggestionsOutput {
+        if (segments.some((segment) => segment.landed === true)) recordModelLanded(AGENT.taskCleanup.id);
+        if (suggestions.length > 0) return buildCleanupOutput(ctx, segments, suggestions, modelUsed, validation);
+        const reason = validation.passed && !demoted
+            ? EMPTY_RESULT_REASON.noPattern
+            : EMPTY_RESULT_REASON.generationDegraded;
+        return buildEmptyCleanupOutput(ctx, segments, modelUsed, validation, reason);
     }
 }
 

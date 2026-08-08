@@ -6,6 +6,7 @@ import { readAgentCases, readAgentPrompt, readAgentTools } from "~agent-worker/s
 import { normalizeOutputLanguage } from "~agent-worker/support/output.language.js";
 import { CLEANUP_PROMPT } from "~agent-worker/domain/cleanup/port/__fakes__/cleanup.test-support.js";
 import {
+    buildCleanupInspectPrompt,
     buildCleanupInspectSystemPrompt,
     buildCleanupRepairPrompt,
     buildCleanupSystemPrompt,
@@ -17,7 +18,11 @@ import {
     resolveCleanupPromptPin,
 } from "./cleanup.prompt.js";
 import { CLEANUP_MAX_EVIDENCE_EVENT_IDS } from "./cleanup.tool.schema.js";
-import { MAX_REDISPATCH_ROUNDS } from "./cleanup.dispatch.schema.js";
+import {
+    MAX_INSPECT_EXCERPTS,
+    MAX_INSPECT_REASON_CHARS,
+    MAX_REDISPATCH_ROUNDS,
+} from "./cleanup.dispatch.schema.js";
 
 const DECLARED = readAgentPrompt(AGENT.taskCleanup.id);
 const LIMITS = readAgentTools(AGENT.taskCleanup.id).limits ?? {};
@@ -93,6 +98,13 @@ describe("정리 제안 프롬프트", () => {
 
         expect(rendered).not.toContain("${");
         expect(rendered).toContain(String(LIMITS["maxEvidenceEventIds"]));
+    });
+
+    it("검토 요청이 보고를 자르는 상한을 모델에게 싣는다", () => {
+        const rendered = buildCleanupInspectPrompt("task-1", 3);
+
+        expect(rendered).toContain(String(MAX_INSPECT_REASON_CHARS));
+        expect(rendered).toContain(String(MAX_INSPECT_EXCERPTS));
     });
 
     it("스키마가 강제하는 상한과 계약의 상한이 같다", () => {

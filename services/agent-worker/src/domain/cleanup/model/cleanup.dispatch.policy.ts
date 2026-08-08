@@ -1,4 +1,5 @@
-import { renderFailureText } from "@tracer-agent/llm";
+import { loadExecutionBudgetContract, renderFailureText } from "@tracer-agent/llm";
+import { clampCodeUnits } from "~agent-worker/support/clamp.js";
 import { MAX_INSPECT_REASON_CHARS, type InspectReport } from "./cleanup.dispatch.schema.js";
 import {
     CLEANUP_TOOL_CONTRACT,
@@ -7,16 +8,19 @@ import {
     type TaskCleanupToolName,
 } from "./cleanup.tool.schema.js";
 
-// 첫 실행이 예산을 거의 다 써도 수리가 고쳐 쓴 출력을 낼 최소 여지는 남긴다.
-export const REPAIR_RESERVED_TURNS = 2;
-export const REPAIR_RESERVED_BUDGET_SHARE = 0.2;
+const { reservation } = loadExecutionBudgetContract();
 
-// 후보 목록을 조회하고 무엇을 조사할지 정하는 데 예약해 두는 턴이다.
-export const TRIAGE_TURNS = 3;
-export const TRIAGE_BUDGET_SHARE = 0.2;
+// 첫 실행이 예산을 거의 다 써도 수리가 고쳐 쓴 출력을 낼 최소 여지는 남긴다.
+export const REPAIR_RESERVED_TURNS = reservation.repair.turns;
+export const REPAIR_RESERVED_BUDGET_SHARE = reservation.repair.budgetShare;
+
+// 후보 목록을 조회하고 무엇을 조사할지 정하는 데 예약해 두는 턴이며, 계획을 세우는 자리이므로
+// 계약이 survey 로 적은 예약을 그대로 쓴다.
+export const TRIAGE_TURNS = reservation.survey.turns;
+export const TRIAGE_BUDGET_SHARE = reservation.survey.budgetShare;
 
 // 결정에 먼저 떼어 두는, 후보 조사에 넘기지 않는 최소 턴이다.
-export const MIN_DECISION_TURNS = 3;
+export const MIN_DECISION_TURNS = reservation.synthesisFloor.turns;
 
 export const CLEANUP_REVIEWER_ROLE = "cleanup-candidate-reviewer";
 
@@ -35,8 +39,8 @@ export function buildInspectFailureReport(taskId: string, error: unknown): Inspe
     return {
         taskId,
         archivable: false,
-        reason: renderFailureText(TASK_CLEANUP_FAILURES.workerFailed, { reason: summary }).slice(
-            0,
+        reason: clampCodeUnits(
+            renderFailureText(TASK_CLEANUP_FAILURES.workerFailed, { reason: summary }),
             MAX_INSPECT_REASON_CHARS,
         ),
         citedEventIds: [],

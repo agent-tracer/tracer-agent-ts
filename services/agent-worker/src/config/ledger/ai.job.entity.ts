@@ -93,7 +93,7 @@ export class AiJobEntity {
         this.updatedAt = now;
     }
 
-    // 재시도로 소진된 시도의 비용과 궤적을 running 상태를 유지한 채 누적한다.
+    // 부른 쪽이 이미 접어 넘긴 시도 원장을 종결하지 않은 잡에 그대로 싣는다.
     recordAttemptUsage(usage: Record<string, unknown>, now: Date): void {
         if (this.isTerminal()) throw new Error("job.already-terminal");
         this.usage = usage;

@@ -40,7 +40,7 @@ export async function createTemporalWorker(options: TemporalWorkerOptions): Prom
         namespace: options.namespace,
         taskQueue: options.taskQueue,
         activities: options.activities,
-        // 워크플로는 잡 큐에서만 돌고 생성 큐는 활동 전용이라 번들이 필요 없다.
+        // 이 공장이 세우는 둘 가운데 잡 큐만 워크플로를 실행하며 대화 큐의 번들은 chat.temporal.worker.ts 가 갖는다.
         ...(isJobsQueue
             ? {
                 workflowsPath,

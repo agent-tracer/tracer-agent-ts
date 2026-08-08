@@ -1,5 +1,6 @@
 import { DISPATCH_DEPTHS } from "@tracer-agent/llm";
 import { z } from "zod";
+import { clampCodeUnits } from "~agent-worker/support/clamp.js";
 import { cleanupSuggestionsListSchema } from "./cleanup.suggestion.schema.js";
 import {
     CLEANUP_MAX_SUGGESTIONS,
@@ -12,6 +13,8 @@ export { MAX_REDISPATCH_ROUNDS };
 // SDK 백엔드가 조사를 조율자와 후보별 조사로 나눌 때만 쓰는 내부 계획·보고 스키마이며, 계약이
 // 고정하는 도구·출력·예산 계약과는 분리된 오케스트레이션 지식이다.
 
+// 검토 보고를 자르는 상한이며 스키마와 프롬프트와 구제가 모두 이 두 값에서 파생하고, 계약의
+// limits 로 올려야 Python 축이 같은 값을 읽는다.
 export const MAX_INSPECT_EXCERPTS = 6;
 export const MAX_INSPECT_REASON_CHARS = 400;
 
@@ -37,6 +40,27 @@ export const inspectReportSchema = z.object({
 export const cleanupDecisionSchema = cleanupSuggestionsListSchema.extend({
     redispatch: z.array(inspectAssignmentSchema).max(CLEANUP_MAX_SUGGESTIONS).default([]),
 });
+
+/**
+ * 상한을 넘겨 거절된 검토 보고를 상한까지 잘라 다시 검증하며, 상한 외의 이유로 스키마에
+ * 어긋난 보고는 검증을 통과하지 못해 null 이다.
+ */
+export function salvageInspectReport(taskId: string, raw: unknown): InspectReport | null {
+    if (raw === null || typeof raw !== "object") return null;
+    const source = raw as Record<string, unknown>;
+    const cited = Array.isArray(source["citedEventIds"]) ? source["citedEventIds"] : [];
+    const parsed = inspectReportSchema.safeParse({
+        ...source,
+        taskId,
+        reason: clamped(source["reason"], MAX_INSPECT_REASON_CHARS),
+        citedEventIds: cited.slice(0, MAX_INSPECT_EXCERPTS),
+    });
+    return parsed.success ? parsed.data : null;
+}
+
+function clamped(value: unknown, max: number): unknown {
+    return typeof value === "string" ? clampCodeUnits(value.trim(), max) : value;
+}
 
 export type InspectAssignment = z.infer<typeof inspectAssignmentSchema>;
 export type TriagePlan = z.infer<typeof triagePlanSchema>;

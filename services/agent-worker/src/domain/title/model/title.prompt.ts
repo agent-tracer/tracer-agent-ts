@@ -8,16 +8,12 @@ export const TITLE_SYSTEM_TEMPLATE_KEY = "title-suggestion.investigator.system" 
 
 export const TITLE_REPAIR_TEMPLATE_KEY = "title-suggestion.investigator.repair" as const;
 
-export const TITLE_SUGGESTION_MAX_TURNS = 4;
-
-
-
-// 도구 예산을 무엇으로 세는지는 실행 기계가 소유하므로 근거를 더 모으라는 문단만 이 구현이 쓴다.
+// 남은 턴은 도구를 열 때마다 페이싱 훅이 실제 상한으로 알리므로 이 문단은 턴 수를 말하지 않는다.
 const PULL_MORE_EVIDENCE = [
     "If the excerpt already shows what the task is about, answer directly without any tool call. When it",
     "is too thin or truncated to name the work, pull more evidence yourself with get_task_events: you",
-    `choose limit and cursor, and order="desc" reads the ending of a long task first. You have up to`,
-    `${TITLE_SUGGESTION_MAX_TURNS} tool turns; stop pulling as soon as you can name the work.`,
+    `choose limit and cursor, and order="desc" reads the ending of a long task first. Stop pulling as`,
+    "soon as you can name the work.",
 ].join("\n");
 
 /** 도구 접두사가 붙지 않은 기준 시스템 프롬프트다. */

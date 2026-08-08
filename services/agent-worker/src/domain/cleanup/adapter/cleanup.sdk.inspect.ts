@@ -1,13 +1,23 @@
 import type { JobStepPayload } from "@tracer-agent/llm";
-import { AgentExecutionFailure } from "@tracer-agent/llm";
+import { AgentExecutionFailure, lastStructuredAttempt } from "@tracer-agent/llm";
+import { validationFailedStep } from "~agent-worker/support/llm/run.segment.js";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { agentFailureAccounting, type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
     buildCleanupInspectPrompt,
     buildCleanupInspectSystemPrompt,
 } from "~agent-worker/domain/cleanup/model/cleanup.prompt.js";
-import { inspectReportSchema, type InspectAssignment, type InspectReport } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
-import { buildInspectFailureReport, CLEANUP_REVIEWER_TOOLS } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
+import {
+    inspectReportSchema,
+    salvageInspectReport,
+    type InspectAssignment,
+    type InspectReport,
+} from "~agent-worker/domain/cleanup/model/cleanup.dispatch.schema.js";
+import {
+    buildInspectFailureReport,
+    CLEANUP_REVIEWER_MAX_TURNS,
+    CLEANUP_REVIEWER_TOOLS,
+} from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
 import { buildCleanupToolHandlers, type CleanupToolBatch, type CleanupToolDeps } from "./cleanup.tools.js";
 import {
@@ -37,17 +47,19 @@ export async function runCleanupInspect(
 ): Promise<CleanupInspectRun> {
     const ledger = new CleanupProvenanceLedger();
     const handlers = buildCleanupToolHandlers(ctx.input.userId, deps, batch, ledger);
+    // 배정이 하나뿐이어도 계약이 정한 백스톱을 넘지 못하며, 모델이 읽는 수도 실제 상한과 같아야 한다.
+    const capped = cappedLease(lease);
 
     try {
         const systemPrompt = buildCleanupInspectSystemPrompt(ctx.prompt);
         const run = await runCleanupQuery(ctx, {
             label: `${TASK_CLEANUP_SPEC.name}:inspect:${assignment.taskId}`,
-            prompt: buildCleanupInspectPrompt(assignment.taskId, lease.maxTurns),
+            prompt: buildCleanupInspectPrompt(assignment.taskId, capped.maxTurns),
             systemPrompt,
             toolNames: INSPECT_TOOL_NAMES,
             handlers,
             outputSchema: inspectReportSchema,
-            lease,
+            lease: capped,
         });
         return {
             report: run.data,
@@ -56,12 +68,31 @@ export async function runCleanupInspect(
             steps: run.steps,
         };
     } catch (error) {
+        const steps = error instanceof AgentExecutionFailure ? error.steps : [];
+        const salvaged = salvageInspectReport(assignment.taskId, lastStructuredAttempt(steps));
         return {
-            report: buildInspectFailureReport(assignment.taskId, error),
+            report: salvaged ?? buildInspectFailureReport(assignment.taskId, error),
             ledger,
             accounting: agentFailureAccounting(error, cleanupModelName(ctx.input)),
-            steps: error instanceof AgentExecutionFailure ? error.steps : [],
+            steps: salvaged === null ? steps : [...steps, salvageTrace(assignment)],
         };
     }
+}
+
+/**
+ * 정산은 떼어 준 몫을 그대로 두고 실제 지출로 잔량을 되돌리므로, 조인 몫은 호출에만 쓰고
+ * 원래 리스는 조율자가 그대로 정산한다.
+ */
+function cappedLease(lease: AgentBudgetLease): AgentBudgetLease {
+    if (lease.maxTurns <= CLEANUP_REVIEWER_MAX_TURNS) return lease;
+    return { ...lease, maxTurns: CLEANUP_REVIEWER_MAX_TURNS };
+}
+
+// 잘라 낸 보고와 처음부터 상한 안에 들어온 보고는 조율자에게 구분되지 않으므로 궤적에 남긴다.
+function salvageTrace(assignment: InspectAssignment): JobStepPayload {
+    return validationFailedStep(
+        "inspect",
+        `${assignment.taskId}: report exceeded its limits and was clamped to fit`,
+    );
 }
 
