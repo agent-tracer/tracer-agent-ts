@@ -137,6 +137,9 @@ classDiagram
 | --- | --- | --- |
 | 도구 허용 목록 | `chat.agent.adapter.ts`·`title.agent.adapter.ts`·`recipe.sdk.query.ts`·`cleanup.sdk.query.ts` | 단계별로 사용할 MCP 도구만 허용한다 |
 | 도구 페이싱 hook | `libs/llm/src/runner/claude/tool.pacing.hook.ts` | `PreToolUse`에서 남은 몫을 문맥으로 건네고, 종료할 때가 되면 그 도구만 거부하며 계약의 마무리 지시를 준다 |
+| SDK 메시지 접기 | `libs/llm/src/runner/claude/claude.message.reducer.ts` | 하위 프로세스를 알지 못한 채 SDK 메시지를 실행 결과 하나로 접으며 호출마다 값을 세고 결과 메시지에서 멈춘다 |
+| 질의 옵션 조립 | `libs/llm/src/runner/claude/claude.query.options.builder.ts` | 요청과 계약을 SDK 옵션 하나로 모으며 SDK 판이 바뀔 때만 바뀐다 |
+| 실패 사유 판정 | `libs/llm/src/runner/claude/claude.query.failure.ts` | 던져진 값과 끊긴 신호의 모양에서 단가 미상·기한·취소·프로세스 오류를 가른다 |
 | 종료 시점 판정 | `libs/llm/src/runner/landing.pacer.ts` | 계약의 `landingReserve.calls`를 비용과 턴 **양쪽**에 떼어 두고 어느 쪽이든 상한에 닿으면 종료로 정하며 한 번 정하면 되돌리지 않는다 |
 | 스키마 제약 강등 | `libs/llm/src/tool/claude.output.schema.ts` | Claude 구조화 출력이 받지 않는 길이·개수·수치 제약을 지우는 대신 그 노드의 `description`에 문장으로 옮겨 모델이 상한을 읽게 한다 |
 | 사본 저장 하향 | `chat.execution.sink.ts`, `recipe.sdk.orchestration.ts` | 초안 검사점과 단계 원장은 재개를 위한 사본이므로 닿지 못해도 실행을 접지 않고 다시 적을 자리를 남긴다 |
