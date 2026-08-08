@@ -56,4 +56,16 @@ describe("설정 병합", () => {
 
         expect(config.agentDb).toMatchObject({ host: "db.internal", port: 7000, database: "ledger" });
     });
+
+    it("연결 수를 적지 않으면 드라이버가 말없이 쓰던 수를 그대로 쓴다", () => {
+        const merged = mergeApplicationConfig({}, {}, {});
+
+        expect(merged.agentDb.poolSize).toBe(10);
+    });
+
+    it("배포가 연결 수를 정하면 그 값을 쓴다", () => {
+        const merged = mergeApplicationConfig({}, {}, { AGENT_DB_POOL_SIZE: "40" });
+
+        expect(merged.agentDb.poolSize).toBe(40);
+    });
 });

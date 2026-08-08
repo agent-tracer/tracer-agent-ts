@@ -18,6 +18,7 @@ export function createDataSource(params: DataSourceParams): DataSource {
         password: params.db.password,
         database: params.db.database,
         entities: params.entities,
+        poolSize: params.db.poolSize,
         migrations: [],
         migrationsRun: false,
         synchronize: false,

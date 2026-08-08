@@ -6,6 +6,8 @@ const dbSchema = z.object({
     username: z.string().min(1),
     password: z.string(),
     database: z.string().min(1),
+    /** 한 프로세스가 동시에 쥘 수 있는 연결 수이며 넘으면 뒤의 질의가 줄을 선다. */
+    poolSize: z.number().int().positive().max(1000),
 });
 
 export const applicationConfigSchema = z.object({
