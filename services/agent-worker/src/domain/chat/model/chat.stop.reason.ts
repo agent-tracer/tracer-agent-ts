@@ -28,8 +28,3 @@ export function chatStopReason(signals: TurnStopSignals): ChatStopReason {
     if (signals.landed) return CHAT_STOP_REASON.budgetLanded;
     return CHAT_STOP_REASON.completed;
 }
-
-/** 사용자가 이어서 진행할지 판단해야 하는 중단인지 알린다. */
-export function isInterruptedStop(reason: ChatStopReason): boolean {
-    return reason !== CHAT_STOP_REASON.completed;
-}
