@@ -85,4 +85,12 @@ describe("문서가 적은 액티비티 표", () => {
     it("생성 액티비티의 heartbeat 를 적는다", () => {
         expect(README).toContain(asKorean(CHAT_ACTIVITY_LIMITS.generateChatExecution.heartbeat));
     });
+
+    // 표 밖 산문이 같은 값을 다시 적으므로 표만 대조하면 그 사본이 검사 밖에 선다.
+    it("표 밖 산문이 적은 생성 상한도 코드와 같다", () => {
+        const limits = CHAT_ACTIVITY_LIMITS.generateChatExecution;
+
+        expect(README).toContain(`${asKorean(limits.startToClose)} start-to-close`);
+        expect(README).toContain(`${asKorean(limits.heartbeat)} heartbeat`);
+    });
 });

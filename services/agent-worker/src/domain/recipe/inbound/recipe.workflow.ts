@@ -8,7 +8,11 @@ import type {
 import type { RecipeScanGenerateOutput } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { messageOf } from "~agent-worker/support/failure.message.js";
 import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
-import { JOB_GENERATE_LIMITS } from "~agent-worker/support/job.workflow.spec.js";
+import {
+    JOB_GENERATE_LIMITS,
+    JOB_SHORT_LIMITS,
+    JOB_SHORT_MAX_ATTEMPTS,
+} from "~agent-worker/support/job.workflow.spec.js";
 
 interface RecipePrepareActivities {
     prepareRecipeScan(input: RecipeScanInput): Promise<RecipeScanPrep>;
@@ -24,13 +28,13 @@ interface RecipeFinalizeActivities {
 }
 
 const { prepareRecipeScan } = proxyActivities<RecipePrepareActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: JOB_SHORT_LIMITS.recipeScan.prepare,
+    retry: { maximumAttempts: JOB_SHORT_MAX_ATTEMPTS },
 });
 
 const { finalizeRecipeScan, markRecipeJobFailed } = proxyActivities<RecipeFinalizeActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: JOB_SHORT_LIMITS.recipeScan.finalize,
+    retry: { maximumAttempts: JOB_SHORT_MAX_ATTEMPTS },
 });
 
 /** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 생성 큐로 보낸다. */

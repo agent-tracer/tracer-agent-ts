@@ -1,7 +1,11 @@
 import { isCancellation, proxyActivities, workflowInfo } from "@temporalio/workflow";
 import { messageOf } from "~agent-worker/support/failure.message.js";
 import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
-import { JOB_GENERATE_LIMITS } from "~agent-worker/support/job.workflow.spec.js";
+import {
+    JOB_GENERATE_LIMITS,
+    JOB_SHORT_LIMITS,
+    JOB_SHORT_MAX_ATTEMPTS,
+} from "~agent-worker/support/job.workflow.spec.js";
 import type {
     FailTitleJobInput,
     TitleSuggestionFinalizeInput,
@@ -24,13 +28,13 @@ interface TitleFinalizeActivities {
 }
 
 const { prepareTitleSuggestion } = proxyActivities<TitlePrepareActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: JOB_SHORT_LIMITS.titleSuggestion.prepare,
+    retry: { maximumAttempts: JOB_SHORT_MAX_ATTEMPTS },
 });
 
 const { finalizeTitleSuggestion, markTitleJobFailed } = proxyActivities<TitleFinalizeActivities>({
-    startToCloseTimeout: "1 minute",
-    retry: { maximumAttempts: 5 },
+    startToCloseTimeout: JOB_SHORT_LIMITS.titleSuggestion.finalize,
+    retry: { maximumAttempts: JOB_SHORT_MAX_ATTEMPTS },
 });
 
 /** 긴 모델 호출이 짧은 활동의 슬롯을 막지 않도록 분리한 생성 큐로 보낸다. */

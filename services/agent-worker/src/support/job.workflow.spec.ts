@@ -31,3 +31,13 @@ export const JOB_GENERATE_LIMITS = {
         initialInterval: "10 seconds",
     },
 } as const satisfies Readonly<Record<string, JobGenerateLimits>>;
+
+/** 잡 종류마다의 짧은 활동 상한이며 워크플로 셋이 이 한 자리를 읽는다. */
+export const JOB_SHORT_LIMITS = {
+    recipeScan: { prepare: "1 minute", finalize: "1 minute" },
+    taskCleanup: { prepare: "2 minutes", finalize: "1 minute" },
+    titleSuggestion: { prepare: "1 minute", finalize: "1 minute" },
+} as const;
+
+/** 짧은 활동은 종류를 가리지 않고 같은 시도 수를 쓴다. */
+export const JOB_SHORT_MAX_ATTEMPTS = 5;
