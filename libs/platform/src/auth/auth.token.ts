@@ -30,7 +30,7 @@ function sign(payloadB64: string, secret: string): string {
 export function verifyAuthToken(
     token: string,
     purpose: AuthTokenPurpose,
-    now: Date = new Date(),
+    now: Date,
 ): string | null {
     const secret = resolveSecret();
     if (secret === null) return null;

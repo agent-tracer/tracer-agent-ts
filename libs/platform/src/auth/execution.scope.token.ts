@@ -43,13 +43,13 @@ export function issueExecutionScopeToken(input: IssueExecutionScopeTokenInput): 
     return `${EXECUTION_SCOPE_TOKEN_PREFIX}.${payloadB64}.${sign(payloadB64, secret)}`;
 }
 
-/** 베어러가 실행 범위 토큰의 모양인지만 보며, 모양이 맞으면 검증에 실패해도 인증으로 되돌리지 않는다. */
+/** 베어러가 실행 범위 토큰의 모양인지만 보며, 모양이 맞은 뒤 검증에 실패한 베어러를 다른 신원으로 되돌리지 않는 것은 부르는 게이트의 몫이다. */
 export function looksLikeExecutionScopeToken(candidate: string): boolean {
     return candidate.startsWith(`${EXECUTION_SCOPE_TOKEN_PREFIX}.`);
 }
 
 /** 서명과 수명이 모두 맞을 때만 실행 범위를 내주므로, 이 값이 자기신고 헤더를 우선한다. */
-export function verifyExecutionScopeToken(token: string, now: Date = new Date()): ExecutionScope | null {
+export function verifyExecutionScopeToken(token: string, now: Date): ExecutionScope | null {
     const secret = resolveSecret();
     if (secret === null) return null;
     const parts = token.split(".");

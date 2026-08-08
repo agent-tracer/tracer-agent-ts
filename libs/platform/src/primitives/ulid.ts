@@ -34,6 +34,7 @@ function encodeRandom(): string {
     return output;
 }
 
-export function generateUlid(timeMs = Date.now()): string {
+/** 시각을 받아야만 만들며, 기본 인자로 벽시계를 숨기면 부르는 쪽의 결정성이 사라진다. */
+export function generateUlid(timeMs: number): string {
     return `${encodeTime(timeMs)}${encodeRandom()}`;
 }
