@@ -151,4 +151,27 @@ describe("종결한 잡의 단계 산출", () => {
 
         expect(stages.cleared).toEqual(["job-1"]);
     });
+
+    it("종결하지 못한 잡의 단계 산출은 지우지 않는다", async () => {
+        const repository = seedRepository();
+        repository.commitWins = false;
+        const stages = new RecordingStageOutputs();
+        const target = new FinalizeRecipeScanUsecase(
+            repository,
+            new InMemoryRecipeOutput(),
+            new CapturingRecipeNotification(),
+            fixedClock,
+            stages,
+        );
+
+        await target.execute({
+            jobId: "job-1",
+            userId: "user-1",
+            sourceTaskId: "task-1",
+            language: OUTPUT_LANGUAGE.ko,
+            output: output(),
+        });
+
+        expect(stages.cleared).toEqual([]);
+    });
 });

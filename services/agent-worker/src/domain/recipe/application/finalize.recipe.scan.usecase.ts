@@ -49,8 +49,6 @@ export class FinalizeRecipeScanUsecase {
             sourceJobId: input.jobId,
             recipes: input.output.recipes,
         });
-        // 종결한 잡은 다시 시도하지 않으므로 그 단계 산출을 원장에 남기지 않는다.
-        await this.stageOutputs?.clear(input.jobId);
         const settled = await this.repository.commitScan({
             jobId: input.jobId,
             userId: input.userId,
@@ -63,6 +61,8 @@ export class FinalizeRecipeScanUsecase {
             now: this.clock.now(),
         });
         if (settled === null) return;
+        // 종결한 잡은 다시 시도하지 않으므로 그 단계 산출을 원장에 남기지 않는다.
+        await this.stageOutputs?.clear(input.jobId);
 
         await this.notification.jobUpdated(input.userId, {
             jobId: input.jobId,
