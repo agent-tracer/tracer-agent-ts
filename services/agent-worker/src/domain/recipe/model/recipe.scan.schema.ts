@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DISPATCH_DEPTHS } from "@tracer-agent/llm";
+import { boundedText, DISPATCH_DEPTHS } from "@tracer-agent/llm";
 import { MAX_REDISPATCH_PROBES, RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 
 export const RECIPE_PROBE_NAMES = ["timeline", "rules", "repetition"] as const;
@@ -12,18 +12,18 @@ export const MAX_PROBE_QUESTION_CHARS = 300;
 export const probeAssignmentSchema = z.object({
     probe: z.enum(RECIPE_PROBE_NAMES),
     depth: z.enum(DISPATCH_DEPTHS),
-    question: z.string().trim().min(1).max(MAX_PROBE_QUESTION_CHARS),
+    question: boundedText(MAX_PROBE_QUESTION_CHARS),
 });
 
 /** 스텝 하나의 이행을 원장 이벤트로 확인할 수 있게 하는 관측 가능한 신호다. */
 const verifyCommandSchema = z.object({
     kind: z.literal("command"),
-    commandMatches: z.array(z.string().trim().min(1).max(200)).min(1).max(20),
+    commandMatches: z.array(boundedText(200)).min(1).max(20),
 });
 
 const verifyPatternSchema = z.object({
     kind: z.literal("pattern"),
-    pattern: z.string().trim().min(1).max(500),
+    pattern: boundedText(500),
 });
 
 const verifyActionSchema = z.object({
@@ -35,38 +35,38 @@ const verifySchema = z.union([verifyCommandSchema, verifyPatternSchema, verifyAc
 
 const stepSchema = z.object({
     order: z.number().int().min(1).max(50),
-    action: z.string().trim().min(1).max(200),
-    rationale: z.string().trim().max(300).nullish(),
+    action: boundedText(200),
+    rationale: boundedText(300, { min: 0 }).nullish(),
     // 모든 단계가 이벤트로 관측되지는 않으므로 근거는 비어도 되고, 실린 근거만 원장과 대조한다.
     evidence: z.array(z.string().trim().min(1)).max(50).default([]),
     verify: verifySchema.nullish(),
 });
 
 const correctionSchema = z.object({
-    whatAgentDid: z.string().trim().min(1).max(500),
-    howCorrected: z.string().trim().min(1).max(500),
+    whatAgentDid: boundedText(500),
+    howCorrected: boundedText(500),
     evidence: z.array(z.string().trim().min(1)).min(1).max(50),
 });
 
 const pitfallSchema = z.object({
-    pitfall: z.string().trim().min(1).max(500),
-    whyNonObvious: z.string().trim().min(1).max(500),
+    pitfall: boundedText(500),
+    whyNonObvious: boundedText(500),
     evidence: z.array(z.string().trim().min(1)).min(1).max(50),
 });
 
 /** correction이 이미 symptom→action 쌍이므로 같은 근거 요구를 그대로 물려받는다. */
 const recoverySchema = z.object({
-    symptom: z.string().trim().min(1).max(500),
-    action: z.string().trim().min(1).max(500),
+    symptom: boundedText(500),
+    action: boundedText(500),
     evidence: z.array(z.string().trim().min(1)).min(1).max(50),
     stepOrder: z.number().int().min(1).max(50).nullish(),
 });
 
 const touchedFileSchema = z.object({
-    path: z.string().trim().min(1).max(500),
+    path: boundedText(500),
     role: z.enum(["read", "write", "both"]),
-    why: z.string().trim().max(200).nullish(),
-    loadWhen: z.string().trim().max(200).nullish(),
+    why: boundedText(200, { min: 0 }).nullish(),
+    loadWhen: boundedText(200, { min: 0 }).nullish(),
 });
 
 const sliceSchema = z.object({
@@ -76,20 +76,20 @@ const sliceSchema = z.object({
 });
 
 const candidateSchema = z.object({
-    title: z.string().trim().min(1).max(120),
-    intent: z.string().trim().min(1).max(200),
-    description: z.string().trim().min(1).max(400),
+    title: boundedText(120),
+    intent: boundedText(200),
+    description: boundedText(400),
     // 적용 조건과 입출력은 궤적이 실제로 보여 준 것만 적으므로 없는 실행에서는 빈 채로 선다.
-    use_when: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
-    summary_md: z.string().trim().min(1).max(4000),
-    request: z.string().trim().min(1).max(2000),
-    inputs: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
-    outputs: z.array(z.string().trim().min(1).max(200)).max(6).default([]),
+    use_when: z.array(boundedText(200)).max(6).default([]),
+    summary_md: boundedText(4000),
+    request: boundedText(2000),
+    inputs: z.array(boundedText(200)).max(6).default([]),
+    outputs: z.array(boundedText(200)).max(6).default([]),
     corrections: z.array(correctionSchema).max(20).default([]),
     pitfalls: z.array(pitfallSchema).max(20).default([]),
     recovery: z.array(recoverySchema).max(10).default([]),
     governing_rules: z.array(z.string().trim().min(1)).max(50).default([]),
-    revises_recipe_id: z.string().trim().min(1).max(200).nullish(),
+    revises_recipe_id: boundedText(200).nullish(),
     // 절차의 순서가 곧 의미이므로 order는 1부터 빈칸 없이 이어져야 한다.
     steps: z
         .array(stepSchema)
@@ -100,7 +100,7 @@ const candidateSchema = z.object({
         }),
     touched_files: z.array(touchedFileSchema).max(30).default([]),
     contributing_slices: z.array(sliceSchema).min(1).max(20),
-    rationale: z.string().trim().min(1).max(500),
+    rationale: boundedText(500),
 });
 
 /** 어느 구현체로 실행하든 스캔 한 번이 돌려주는 구조화 출력이며 모양은 계약이 소유한다. */

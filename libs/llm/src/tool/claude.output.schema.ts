@@ -20,13 +20,19 @@ export const CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS: readonly string[] = [
 
 const UNSUPPORTED = new Set<string>(CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS);
 
+/** 수를 세는 제약을 모델이 읽는 문장으로 바꾸며 하나일 때는 단수로 적는다. */
+function countOf(value: unknown, noun: string, prefix: string): string | null {
+    if (typeof value !== "number") return null;
+    return `${prefix} ${value} ${value === 1 ? noun : `${noun}s`}.`;
+}
+
 // 스키마에서 지워지는 제약을 모델이 읽는 문장으로 옮기는 자리이며 상한의 정본은 zod 하나로 남는다.
 const CONSTRAINT_SENTENCES: Record<string, (value: unknown) => string | null> = {
-    minLength: (value) => (typeof value === "number" ? `At least ${value} characters.` : null),
-    maxLength: (value) => (typeof value === "number" ? `At most ${value} characters.` : null),
+    minLength: (value) => (value === 1 ? null : countOf(value, "character", "At least")),
+    maxLength: (value) => countOf(value, "character", "At most"),
     pattern: (value) => (typeof value === "string" ? `Must match the regular expression ${value}.` : null),
-    minItems: (value) => (typeof value === "number" ? `At least ${value} items.` : null),
-    maxItems: (value) => (typeof value === "number" ? `At most ${value} items.` : null),
+    minItems: (value) => countOf(value, "item", "At least"),
+    maxItems: (value) => countOf(value, "item", "At most"),
     minimum: (value) => (typeof value === "number" ? `At least ${value}.` : null),
     maximum: (value) => (typeof value === "number" ? `At most ${value}.` : null),
     exclusiveMinimum: (value) => (typeof value === "number" ? `Greater than ${value}.` : null),

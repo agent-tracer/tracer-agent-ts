@@ -1,9 +1,10 @@
+import { boundedText } from "@tracer-agent/llm";
 import { z } from "zod";
 
 /** 제목 후보 하나이며 모양은 계약의 title-suggestion 출력이 소유한다. */
 export const titleSuggestionSchema = z.object({
-    title: z.string().trim().min(1).max(80),
-    rationale: z.string().trim().min(1).max(200),
+    title: boundedText(80),
+    rationale: boundedText(200),
 });
 
 export type TitleSuggestionPayload = z.infer<typeof titleSuggestionSchema>;

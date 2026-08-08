@@ -1,3 +1,4 @@
+import { boundedText } from "@tracer-agent/llm";
 import { z } from "zod";
 import {
     CLEANUP_MAX_EVIDENCE_EVENT_IDS,
@@ -7,7 +8,7 @@ import {
 const cleanupSuggestionSchema = z.object({
     kind: z.literal("archive"),
     taskId: z.string().trim().min(1),
-    rationale: z.string().trim().min(1).max(500),
+    rationale: boundedText(500),
     evidenceEventIds: z.array(z.string().trim().min(1)).max(CLEANUP_MAX_EVIDENCE_EVENT_IDS),
 });
 

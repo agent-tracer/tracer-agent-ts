@@ -34,6 +34,7 @@ export * from "./support/parse.json.js";
 export * from "./support/redaction.js";
 export * from "./support/sha256.js";
 export * from "./tool/claude.output.schema.js";
+export * from "./tool/bounded.text.schema.js";
 export * from "./tool/claude.tool.schema.js";
 export * from "./tool/contract.tool.schema.js";
 export * from "./tool/mcp.tool.prefix.js";
