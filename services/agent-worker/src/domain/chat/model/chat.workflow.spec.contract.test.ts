@@ -5,11 +5,12 @@ import {
     CHAT_THREAD_BUSY_FAILURE,
     CHAT_THREAD_BUSY_MAX_ROUNDS,
     CHAT_THREAD_BUSY_RETRY_MS,
+    CHAT_THREAD_IDLE_TIMEOUT,
     CHAT_THREAD_MAX_CHILDREN,
 } from "./chat.workflow.spec.js";
 
 interface QueuesDeclaration {
-    readonly workflows: { readonly chatThread: { readonly maxChildren: number } };
+    readonly workflows: { readonly chatThread: { readonly maxChildren: number; readonly idleSeconds: number } };
     readonly leases: {
         readonly chatRunningMs: number;
         readonly threadBusyRetryMs: number;
@@ -24,6 +25,12 @@ const DECLARED = readContractYaml<QueuesDeclaration>("workflow/queues.yaml");
 describe("스레드 워크플로 상수와 계약", () => {
     it("자식 상한을 계약이 적은 수와 같이 갖는다", () => {
         expect(CHAT_THREAD_MAX_CHILDREN).toBe(DECLARED.workflows.chatThread.maxChildren);
+    });
+
+    it("다음 턴을 기다리는 시간을 계약이 적은 값과 같이 갖는다", () => {
+        const declaredMs = DECLARED.workflows.chatThread.idleSeconds * 1000;
+
+        expect(CHAT_THREAD_IDLE_TIMEOUT).toBe(`${declaredMs / 60000} minutes`);
     });
 
     it("실행 임차 수명을 계약이 적은 값과 같이 갖는다", () => {

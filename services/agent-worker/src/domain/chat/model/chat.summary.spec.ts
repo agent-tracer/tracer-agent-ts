@@ -1,15 +1,24 @@
 import { featureModels } from "@tracer-agent/llm";
+import { readContractJson } from "~agent-worker/support/contract.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 
-/** 압축 문턱과 재생 창 크기이며 도구 없는 단발 호출이라 요약 모델은 가장 싼 등급으로 충분하다. */
+interface ChatSummaryContract {
+    readonly production: { readonly trigger: { readonly messages: number; readonly chars: number } };
+    readonly consumption: { readonly recentKeepCount: number };
+    readonly limits: { readonly maxOutputTokens: number; readonly deadlineMs: number };
+}
+
+const DECLARED = readContractJson<ChatSummaryContract>("agent/chat/summary.json");
+
+/** 압축 문턱과 재생 창 크기는 계약이 갖고 도구 없는 단발 호출이라 요약 모델은 가장 싼 등급으로 충분하다. */
 export const CHAT_SUMMARY_SPEC = {
-    triggerMessageCount: 20,
-    recentKeepCount: 8,
-    triggerCharBudget: 12_000,
+    triggerMessageCount: DECLARED.production.trigger.messages,
+    recentKeepCount: DECLARED.consumption.recentKeepCount,
+    triggerCharBudget: DECLARED.production.trigger.chars,
     limits: {
         model: featureModels("title-suggestion")!.default,
-        maxOutputTokens: 600,
-        deadlineMs: 30_000,
+        maxOutputTokens: DECLARED.limits.maxOutputTokens,
+        deadlineMs: DECLARED.limits.deadlineMs,
     },
 } as const;
 
