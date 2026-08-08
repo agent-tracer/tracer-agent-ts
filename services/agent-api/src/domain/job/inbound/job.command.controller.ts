@@ -35,7 +35,7 @@ export class JobCommandController {
         @Headers(MONITOR_USER_HEADER) user: string | undefined,
         @Param("id", pathParamPipe) id: string,
     ) {
-        const job = await this.cancelJob.execute(resolveUserId(user), id, new Date());
+        const job = await this.cancelJob.execute(resolveUserId(user), id);
         if (job === null) throw new NotFoundException("Job execution not found");
         return { job };
     }

@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { InvariantViolationError } from "@tracer-agent/platform";
 import { JOB_STATUS } from "~agent-api/domain/job/model/job.const.js";
 import { mapJob, type JobDto } from "~agent-api/domain/job/model/job.view.model.js";
+import { JOB_CLOCK, type ClockPort } from "~agent-api/domain/job/port/clock.port.js";
 import { JOB_STATUS_NOTIFIER, type JobStatusNotifier } from "~agent-api/domain/job/port/job.status.notifier.port.js";
 import { JOB_REPOSITORY, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
 import { WORKFLOW_DISPATCHER, type WorkflowDispatcherPort } from "~agent-api/domain/job/port/workflow.dispatcher.port.js";
@@ -13,9 +14,11 @@ export class CancelJobUseCase {
         @Inject(JOB_REPOSITORY) private readonly jobs: JobRepositoryPort,
         @Inject(WORKFLOW_DISPATCHER) private readonly dispatcher: WorkflowDispatcherPort,
         @Inject(JOB_STATUS_NOTIFIER) private readonly notifier: JobStatusNotifier,
+        @Inject(JOB_CLOCK) private readonly clock: ClockPort,
     ) {}
 
-    async execute(userId: string, id: string, now: Date): Promise<JobDto | null> {
+    async execute(userId: string, id: string): Promise<JobDto | null> {
+        const now = this.clock.now();
         const job = await this.jobs.findById(id);
         // 남의 잡은 존재 여부도 드러내지 않는다.
         if (job === null || !job.isOwnedBy(userId)) return null;
