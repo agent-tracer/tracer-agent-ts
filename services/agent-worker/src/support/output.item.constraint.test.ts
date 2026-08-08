@@ -130,9 +130,38 @@ const CASES = AGENTS.flatMap(({ id, schema }) => {
     }));
 });
 
+/** 위 순회기와 다른 길로 같은 제약의 수만 세며, 경로를 만들지도 방문을 억제하지도 않으므로 그 두 자리가 자리를 삼키면 두 수가 갈린다. */
+function declaredCount(root: Node, raw: unknown, depth = 0): number {
+    const node = deref(root, raw);
+    if (!isNode(node) || depth > 40) return 0;
+    let found = 0;
+    for (const branch of branchesOf(node)) found += declaredCount(root, branch, depth + 1);
+    if (node["type"] === "array") {
+        const items = deref(root, node["items"]);
+        if (isNode(items)) {
+            if (items["type"] === "string" && typeof items["minLength"] === "number" && items["minLength"] >= 1) {
+                found += 1;
+            }
+            found += declaredCount(root, items, depth + 1);
+        }
+    }
+    const properties = node["properties"];
+    if (isNode(properties)) {
+        for (const child of Object.values(properties)) found += declaredCount(root, child, depth + 1);
+    }
+    return found;
+}
+
 describe("계약이 배열 항목에 건 최소 길이", () => {
     it("계약이 그 제약을 적어도 하나 갖는다", () => {
         expect(CASES.length).toBeGreaterThan(0);
+    });
+
+    // 검사가 조용히 적게 보는 것은 통과와 구분되지 않으므로 본 개수를 계약이 적은 수와 맞춘다.
+    it.each(AGENTS)("$id 가 적은 제약을 하나도 빠뜨리지 않고 본다", ({ id }) => {
+        const declared = readAgentOutput(id).schema as Node;
+
+        expect(CASES.filter((entry) => entry.id === id).length).toBe(declaredCount(declared, declared));
     });
 
     // 같은 모양에 쓸 수 있는 항목을 실은 값이며, 이것이 통과해야 아래 거절이 빈 항목 때문임이 정해진다.
