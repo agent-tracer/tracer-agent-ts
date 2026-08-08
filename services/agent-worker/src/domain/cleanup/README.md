@@ -65,13 +65,13 @@ Cleanup MCP server 이름은 `monitor-task-cleanup`이다. triage는 도구를 �
 | tool allowlist | triage와 inspect 단계별로 단일 도구만 허용한다 |
 | provenance | 후보와 이벤트의 출처를 ledger에 누적한다 |
 | redaction | 도구 결과와 최종 제안에서 민감 정보를 제거한다 |
-| budget lease | repair 20%, triage 20%, decision floor를 먼저 예약한다 |
+| budget lease | repair와 triage와 decision 몫을 조사 전에 예약하며 비율은 계약의 `reservation`이 갖는다 |
 | redispatch | 제안이 없고 재조사 요청이 있으며 남은 예산이 있을 때만 수행한다 |
 | structured validation | schema 검증 후 도메인 검증을 추가로 수행한다 |
 
 ```mermaid
 flowchart TD
-    LT --> LEDGER1[triage provenance ledger]
+    TRIAGE[triage query] --> LEDGER1[triage provenance ledger]
     LEDGER1 --> INSPECT[inspect query]
     INSPECT --> ET[get_task_events]
     ET --> LEDGER2[inspect provenance ledger]

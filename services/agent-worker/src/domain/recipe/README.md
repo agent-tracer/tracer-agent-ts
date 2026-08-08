@@ -163,6 +163,17 @@ trajectory 수집과 redaction과 fallback model을 적용한다.
 출력 타입은 `DispatchPlan` → `ProbeReport` → `RecipeSynthesis` 순서로 좁혀진다. 최종
 `RecipeSynthesis`가 검증을 통과해야 recipe 후보와 provenance가 된다.
 
+## 초안 배달
+
+산출 어댑터가 배치의 `language`를 초안마다 실어 보내므로 원장의 레시피가 어느 언어로 쓰였는지를
+갖는다. 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 가림 단계 `output`을 이 자리에서
+지난다.
+
+이 자리는 두 축이 갈린다. `conformance/cases/divergence.json`의 `recipe.draft.language`가 그
+차이를 갖고 이 축을 canonical 로 적는다. 파이썬 축은 산출을 종결하는 자리가 요청 payload 를 받지
+못해 언어가 빈 채 저장되며, 잡 산출을 종결하는 공유 표면이 요청 payload 를 함께 받도록 계약이 그
+자리를 갖는 뒤에 좁힌다.
+
 ## Temporal 워크플로
 
 `recipe.workflow.ts`는 prepare → generate → finalize 순서를 사용한다. generate activity는 `generate` task queue에서 15분 start-to-close, 1시간 schedule-to-close, 30초 heartbeat와 최대 3회 재시도를 적용한다. prepare·finalize·fail은 짧은 activity retry 정책을 사용한다.
@@ -187,4 +198,5 @@ stateDiagram-v2
 - `model/recipe.dispatch.policy.ts`: 전문 역할별 도구 선택
 - `model/recipe.outcome.model.ts`: 빈 결과의 사유 어휘와 판정
 - `model/recipe.prompt.ts`: 단계별 prompt 조립
+- `adapter/recipe.output.adapter.ts`: 초안 배달과 언어 부착과 output 단계 가림
 - `inbound/recipe.workflow.ts`: Temporal workflow

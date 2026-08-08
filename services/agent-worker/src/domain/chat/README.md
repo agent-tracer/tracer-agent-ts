@@ -215,6 +215,24 @@ flowchart TD
     TERM -->|아니다| SIG
 ```
 
+## 요약 접기
+
+스레드가 길어지면 오래된 대화를 요약으로 접고 최근 턴만 그대로 싣는다. 요약은 `chat_threads`의
+한 칸이고 두 축이 그 원장을 공유하므로 만드는 규칙과 읽는 규칙을 계약의 `agent/chat/summary.json`이
+소유한다. 접는 기준과 남기는 턴 수는 `model/chat.summary.spec.ts`가 계약에서 읽으며 이 문서는
+그 수치를 복제하지 않는다.
+
+요약은 답을 낸 뒤 종결 활동 안에서 만든다. 사용자는 이미 답을 받았으므로 요약이 실패해도 그 턴을
+실패로 접지 않고, 다만 파생 계산을 활동 수명 밖으로 떼어 내지 않아 워커가 내려갈 때 사라지지
+않게 한다.
+
+| 자리 | 파일 | 역할 |
+| --- | --- | --- |
+| 접는 기준 | `model/chat.summary.spec.ts` | 계약의 메시지 수와 글자 수 문턱을 읽고 접을지 정한다 |
+| 만드는 자리 | `application/summarize.thread.projection.ts` | 재생 창 바깥에 남는 오래된 메시지만 접고 앞선 요약을 이어 붙인다 |
+| 모델 호출 | `adapter/chat.summarizer.adapter.ts` | 도구 없는 단발 호출로 요약 본문을 만든다 |
+| 부르는 자리 | `application/finalize.chat.execution.usecase.ts` | 종결 활동 안에서 title 투영과 함께 부르고 실패는 하향해 관측에 남긴다 |
+
 ## Temporal 워크플로
 
 `chat.thread.workflow.ts`가 스레드 하나를 소유하고 `chat.execution.workflow.ts`가 턴 하나를
@@ -252,4 +270,7 @@ stateDiagram-v2
 - `adapter/chat.read.tools.ts`: 읽기 도구 adapter
 - `adapter/chat.memory.tools.ts`: memory 도구 adapter
 - `adapter/chat.write.tools.ts`: confirmation write adapter
+- `application/summarize.thread.projection.ts`: 오래된 대화를 요약으로 접는 투영
+- `model/chat.summary.spec.ts`: 계약이 정한 접는 문턱과 남기는 턴 수
+- `adapter/chat.summarizer.adapter.ts`, `port/chat.summarizer.port.ts`: 요약 본문을 만드는 경계
 - `inbound/chat.thread.workflow.ts`, `inbound/chat.execution.workflow.ts`: Temporal workflow
