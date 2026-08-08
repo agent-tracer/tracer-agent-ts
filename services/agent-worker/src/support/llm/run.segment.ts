@@ -23,6 +23,8 @@ export interface RunSegment {
     readonly accounting: AgentCallAccounting;
     readonly steps: readonly JobStepPayload[];
     readonly nodeName: string;
+    /** 이 호출이 예산 종료로 도구를 거두고 결론만 냈는지이며 궤적 사건 조각에는 없다. */
+    readonly landed?: boolean;
 }
 
 const ZERO_ACCOUNTING = { durationMs: 0, costUsd: null, numTurns: null, usage: null } as const;
@@ -87,6 +89,11 @@ export function pushValidationFailed(segments: RunSegment[], nodeName: string, c
 /** 조각을 모으는 자리가 아니라 실행 안에서 검증 사유를 남길 때 쓰는 한 줄이다. */
 export function validationFailedStep(nodeName: string, content: string): JobStepPayload {
     return orchestrationStep(nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
+}
+
+/** 조각을 모으는 자리가 아니라 실행 안에서 빈 결과의 사유를 남길 때 쓰는 한 줄이다. */
+export function emptyResultStep(nodeName: string, content: string): JobStepPayload {
+    return orchestrationStep(nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.routeSelected, content);
 }
 
 /** 노드 하나를 감싸 진입과 완료와 실패를 궤적에 남기며, 실패하면 실패를 남긴 뒤 그대로 다시 던진다. */

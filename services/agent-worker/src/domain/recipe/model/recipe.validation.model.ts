@@ -109,7 +109,7 @@ function validateRecipeCandidate(
             errors.push(`Recovery ${index + 1} cites unsupported event IDs: ${unknown.join(", ")}.`);
         }
     });
-    // 근거를 적지 않은 단계는 관측되지 않았다는 뜻이므로 검사할 것이 없다.
+    // 단계가 든 근거는 관측된 사건이어야 하며 근거를 적지 않은 단계는 걸릴 것이 없다.
     candidate.steps.forEach((step, index) => {
         const unknown = unsupported(step.evidence, (id) => isEventVerifiedAnyTask(provenance, id));
         if (unknown.length > 0) {

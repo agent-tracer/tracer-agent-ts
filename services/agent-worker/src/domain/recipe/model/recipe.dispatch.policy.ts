@@ -3,6 +3,7 @@ import {
     loadExecutionBudgetContract,
     renderFailureText,
 } from "@tracer-agent/llm";
+import { clampCodeUnits } from "~agent-worker/support/clamp.js";
 import { deadlineFractionMs } from "~agent-worker/support/llm/agent.deadline.js";
 import { RECIPE_FEATURE } from "./recipe.const.js";
 import {
@@ -67,8 +68,8 @@ export function buildProbeFailureReport(probe: RecipeProbeName, error: unknown):
     const summary = messageOf(error).trim() || "unknown error";
     return {
         probe,
-        verdict: renderFailureText(RECIPE_SCAN_FAILURES.workerFailed, { reason: summary }).slice(
-            0,
+        verdict: clampCodeUnits(
+            renderFailureText(RECIPE_SCAN_FAILURES.workerFailed, { reason: summary }),
             MAX_VERDICT_CHARS,
         ),
         excerpts: [],

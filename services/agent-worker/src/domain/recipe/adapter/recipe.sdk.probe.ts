@@ -22,6 +22,7 @@ import {
   probeToolNames,
   PROBE_MIN_WALL_CLOCK_FRACTION,
   PROBE_WALL_CLOCK_CEILING_MS,
+  RECIPE_WORKER_MAX_TURNS,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.policy.js";
 import { ProvenanceLedger } from "~agent-worker/domain/recipe/model/recipe.provenance.model.js";
 import {
@@ -55,6 +56,8 @@ export async function runRecipeProbe(
   const handlers = buildRecipeToolHandlers(ctx.input.userId, deps, ledger);
   const toolNames = probeToolNames(assignment.probe);
   const systemPrompt = buildRecipeProbeSystemPrompt(ctx.prompt);
+  // 몫이 큰 전문가도 계약이 정한 백스톱을 넘지 못하며, 모델이 읽는 수도 실제 상한과 같아야 한다.
+  const capped = cappedLease(lease);
 
   try {
     const run = await runRecipeQuery(ctx, {
@@ -63,14 +66,14 @@ export async function runRecipeProbe(
         ctx.prompt,
         ctx.input.taskId,
         assignment.question,
-        lease.maxTurns,
+        capped.maxTurns,
         siblings,
       ),
       systemPrompt,
       toolNames,
       handlers,
       outputSchema: probeReportSchema,
-      lease,
+      lease: capped,
       deadlineMs: weightedWallClockMs(
         PROBE_WALL_CLOCK_CEILING_MS,
         lease.maxBudgetUsd,
@@ -99,6 +102,15 @@ export async function runRecipeProbe(
       steps: salvaged === null ? steps : [...steps, salvageTrace(assignment)],
     };
   }
+}
+
+/**
+ * 정산은 떼어 준 몫을 그대로 두고 실제 지출로 잔량을 되돌리므로, 조인 몫은 호출에만 쓰고
+ * 원래 리스는 조율자가 그대로 정산한다.
+ */
+function cappedLease(lease: AgentBudgetLease): AgentBudgetLease {
+  if (lease.maxTurns <= RECIPE_WORKER_MAX_TURNS) return lease;
+  return { ...lease, maxTurns: RECIPE_WORKER_MAX_TURNS };
 }
 
 // 잘라 낸 보고와 처음부터 상한 안에 들어온 보고는 조율자에게 구분되지 않으므로 궤적에 남긴다.

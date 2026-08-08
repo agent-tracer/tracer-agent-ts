@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { clampCodeUnits } from "~agent-worker/support/clamp.js";
 import {
     RECIPE_PROBE_NAMES,
     probeAssignmentSchema,
@@ -73,7 +74,7 @@ export function salvageProbeReport(probe: RecipeProbeName, raw: unknown): ProbeR
 }
 
 function clamped(value: unknown, max: number): unknown {
-    return typeof value === "string" ? value.trim().slice(0, max) : value;
+    return typeof value === "string" ? clampCodeUnits(value.trim(), max) : value;
 }
 
 function clampedExcerpt(value: unknown): unknown {
