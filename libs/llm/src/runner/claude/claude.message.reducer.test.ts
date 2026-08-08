@@ -162,4 +162,44 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
             ),
         ).toThrow(UnpricedModelError);
     });
+
+    it("공급자가 한도로 막은 실행은 재시도 가능한 사유로 적는다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "blocking_limit" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.rateLimit);
+    });
+
+    it("급속 충전 차단기도 같은 자리로 접는다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "rapid_refill_breaker" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.rateLimit);
+    });
+
+    it("입력이 창을 넘긴 실행은 다시 불러도 같으므로 요청 과대로 적는다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "prompt_too_long" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.requestTooLarge);
+    });
+
+    it("결과 서브타입이 이미 말하는 까닭은 그대로 둔다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ subtype: "error_max_turns", terminal_reason: "max_turns" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTurnsExceeded);
+    });
+
+    it("끝낸 까닭이 없으면 서브타입 판정을 그대로 쓴다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ subtype: "error_during_execution" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.executionError);
+    });
 });

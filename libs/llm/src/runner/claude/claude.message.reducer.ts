@@ -16,6 +16,7 @@ import {
     toUsage,
 } from "./claude.query.mappers.js";
 import { reportPermissionDenials } from "./claude.query.permissions.js";
+import { providerSubtypeFromTerminalReason } from "./claude.terminal.reason.js";
 import { partialAssistantDeltaText } from "./claude.stream.delta.js";
 
 /** 접어 낸 한 실행의 값이며 실행기는 여기에 시각과 궤적만 더해 결과로 낸다. */
@@ -174,7 +175,10 @@ export class ClaudeMessageReducer {
         this.usage = toUsage(msg.usage);
         this.actualModel = dominantModel(msg.modelUsage);
         if (msg.subtype !== "success") {
-            this.errorSubtype = normalizeClaudeResultSubtype(msg.subtype);
+            // 공급자 사정으로 끝난 실행은 전이성 실패이므로 재시도 가능한 사유로 적어야 다시 선다.
+            this.errorSubtype =
+                providerSubtypeFromTerminalReason(msg.terminal_reason) ??
+                normalizeClaudeResultSubtype(msg.subtype);
             this.errorSummary = `${msg.subtype}${msg.errors.length > 0 ? `: ${msg.errors.join("; ")}` : ""}`;
             this.warnOnExhaustion(msg.subtype);
             return;
