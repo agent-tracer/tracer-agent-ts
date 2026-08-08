@@ -41,6 +41,7 @@ export function loadErrorSubtypeContract(): ErrorSubtypeContract {
 export const AGENT_ERROR_SUBTYPE = {
     maxTurnsExceeded: "max_turns_exceeded",
     budgetExceeded: "budget_exceeded",
+    maxTokens: "max_tokens",
     outputSchemaInvalid: "output_schema_invalid",
     executionError: "agent_execution_error",
     deadlineExceeded: "deadline_exceeded",

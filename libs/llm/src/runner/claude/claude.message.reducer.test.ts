@@ -202,4 +202,20 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
 
         expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.executionError);
     });
+
+    it("출력 한도에서 끊긴 답은 성공 모양이어도 절단으로 적는다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ stop_reason: "max_tokens", result: "잘린 답" }));
+
+        expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTokens);
+    });
+
+    it("절단된 답이라도 그때까지 받은 글은 버리지 않는다", () => {
+        const { reducer } = reducerOf();
+
+        reducer.accept(result({ stop_reason: "max_tokens", result: "잘린 답" }));
+
+        expect(reducer.snapshot().rawOutput).toBe("잘린 답");
+    });
 });

@@ -1,6 +1,6 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { logWarn } from "@tracer-agent/platform";
-import { PROVIDER_ERROR_SUBTYPE, UnpricedModelError } from "~llm/model/agent.error.js";
+import { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE, UnpricedModelError } from "~llm/model/agent.error.js";
 import type { AgentQueryUsage } from "~llm/model/agent.usage.js";
 import type { JobStepToolCall } from "~llm/model/job.step.js";
 import type { TrajectoryRecorder } from "~llm/observability/trajectory.js";
@@ -184,6 +184,14 @@ export class ClaudeMessageReducer {
             return;
         }
         this.ttftMs = msg.ttft_ms ?? null;
+        if (msg.stop_reason === "max_tokens") {
+            // 출력 한도에서 끊긴 답은 성공 모양으로 오지만 글이 잘려 있어 그대로 쓰면 파싱이 대신 실패한다.
+            this.errorSubtype = AGENT_ERROR_SUBTYPE.maxTokens;
+            this.errorSummary = "model output was truncated by the output token limit";
+            this.resultText = msg.result;
+            this.structuredOutput = msg.structured_output ?? null;
+            return;
+        }
         if (msg.stop_reason === "refusal") {
             // 안전 분류기가 거절해도 결과는 success 모양으로 오므로 stop_reason 으로 구분한다.
             this.errorSubtype = PROVIDER_ERROR_SUBTYPE.refusal;
