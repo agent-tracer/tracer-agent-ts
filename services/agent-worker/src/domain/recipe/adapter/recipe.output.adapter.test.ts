@@ -181,4 +181,18 @@ describe("RecipeOutputAdapter", () => {
         ).resolves.toBe(0);
         expect(sent).toEqual([]);
     });
+
+    it("모델이 흘린 자격 증명을 사용자에게 내보내기 전에 가린다", async () => {
+        const { target, sent } = adapterWith({ recipes: [{ id: "r1" }] });
+
+        await target.createCandidates({
+            userId: "user",
+            sourceJobId: "job",
+            language: OUTPUT_LANGUAGE.ko,
+            recipes: [candidate({ summaryMd: "키는 sk-ant-AAAAAAAAAAAAAAAA 이다" })],
+        });
+
+        const body = JSON.parse(String(sent[0]?.init.body)) as { recipes: { summaryMd: string }[] };
+        expect(body.recipes[0]?.summaryMd).not.toContain("sk-ant-AAAAAAAAAAAAAAAA");
+    });
 });

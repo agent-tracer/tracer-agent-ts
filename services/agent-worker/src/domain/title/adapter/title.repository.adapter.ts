@@ -1,4 +1,4 @@
-import type { GeneratedJobStep } from "@tracer-agent/llm";
+import { redactPayload, type GeneratedJobStep } from "@tracer-agent/llm";
 import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import type { DataSource, EntityManager } from "typeorm";
 import { readAppSetting } from "~agent-worker/config/app.setting.reader.js";
@@ -135,7 +135,8 @@ export class TitleRepositoryAdapter implements TitleRepositoryPort {
 
                 await insertSteps(manager, job.id, input.userId, input.steps, input.attempt, input.now);
                 // 태스크를 직접 개명하지 않고 후보만 남겨 사용자가 고르게 한다.
-                job.complete({ suggestions: input.suggestions }, input.usage, input.now);
+                const suggestions = redactPayload(input.suggestions);
+                job.complete({ suggestions }, input.usage, input.now);
                 if (!(await jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES))) {
                     throw new JobTransitionLostError(job.id);
                 }

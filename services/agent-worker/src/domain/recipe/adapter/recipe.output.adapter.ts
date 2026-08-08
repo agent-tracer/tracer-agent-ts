@@ -1,3 +1,4 @@
+import { redactPayload } from "@tracer-agent/llm";
 import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { wireArray, wireObject } from "~agent-worker/support/wire.value.js";
 import { RECIPE_AUTHOR_AGENT } from "~agent-worker/domain/recipe/model/recipe.const.js";
@@ -18,7 +19,8 @@ export class RecipeOutputAdapter implements RecipeOutputPort {
             path: "/api/v1/recipes",
             userId: batch.userId,
             body: {
-                recipes: batch.recipes.map((recipe) => toDraft(recipe, batch.language)),
+                // 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 output 단계를 여기서 지난다.
+                recipes: batch.recipes.map((recipe) => redactPayload(toDraft(recipe, batch.language))),
                 author: RECIPE_AUTHOR_AGENT,
                 sourceJobId: batch.sourceJobId,
             },

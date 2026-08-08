@@ -1,3 +1,4 @@
+import { redactText } from "@tracer-agent/llm";
 import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { wireArray, wireObject } from "~agent-worker/support/wire.value.js";
 import { CLEANUP_SUGGESTION_KIND_ARCHIVE } from "~agent-worker/domain/cleanup/model/cleanup.const.js";
@@ -20,7 +21,8 @@ export class CleanupOutputAdapter implements CleanupOutputPort {
                 suggestions: batch.suggestions.map((suggestion) => ({
                     taskId: suggestion.taskId,
                     kind: CLEANUP_SUGGESTION_KIND_ARCHIVE,
-                    rationale: suggestion.rationale,
+                    // 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 output 단계를 여기서 지난다.
+                    rationale: redactText(suggestion.rationale),
                 })),
                 jobId: batch.jobId,
             },

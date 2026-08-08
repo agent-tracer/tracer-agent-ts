@@ -78,4 +78,24 @@ describe("CleanupOutputAdapter", () => {
         await expect(target.createSuggestions({ userId: "local", jobId: "job-1", suggestions: [] })).resolves.toBe(0);
         expect(sent).toEqual([]);
     });
+
+    it("모델이 흘린 자격 증명을 사용자에게 내보내기 전에 가린다", async () => {
+        const { target, sent } = adapterWith({ ok: true, data: { suggestions: [{ id: "s1" }] } });
+
+        await target.createSuggestions({
+            userId: "local",
+            jobId: "job-1",
+            suggestions: [
+                {
+                    kind: "archive" as const,
+                    taskId: "task-1",
+                    rationale: "키는 sk-ant-AAAAAAAAAAAAAAAA 이다",
+                    evidenceEventIds: [],
+                },
+            ],
+        });
+
+        const draft = (sentBody(sent)["suggestions"] as Record<string, unknown>[])[0]!;
+        expect(String(draft["rationale"])).not.toContain("sk-ant-AAAAAAAAAAAAAAAA");
+    });
 });
