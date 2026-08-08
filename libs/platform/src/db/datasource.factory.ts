@@ -19,6 +19,8 @@ export function createDataSource(params: DataSourceParams): DataSource {
         database: params.db.database,
         entities: params.entities,
         poolSize: params.db.poolSize,
+        // 연결을 못 받은 질의가 영원히 기다리지 않고 실패로 드러나게 한다.
+        extra: { connectionTimeoutMillis: params.db.connectionTimeoutMs },
         migrations: [],
         migrationsRun: false,
         synchronize: false,

@@ -68,4 +68,16 @@ describe("설정 병합", () => {
 
         expect(merged.agentDb.poolSize).toBe(40);
     });
+
+    it("기다리는 상한을 적지 않아도 무한 대기로 두지 않는다", () => {
+        const merged = mergeApplicationConfig({}, {}, {});
+
+        expect(merged.agentDb.connectionTimeoutMs).toBe(5000);
+    });
+
+    it("배포가 기다리는 상한을 정하면 그 값을 쓴다", () => {
+        const merged = mergeApplicationConfig({}, {}, { AGENT_DB_CONNECTION_TIMEOUT_MS: "1500" });
+
+        expect(merged.agentDb.connectionTimeoutMs).toBe(1500);
+    });
 });
