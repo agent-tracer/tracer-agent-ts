@@ -27,10 +27,21 @@ const DISCARD = "discard";
 
 const NORMALIZERS: Readonly<Record<string, (text: string) => string>> = {
     casefold: (text) => text.toLowerCase(),
-    // 걸린 구간의 자리를 원문에서 세므로 접는 절차가 길이를 바꾸면 안 된다.
     lowerAscii: (text) => text.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()),
     keepAlphanumeric: (text) => text.replace(/[^\p{L}\p{N}]+/gu, ""),
 };
+
+/** 글자 하나를 글자 하나로만 바꾸어 접은 자리와 원문의 자리가 같은 절차다. */
+const LENGTH_PRESERVING_NORMALIZERS: ReadonlySet<string> = new Set(["lowerAscii"]);
+
+/** 걸린 구간을 접힌 글에서 세고 원문에서 자르므로 자리를 정하는 절차는 길이를 바꾸면 안 된다. */
+export function assertSpanNormalizers(steps: readonly string[]): void {
+    const shifting = steps.filter((step) => !LENGTH_PRESERVING_NORMALIZERS.has(step));
+    if (shifting.length === 0) return;
+    throw new Error(`자리를 세는 절차는 길이를 바꾸지 않아야 하는데 계약이 ${shifting.join(", ")} 를 적었다`);
+}
+
+assertSpanNormalizers(RULE.values.matching.normalize);
 
 function normalize(text: string, steps: readonly string[]): string {
     return steps.reduce((folded, step) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readContractJson } from "./contract.js";
 import {
+    assertSpanNormalizers,
     hasSuspect,
     isSuspectKey,
     isSuspectText,
@@ -18,6 +19,7 @@ interface RedactionRule {
     readonly values: {
         readonly words: readonly string[];
         readonly requiresTrailingBody: { readonly minLength: number };
+        readonly matching: { readonly normalize: readonly string[] };
     };
     readonly stages: Readonly<Record<string, { readonly onSuspect: string }>>;
 }
@@ -117,5 +119,23 @@ describe("폐기 판정", () => {
             const discards = RULE.stages[stage]?.onSuspect === "discard";
             expect(stageDiscards(stage)).toBe(discards);
         }
+    });
+});
+
+describe("자리를 세는 접기 절차", () => {
+    it("글자 하나를 글자 하나로 바꾸는 절차는 받는다", () => {
+        expect(() => assertSpanNormalizers(["lowerAscii"])).not.toThrow();
+    });
+
+    it("글자를 지워 자리를 미는 절차는 거절한다", () => {
+        expect(() => assertSpanNormalizers(["keepAlphanumeric"])).toThrow(/keepAlphanumeric/u);
+    });
+
+    it("판마다 길이가 달라질 수 있는 절차도 거절한다", () => {
+        expect(() => assertSpanNormalizers(["casefold"])).toThrow(/casefold/u);
+    });
+
+    it("계약이 자리를 세는 자리에 적은 절차를 그대로 받는다", () => {
+        expect(() => assertSpanNormalizers(RULE.values.matching.normalize)).not.toThrow();
     });
 });
