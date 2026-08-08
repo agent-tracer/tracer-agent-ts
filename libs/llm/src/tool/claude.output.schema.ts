@@ -4,8 +4,11 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 /** 결과를 검증하는 파서와 모델이 볼 JSON Schema 가 함께 나오는 스키마 하나다. */
 export type StructuredSchema<T> = ZodType<T, ZodTypeDef, unknown>;
 
-// Claude 구조화 출력이 400으로 거부하는 JSON Schema 키워드이며 문자열 길이 제약은 받아들인다.
+// Claude 구조화 출력이 받지 않는 JSON Schema 키워드이며 길이·개수·수치 제약이 모두 여기 든다.
 export const CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS: readonly string[] = [
+    "minLength",
+    "maxLength",
+    "pattern",
     "minItems",
     "maxItems",
     "minimum",
@@ -16,6 +19,31 @@ export const CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS: readonly string[] = [
 ];
 
 const UNSUPPORTED = new Set<string>(CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS);
+
+// 스키마에서 지워지는 제약을 모델이 읽는 문장으로 옮기는 자리이며 상한의 정본은 zod 하나로 남는다.
+const CONSTRAINT_SENTENCES: Record<string, (value: unknown) => string | null> = {
+    minLength: (value) => (typeof value === "number" ? `At least ${value} characters.` : null),
+    maxLength: (value) => (typeof value === "number" ? `At most ${value} characters.` : null),
+    pattern: (value) => (typeof value === "string" ? `Must match the regular expression ${value}.` : null),
+    minItems: (value) => (typeof value === "number" ? `At least ${value} items.` : null),
+    maxItems: (value) => (typeof value === "number" ? `At most ${value} items.` : null),
+    minimum: (value) => (typeof value === "number" ? `At least ${value}.` : null),
+    maximum: (value) => (typeof value === "number" ? `At most ${value}.` : null),
+    exclusiveMinimum: (value) => (typeof value === "number" ? `Greater than ${value}.` : null),
+    exclusiveMaximum: (value) => (typeof value === "number" ? `Less than ${value}.` : null),
+    multipleOf: (value) => (typeof value === "number" ? `A multiple of ${value}.` : null),
+};
+
+/** 지워진 제약을 선언 순서대로 문장으로 옮겨 같은 스키마가 언제나 같은 설명을 내게 한다. */
+function describeStrippedConstraints(stripped: ReadonlyMap<string, unknown>): string[] {
+    const sentences: string[] = [];
+    for (const keyword of CLAUDE_UNSUPPORTED_SCHEMA_KEYWORDS) {
+        if (!stripped.has(keyword)) continue;
+        const sentence = CONSTRAINT_SENTENCES[keyword]?.(stripped.get(keyword));
+        if (sentence !== null && sentence !== undefined) sentences.push(sentence);
+    }
+    return sentences;
+}
 
 // properties와 $defs의 키는 필드 이름이므로 키워드 필터를 적용하지 않는다.
 const SCHEMA_MAP_KEYWORDS = ["properties", "$defs", "definitions", "patternProperties"] as const;
@@ -66,9 +94,19 @@ function toClaudeCompatibleSchema(node: unknown): unknown {
     if (!isSchemaNode(node)) return node;
 
     const converted: SchemaNode = {};
+    const stripped = new Map<string, unknown>();
     for (const [key, value] of Object.entries(node)) {
-        if (UNSUPPORTED.has(key)) continue;
+        if (UNSUPPORTED.has(key)) {
+            stripped.set(key, value);
+            continue;
+        }
         converted[key] = value;
+    }
+
+    const sentences = describeStrippedConstraints(stripped);
+    if (sentences.length > 0) {
+        const existing = typeof converted["description"] === "string" ? converted["description"].trim() : "";
+        converted["description"] = [existing, ...sentences].filter((part) => part.length > 0).join(" ");
     }
 
     for (const keyword of SCHEMA_MAP_KEYWORDS) {
