@@ -66,12 +66,23 @@ export function toolBinding(
     return binding;
 }
 
-/** 이 도구의 호출이 어느 상류로 나가는지만 보는 자리이며 action 사이에서 상류는 갈리지 않는다. */
+/** 경로의 앞 두 마디가 그 호출이 나가는 상류를 정하며 뒤따르는 자원 경로는 상류를 바꾸지 않는다. */
+function upstreamPrefixOf(path: string): string {
+    return path.split("/").slice(0, 3).join("/");
+}
+
+/** 이 도구의 호출이 어느 상류로 나가는지만 보는 자리이며, action 마다 경로는 달라도 상류 접두사는 갈리지 않아야 하므로 갈리면 거절한다. */
 export function toolUpstreamPath(toolName: string): string {
     const actions = TOOL_ACTION_BINDINGS[toolName];
     if (actions === undefined) return toolBinding(toolName).path;
     const [first] = Object.values(actions);
     if (first === undefined) throw new Error(`${toolName} declares no action`);
+    const upstream = upstreamPrefixOf(first.path);
+    for (const binding of Object.values(actions)) {
+        if (upstreamPrefixOf(binding.path) !== upstream) {
+            throw new Error(`${toolName} straddles ${upstream} and ${upstreamPrefixOf(binding.path)}`);
+        }
+    }
     return first.path;
 }
 
