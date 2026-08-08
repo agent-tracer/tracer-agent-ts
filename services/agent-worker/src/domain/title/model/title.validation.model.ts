@@ -1,10 +1,11 @@
-import type { TitleSuggestionPayload } from "./title.suggestion.schema.js";
+import {
+    TITLE_MAX_SUGGESTIONS,
+    TITLE_MIN_SUGGESTIONS,
+    type TitleSuggestionPayload,
+} from "./title.suggestion.schema.js";
 
 const PLACEHOLDER_TITLES: ReadonlySet<string> = new Set(["untitled", "test"]);
 const PLACEHOLDER_PATTERN = /^task(?:[\s\-_:#])*\d+$/;
-const MIN_SUGGESTIONS = 2;
-// 상한은 출력 스키마가 이미 끊으므로 여기서는 모자란 개수만 모델에게 돌려준다.
-const MAX_SUGGESTIONS = 3;
 
 /** 쓸모없는 후보를 지운 결과와 모델이 고쳐야 하는 사유다. */
 export interface NormalizedTitleSuggestions {
@@ -15,7 +16,7 @@ export interface NormalizedTitleSuggestions {
 function shortfall(kept: number): string {
     return (
         `only ${kept} usable suggestion(s) remain after dropping unusable ones; ` +
-        `return ${MIN_SUGGESTIONS}-${MAX_SUGGESTIONS} distinct titles that differ from the current one`
+        `return ${TITLE_MIN_SUGGESTIONS}-${TITLE_MAX_SUGGESTIONS} distinct titles that differ from the current one`
     );
 }
 
@@ -36,7 +37,7 @@ export function normalizeTitleSuggestions(
         seen.add(normalized);
         kept.push(suggestion);
     }
-    if (kept.length < MIN_SUGGESTIONS) return { kept, errors: [shortfall(kept.length)] };
+    if (kept.length < TITLE_MIN_SUGGESTIONS) return { kept, errors: [shortfall(kept.length)] };
     return { kept, errors: [] };
 }
 
