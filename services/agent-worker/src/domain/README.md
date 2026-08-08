@@ -144,6 +144,8 @@ classDiagram
 | 스키마 제약 강등 | `libs/llm/src/tool/claude.output.schema.ts` | Claude 구조화 출력이 받지 않는 길이·개수·수치 제약을 지우는 대신 그 노드의 `description`에 문장으로 옮겨 모델이 상한을 읽게 한다 |
 | 사본 저장 하향 | `chat.execution.sink.ts`, `recipe.sdk.orchestration.ts` | 초안 검사점과 단계 원장은 재개를 위한 사본이므로 닿지 못해도 실행을 접지 않고 다시 적을 자리를 남긴다 |
 | 모델 목록 유일성 | `recipe.sdk.orchestration.ts`, `cleanup.sdk.orchestration.ts` | 모델이 같은 축이나 같은 태스크를 겹쳐 내도 한 라운드에 하나만 세워 요금과 재개가 겹치지 않게 한다 |
+| action 별 필수 인자 | `chat.tool.support.ts`, `libs/llm/src/tool/contract.tool.schema.ts` | 계약의 `requiredByAction`이 그 action에 요구하는 인자가 빠지면 대기 행을 세우기 전에 거절하고, 빠진 자리를 모델에게 알려 같은 호출을 고쳐 부르게 한다 |
+| 고칠 수 있는 실패 구분 | `libs/llm/src/tool/tool.failure.ts` | 빠진 인자는 채우면 성립하므로 포기를 지시하는 `toolFailed` 대신 다시 부르라고 말하는 `argumentsMissing`으로 옮긴다 |
 | MCP 경계 | `libs/llm/src/tool/claude.tool.schema.ts` | 계약 도구를 SDK MCP tool로 변환하고 인자 스키마와 실패 응답을 연결한다 |
 | 결과 비식별화 | `libs/llm/src/tool/claude.tool.schema.ts`, `libs/llm/src/support/redaction.ts` | 도구 결과·답변·초안에 포함된 민감 정보를 모델과 사용자 경계 전에 제거한다 |
 | 도구 이름 정규화 | `libs/llm/src/tool/mcp.tool.prefix.ts` | `mcp__{server}__{tool}` 이름과 계약의 정규 이름 사이를 변환한다 |

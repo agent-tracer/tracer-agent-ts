@@ -59,14 +59,14 @@ sequenceDiagram
 
 ## 도구 타입
 
-Chat 계약에는 35개 도구가 정의되어 있다. 실행 권한은 도구 surface에 따라 분리한다.
+Chat 계약에는 24개 도구가 정의되어 있다. 실행 권한은 도구 surface에 따라 분리한다.
 
 | 타입 | 수량 | 예시 | 실행 경계 |
 | --- | ---: | --- | --- |
-| 읽기 도구 | 10 | `search_tasks`, `get_task`, `get_timeline`, `get_rule_evidence`, `search_events`, `list_memos`, `list_rules`, `list_tags`, `list_recipes`, `list_cleanup_suggestions` | tracer API |
+| 읽기 도구 | 14 | `find_tasks`, `search_tasks`, `get_task`, `get_timeline` 등 | tracer API |
 | Agent read | 1 | `get_job` | agent API 내부 surface |
 | memory | 1 | `recall_facts` | memory API |
-| 확인 쓰기 | 23 | `remember_fact`, `update_task`, `create_memo`, `create_rule`, `set_task_tags`, `accept_recipe`, `accept_cleanup`, `enqueue_job` | confirmation API |
+| 확인 쓰기 | 8 | `remember_fact`, `enqueue_job`, `propose_task_write`, `propose_memo_write` 등 | confirmation API |
 
 읽기·memory 도구는 즉시 조회할 수 있다. 쓰기 도구는 직접 mutation을 실행하지 않고 `POST /api/agent/chat/threads/{threadId}/confirmations`를 호출해 사용자의 확인을 기다린다. 확인 식별자는 trajectory와 `ChatTurnToolCall`에 기록된다.
 
