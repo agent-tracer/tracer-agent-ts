@@ -16,10 +16,17 @@ export interface StartedLedger {
     stop(): Promise<void>;
 }
 
-/** 판정이 Postgres 방언에 매여 있으므로 계약의 migration 을 그대로 적용한 실제 원장을 띄운다. */
+/** 연결을 유한한 자원으로 세워 한 요청이 연결을 몇 개 요구하는지 드러나게 하는 설정이다. */
+export interface LedgerPoolOptions {
+    readonly size: number;
+    readonly acquireTimeoutMs: number;
+}
+
+/** 판정이 Postgres 방언에 매여 있으므로 계약의 migration 을 그대로 적용한 실제 원장을 띄우며, pool 을 주지 않으면 연결 상한이 없어 한 요청이 연결을 몇 개 요구하는지 드러나지 않는다. */
 export async function startLedger(
     migrationsDir: string,
     entities: readonly LedgerEntity[],
+    pool?: LedgerPoolOptions,
 ): Promise<StartedLedger> {
     const container: StartedPostgreSqlContainer = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
     const source = new DataSource({
@@ -27,6 +34,9 @@ export async function startLedger(
         url: container.getConnectionUri(),
         entities: [...entities],
         synchronize: false,
+        ...(pool === undefined
+            ? {}
+            : { poolSize: pool.size, extra: { connectionTimeoutMillis: pool.acquireTimeoutMs } }),
     });
     await source.initialize();
     for (const statement of readMigrations(migrationsDir)) await source.query(statement);
