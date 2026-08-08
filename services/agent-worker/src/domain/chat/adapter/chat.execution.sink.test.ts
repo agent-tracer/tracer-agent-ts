@@ -134,3 +134,56 @@ describe("실행이 무엇을 하는 중인지", () => {
         expect(declared.edge).toBe("leading");
     });
 });
+
+/** 지정한 횟수만큼 검사점 쓰기를 실패시키고 그 뒤에는 받아 적는다. */
+class FlakyExecutions {
+    readonly drafts: string[] = [];
+    private failures: number;
+
+    constructor(failures: number) {
+        this.failures = failures;
+    }
+
+    async checkpointRunning(_id: string, _attempt: number, draftText: string): Promise<boolean> {
+        if (this.failures > 0) {
+            this.failures -= 1;
+            return Promise.reject(new Error("원장에 닿지 못했다"));
+        }
+        this.drafts.push(draftText);
+        return Promise.resolve(true);
+    }
+}
+
+function flakySink(failures: number) {
+    const executions = new FlakyExecutions(failures);
+    const factory = new ChatExecutionSinkFactory(
+        executions as unknown as ChatExecutionRepositoryPort,
+        new FixedClock(),
+        IDLE_SCHEDULER,
+        new RecordingChatExecutionUpdates(),
+    );
+    return { executions, handle: factory.create("exec-1", 1) };
+}
+
+describe("초안 검사점이 원장에 닿지 못할 때", () => {
+    it("마무리가 실패한 자리를 다시 적어 마지막 초안을 남긴다", async () => {
+        const { executions, handle } = flakySink(1);
+
+        await handle.sink.onAssistantDelta("첫 조각");
+        await settle();
+
+        await handle.flush();
+        await settle();
+
+        expect(executions.drafts.at(-1)).toBe("첫 조각");
+    });
+
+    it("검사점이 실패해도 마무리가 턴을 실패로 만들지 않는다", async () => {
+        const { handle } = flakySink(5);
+
+        await handle.sink.onAssistantDelta("답변");
+        await settle();
+
+        await expect(handle.flush()).resolves.toBeUndefined();
+    });
+});

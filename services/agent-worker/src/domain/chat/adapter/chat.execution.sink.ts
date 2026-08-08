@@ -1,5 +1,5 @@
 import { redactText } from "@tracer-agent/llm";
-import type { IClock } from "@tracer-agent/platform";
+import { errorMessage, logWarn, type IClock } from "@tracer-agent/platform";
 import { readChatDraftRules } from "~agent-worker/support/contract.js";
 import {
     CHAT_EXECUTION_PHASE,
@@ -47,6 +47,8 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
     private phase: ChatExecutionPhase = CHAT_EXECUTION_PHASE.starting;
     private opened = false;
     private savedSeq = 0;
+    /** 이미 큐에 얹어 둔 자리이며 실패하면 풀려 다시 적을 수 있게 한다. */
+    private pendingSeq = 0;
     private timer: object | null = null;
     private tail: Promise<void> = Promise.resolve();
 
@@ -116,18 +118,32 @@ class DurableChatExecutionSink implements ChatExecutionSinkHandle {
         const text = redactText(this.text);
         const seq = this.seq;
         const phase = this.phase;
-        if (seq === 0 || seq === this.savedSeq) return;
-        this.savedSeq = seq;
-        this.tail = this.tail.catch(() => undefined).then(async () => {
-            const saved = await this.executions.checkpointRunning(
-                this.executionId,
-                this.attempt,
-                text,
-                seq,
-                phase,
-                this.clock.now(),
-            );
-            if (saved) this.events.publish(this.executionId);
+        if (seq === 0 || seq === this.pendingSeq) return;
+        this.pendingSeq = seq;
+        this.tail = this.tail.then(async () => {
+            try {
+                const saved = await this.executions.checkpointRunning(
+                    this.executionId,
+                    this.attempt,
+                    text,
+                    seq,
+                    phase,
+                    this.clock.now(),
+                );
+                this.savedSeq = seq;
+                if (saved) this.events.publish(this.executionId);
+            } catch (error) {
+                // 예약을 풀어 다음 조각이나 마무리가 이 자리를 다시 적게 한다.
+                if (this.pendingSeq === seq) this.pendingSeq = this.savedSeq;
+                // 초안은 화면에 보이는 사본일 뿐이므로 여기서 턴을 실패로 접지 않는다.
+                logWarn({
+                    msg: "chat.checkpoint.failed",
+                    executionId: this.executionId,
+                    attempt: this.attempt,
+                    draftSeq: seq,
+                    error: errorMessage(error),
+                });
+            }
         });
     }
 }
