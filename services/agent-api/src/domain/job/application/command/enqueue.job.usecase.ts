@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import { JOB_API_KEY_SETTING, JOB_KIND, JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import {
     IneligibleScanAnchorError,
@@ -104,7 +105,7 @@ export class EnqueueJobUseCase {
             await this.jobs.insert(job);
             return { job, created: true };
         } catch (error) {
-            if (!isUniqueViolation(error)) throw error;
+            if (!(error instanceof LedgerUniqueViolationError)) throw error;
         }
         const existing = await this.jobs.findByIdempotency(job.userId, job.kind, idempotencyKey);
         if (existing === null || existing.idempotencyInputHash !== inputHash) {
@@ -124,17 +125,6 @@ function readRequiredText(value: unknown): string | null {
     if (typeof value !== "string") return null;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
-}
-
-function isUniqueViolation(error: unknown): boolean {
-    if (getErrorCode(error) === "23505") return true;
-    return getErrorCode((error as { readonly driverError?: unknown } | null)?.driverError) === "23505";
-}
-
-function getErrorCode(error: unknown): string | undefined {
-    if (typeof error !== "object" || error === null) return undefined;
-    const code = (error as { readonly code?: unknown }).code;
-    return typeof code === "string" ? code : undefined;
 }
 
 /** 요청이 표면을 말하지 않으면 계약이 정한 대로 dashboard 로 본다. */

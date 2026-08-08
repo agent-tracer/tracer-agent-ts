@@ -1,7 +1,9 @@
 import path from "node:path";
 import { AGENT_BACKEND } from "@tracer-agent/llm";
-import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform";
+import { LedgerUniqueViolationError } from "@tracer-agent/platform";
+import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform/testing/ledger.container.js";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import { CONTRACT_ROOT, readContractJson } from "~agent-api/support/contract.js";
 import { ChatExecutionEntity } from "./chat.execution.entity.js";
 import { TypeOrmChatExecutionRepository } from "./typeorm.chat.execution.repository.adapter.js";
@@ -71,6 +73,49 @@ function seedRow(caseRow: Record<string, unknown>): Record<string, unknown> {
 function wire(value: unknown): unknown {
     return value instanceof Date ? `${value.toISOString().slice(0, 23)}Z` : value;
 }
+
+describe("실행 원장의 멱등 제약", () => {
+    function turn(id: string): ChatExecution {
+        return ChatExecution.create({
+            id,
+            userId: "local",
+            threadId: "t1",
+            replayAnchorMessageId: `message-${id}`,
+            clientRequestId: "r1",
+            inputHash: "hash-1",
+            model: null,
+            language: null,
+            now: new Date("2026-01-01T00:00:00.000Z"),
+        });
+    }
+
+    it("같은 멱등 좌표의 두 번째 접수를 드라이버 오류가 아니라 중복으로 알린다", async () => {
+        const repository = new TypeOrmChatExecutionRepository(ledger.repository(ChatExecutionEntity));
+        await repository.insert(turn("execution-1"));
+
+        await expect(repository.insert(turn("execution-2")))
+            .rejects.toBeInstanceOf(LedgerUniqueViolationError);
+    });
+
+    it("멱등 좌표가 다르면 그대로 적는다", async () => {
+        const repository = new TypeOrmChatExecutionRepository(ledger.repository(ChatExecutionEntity));
+        await repository.insert(turn("execution-1"));
+
+        await expect(repository.insert(
+            ChatExecution.create({
+                id: "execution-2",
+                userId: "local",
+                threadId: "t1",
+                replayAnchorMessageId: "message-2",
+                clientRequestId: "r2",
+                inputHash: "hash-2",
+                model: null,
+                language: null,
+                now: new Date("2026-01-01T00:00:00.000Z"),
+            }),
+        )).resolves.toBeUndefined();
+    });
+});
 
 describe("대화 실행 취소 판정", () => {
     for (const operation of contract.operations.filter((one) => OWNED.has(one.operation))) {

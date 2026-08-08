@@ -1,5 +1,6 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { describe, expect, it } from "vitest";
+import type { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import { ChatThread } from "~agent-api/domain/chat/model/chat.thread.model.js";
 import { FixedClock } from "~agent-api/domain/chat/port/__fakes__/fixed.clock.js";
 import { InMemoryChatExecutionRepository } from "~agent-api/domain/chat/port/__fakes__/in-memory.chat.execution.repository.js";
@@ -14,14 +15,33 @@ import { EnqueueChatTurnUseCase } from "./enqueue.chat.turn.usecase.js";
 const NOW = new Date("2026-01-01T00:00:00.000Z");
 const TURN = { userId: "local", threadId: "t1", clientRequestId: "r1", content: "안녕" };
 
+/** 접수가 멱등 조회를 지난 뒤 다른 replica 가 같은 행을 먼저 적고 간 경쟁을 만든다. */
+class RacingChatExecutionRepository extends InMemoryChatExecutionRepository {
+    private hideOnce = false;
+
+    hideNextIdempotencyRead(): void {
+        this.hideOnce = true;
+    }
+
+    override findByIdempotency(
+        userId: string,
+        threadId: string,
+        clientRequestId: string,
+    ): Promise<ChatExecution | null> {
+        if (!this.hideOnce) return super.findByIdempotency(userId, threadId, clientRequestId);
+        this.hideOnce = false;
+        return Promise.resolve(null);
+    }
+}
+
 function makeUseCase(): {
     useCase: EnqueueChatTurnUseCase;
-    executions: InMemoryChatExecutionRepository;
+    executions: RacingChatExecutionRepository;
     dispatcher: RecordingChatExecutionDispatcher;
 } {
     const threads = new InMemoryChatThreadRepository();
     threads.seed(ChatThread.create({ id: "t1", userId: "local", title: "첫 대화", now: NOW }));
-    const executions = new InMemoryChatExecutionRepository();
+    const executions = new RacingChatExecutionRepository();
     const messages = new InMemoryChatMessageRepository();
     const dispatcher = new RecordingChatExecutionDispatcher();
     const transaction = inMemoryChatTransaction({
@@ -88,6 +108,28 @@ describe("EnqueueChatTurnUseCase", () => {
 
         await expect(useCase.execute({ ...TURN, clientRequestId: "r2", content: "이어서" }))
             .rejects.toMatchObject({ code: "chat.execution-active-conflict" });
+    });
+
+    it("원장이 중복으로 거절한 접수는 이미 적힌 실행으로 답한다", async () => {
+        const { useCase, executions } = makeUseCase();
+        const first = await useCase.execute(TURN);
+        await executions.cancelActive(first.execution.id, NOW);
+        executions.hideNextIdempotencyRead();
+
+        const second = await useCase.execute(TURN);
+
+        expect(second.execution.id).toBe(first.execution.id);
+        expect(await executions.listByThread("t1")).toHaveLength(1);
+    });
+
+    it("원장이 중복으로 거절했는데 그 행을 되읽지 못하면 거절한다", async () => {
+        const { useCase, executions } = makeUseCase();
+        const first = await useCase.execute(TURN);
+        await executions.cancelActive(first.execution.id, NOW);
+        executions.hideNextIdempotencyRead();
+
+        await expect(useCase.execute({ ...TURN, content: "다른 말" }))
+            .rejects.toMatchObject({ code: "chat.execution-idempotency-conflict" });
     });
 
     it("소유하지 않은 스레드에는 접수하지 않는다", async () => {

@@ -1,4 +1,5 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
+import { translatingUniqueViolation } from "@tracer-agent/platform";
 import { In, LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import {
     CHAT_EXECUTION_PHASE,
@@ -111,7 +112,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
 
     async insert(execution: ChatExecution): Promise<void> {
         const row = toChatExecutionRow(execution) as unknown as QueryDeepPartialEntity<ChatExecutionEntity>;
-        await this.repo.insert(row);
+        await translatingUniqueViolation(() => this.repo.insert(row));
     }
 
     async deleteByThread(threadId: string): Promise<void> {

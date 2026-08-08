@@ -52,6 +52,7 @@ export interface ChatExecutionRepositoryPort {
         now: Date,
     ): Promise<boolean>;
     cancelActive(id: string, now: Date): Promise<boolean>;
+    /** 같은 멱등 좌표의 행이 이미 있으면 LedgerUniqueViolationError 로 거절하며 드라이버 오류를 올리지 않는다. */
     insert(execution: ChatExecution): Promise<void>;
     deleteByThread(threadId: string): Promise<void>;
 }

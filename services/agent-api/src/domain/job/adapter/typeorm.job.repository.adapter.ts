@@ -1,3 +1,4 @@
+import { translatingUniqueViolation } from "@tracer-agent/platform";
 import type { DataSource, EntityManager, QueryDeepPartialEntity, Repository } from "typeorm";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
@@ -61,7 +62,8 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
     }
 
     async insert(job: Job): Promise<void> {
-        await this.repo.insert(toJobRow(job) as unknown as QueryDeepPartialEntity<JobEntity>);
+        const row = toJobRow(job) as unknown as QueryDeepPartialEntity<JobEntity>;
+        await translatingUniqueViolation(() => this.repo.insert(row));
     }
 
     async upsert(job: Job): Promise<void> {

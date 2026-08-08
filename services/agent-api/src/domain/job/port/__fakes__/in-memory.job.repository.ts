@@ -1,3 +1,4 @@
+import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import { Job } from "~agent-api/domain/job/model/job.model.js";
@@ -6,9 +7,6 @@ import type {
     JobHistoryQuery,
     JobRepositoryPort,
 } from "~agent-api/domain/job/port/job.repository.port.js";
-
-// Postgres unique_violation.
-const UNIQUE_VIOLATION = "23505";
 
 function copy(job: Job): Job {
     return Object.assign(new Job(), job);
@@ -77,9 +75,7 @@ export class InMemoryJobRepository implements JobRepositoryPort {
                 && row.kind === job.kind
                 && row.idempotencyKey === job.idempotencyKey,
             );
-        if (duplicated) {
-            return Promise.reject(Object.assign(new Error("duplicate idempotency key"), { code: UNIQUE_VIOLATION }));
-        }
+        if (duplicated) return Promise.reject(new LedgerUniqueViolationError());
         this.rows.set(job.id, copy(job));
         return Promise.resolve();
     }

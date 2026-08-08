@@ -1,4 +1,5 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
+import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import {
     CHAT_EXECUTION_STATUS,
     type ChatExecutionPhase,
@@ -102,7 +103,7 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
                 row.threadId === execution.threadId &&
                 row.clientRequestId === execution.clientRequestId,
         );
-        if (duplicate) return Promise.reject(Object.assign(new Error("duplicate"), { code: "23505" }));
+        if (duplicate) return Promise.reject(new LedgerUniqueViolationError());
         this.rows.set(execution.id, execution);
         return Promise.resolve();
     }

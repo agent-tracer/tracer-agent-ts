@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import { CHAT_EXECUTION_STATUS, CHAT_MESSAGE_ROLE } from "~agent-api/domain/chat/model/chat.const.js";
 import {
     ChatActiveTurnConflictError,
@@ -66,7 +67,7 @@ export class EnqueueChatTurnUseCase {
         try {
             accepted = await this.transaction.run((tx) => this.accept(tx, input, inputHash));
         } catch (error) {
-            if (!isUniqueViolation(error)) throw error;
+            if (!(error instanceof LedgerUniqueViolationError)) throw error;
             accepted = await this.resolveExisting(input, inputHash);
         }
 
@@ -157,15 +158,4 @@ function hashInput(input: EnqueueChatTurnInput): string {
             language: input.language ?? null,
         }))
         .digest("hex");
-}
-
-function isUniqueViolation(error: unknown): boolean {
-    if (errorCode(error) === "23505") return true;
-    return errorCode((error as { readonly driverError?: unknown } | null)?.driverError) === "23505";
-}
-
-function errorCode(error: unknown): string | undefined {
-    if (typeof error !== "object" || error === null) return undefined;
-    const code = (error as { readonly code?: unknown }).code;
-    return typeof code === "string" ? code : undefined;
 }
