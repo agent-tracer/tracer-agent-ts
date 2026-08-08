@@ -17,6 +17,7 @@ import {
     type ChatExecutionWorkflowInput,
     type FailChatExecutionInput,
 } from "~agent-worker/domain/chat/model/chat.workflow.spec.js";
+import { messageOf } from "~agent-worker/support/failure.message.js";
 
 interface ChatExecutionActivities {
     prepareChatExecution(input: ChatExecutionWorkflowInput): Promise<PreparedChatExecution>;
@@ -76,8 +77,4 @@ function isThreadBusy(error: unknown): boolean {
         if ((cause as { readonly type?: unknown }).type === CHAT_THREAD_BUSY_FAILURE) return true;
     }
     return false;
-}
-
-function messageOf(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
 }
