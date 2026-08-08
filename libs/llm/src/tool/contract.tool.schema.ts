@@ -50,6 +50,33 @@ export interface ContractTool {
     readonly description: string;
     readonly surface?: ToolSurface;
     readonly args: Readonly<Record<string, ContractToolArg>>;
+    /** action 마다 달라지는 필수 인자이며 인자 스키마 하나로는 이 자리를 가르지 못한다. */
+    readonly requiredByAction?: Readonly<Record<string, readonly string[]>>;
+}
+
+/** action 이 요구하는 인자 가운데 그 호출에 없는 것이며 고칠 자리를 부르는 쪽에 알린다. */
+export interface MissingActionArgs {
+    readonly action: string;
+    readonly missing: readonly string[];
+}
+
+function isBlank(value: unknown): boolean {
+    if (value === undefined || value === null) return true;
+    if (typeof value === "string") return value.trim().length === 0;
+    return Array.isArray(value) && value.length === 0;
+}
+
+/** 그 action 에 필요한데 빠진 인자를 계약이 적은 순서로 낸다. */
+export function missingArgsForAction(
+    tool: ContractTool,
+    args: Readonly<Record<string, unknown>>,
+): MissingActionArgs | null {
+    const action = args["action"];
+    if (typeof action !== "string") return null;
+    const required = tool.requiredByAction?.[action];
+    if (required === undefined) return null;
+    const missing = required.filter((name) => isBlank(args[name]));
+    return missing.length === 0 ? null : { action, missing };
 }
 
 /** 에이전트 하나의 도구 선언 파일이다. */

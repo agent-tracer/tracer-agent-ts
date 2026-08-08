@@ -53,3 +53,14 @@ export function parseChatToolArgs(toolName: string, raw: unknown): Record<string
     if (shape === undefined) throw new Error(`${toolName} is not a contract tool`);
     return z.object(shape).parse(raw);
 }
+
+/** action 이 요구하는 인자가 빠진 호출을 거절할 때 낼 상태와 코드와 문구를 계약이 적은 그대로 담는다. */
+export interface ChatToolArgumentRejection {
+    readonly status: number;
+    readonly code: string;
+    readonly message: string;
+}
+
+/** 거절 어휘는 계약이 갖고 두 축이 같은 글자를 내야 하므로 값을 여기에 다시 적지 않는다. */
+export const CHAT_TOOL_ARGUMENT_REJECTION: ChatToolArgumentRejection =
+    readContractJson<{ readonly argumentRejection: ChatToolArgumentRejection }>("agent/chat/tool.json").argumentRejection;

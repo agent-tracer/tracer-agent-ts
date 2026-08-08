@@ -1,8 +1,8 @@
-import type { ToolHandlers } from "@tracer-agent/llm";
+import { ToolArgumentsMissingError, type ToolHandlers } from "@tracer-agent/llm";
 import { parseChatToolArgs } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
 import type { ChatTurnToolCall } from "~agent-worker/domain/chat/model/chat.turn.model.js";
 import { chatWriteToolNames } from "./chat.tool.surface.js";
-import { chatApiHeaders, telemetered, unwrapChatApiEnvelope } from "./chat.tool.support.js";
+import { chatApiHeaders, missingArgumentsOf, telemetered, unwrapChatApiEnvelope } from "./chat.tool.support.js";
 
 const CHAT_THREADS_PATH = "/api/agent/chat/threads";
 
@@ -61,8 +61,13 @@ export function buildChatWriteToolHandlers(client: ChatWriteClient): ChatWriteTo
             const args = parseChatToolArgs(name, raw);
             return telemetered(name, args, async () => {
                 const result = await client.propose(name, args);
-                // 계약 문장으로 옮기는 일은 도구 경계가 하므로 여기서는 사유만 던진다.
-                if (!result.ok) throw new Error(`the confirmation API answered ${result.statusCode}`);
+                if (!result.ok) {
+                    // 빠진 인자는 모델이 고칠 수 있으므로 포기를 지시하는 실패와 같은 자리에 두지 않는다.
+                    const missing = missingArgumentsOf(result.text);
+                    if (missing !== null) throw new ToolArgumentsMissingError(missing.action, missing.missing);
+                    // 계약 문장으로 옮기는 일은 도구 경계가 하므로 여기서는 사유만 던진다.
+                    throw new Error(`the confirmation API answered ${result.statusCode}`);
+                }
                 proposals.push({ id: confirmationIdOf(result.text), name, args });
                 return result.text;
             });

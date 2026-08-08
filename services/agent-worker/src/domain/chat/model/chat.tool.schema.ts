@@ -18,10 +18,21 @@ export interface ChatToolContract extends ContractToolFile {
     /** 승인된 도구가 실행된 뒤 그 결과를 알리도록 지시하는 문장이다. */
     readonly approvalReportNote: string;
     readonly failures: ToolFailureTexts;
+    readonly argumentRejection: ChatToolArgumentRejection;
+}
+
+/** action 이 요구하는 인자가 빠진 호출을 거절할 때 창구가 내는 코드이며 도구 경계가 그 코드로 갈래를 구분한다. */
+export interface ChatToolArgumentRejection {
+    readonly status: number;
+    readonly code: string;
+    readonly message: string;
 }
 
 /** 두 구현체가 함께 읽는 도구 계약이며 값은 계약 저장소가 소유한다. */
 export const CHAT_TOOL_CONTRACT: ChatToolContract = readAgentTools<ChatToolContract>(AGENT.chat.id);
+
+/** 거절 어휘는 계약이 갖고 두 축이 같은 글자를 내야 하므로 값을 여기에 다시 적지 않는다. */
+export const CHAT_TOOL_ARGUMENT_REJECTION: ChatToolArgumentRejection = CHAT_TOOL_CONTRACT.argumentRejection;
 
 /** 이 에이전트가 모델에게 여는 도구의 전체 이름이다. */
 export const CHAT_TOOLS: readonly string[] = Object.keys(CHAT_TOOL_CONTRACT.tools);

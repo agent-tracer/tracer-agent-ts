@@ -1,5 +1,6 @@
-import { withToolTelemetry } from "@tracer-agent/llm";
-import { isApiSuccessEnvelope } from "@tracer-agent/platform";
+import { withToolTelemetry, type MissingActionArgs } from "@tracer-agent/llm";
+import { isApiErrorEnvelope, isApiSuccessEnvelope } from "@tracer-agent/platform";
+import { CHAT_TOOL_ARGUMENT_REJECTION } from "~agent-worker/domain/chat/model/chat.tool.schema.js";
 import { AGENT, MONITOR_USER_HEADER } from "~agent-worker/support/agent.const.js";
 
 const AGENT_NAME = AGENT.chat.id;
@@ -28,4 +29,20 @@ export function unwrapChatApiEnvelope(raw: string): string {
         return raw;
     }
     return isApiSuccessEnvelope(payload) ? JSON.stringify(payload.data) : raw;
+}
+
+/** 확인 창구가 빠진 인자를 알리며 거절했으면 그 자리를 낸다. */
+export function missingArgumentsOf(raw: string): MissingActionArgs | null {
+    let payload: unknown;
+    try {
+        payload = JSON.parse(raw);
+    } catch {
+        return null;
+    }
+    if (!isApiErrorEnvelope(payload) || payload.error.code !== CHAT_TOOL_ARGUMENT_REJECTION.code) return null;
+    const details = payload.error.details;
+    if (typeof details !== "object" || details === null) return null;
+    const { action, missing } = details as { action?: unknown; missing?: unknown };
+    if (typeof action !== "string" || !Array.isArray(missing)) return null;
+    return { action, missing: missing.filter((name): name is string => typeof name === "string") };
 }

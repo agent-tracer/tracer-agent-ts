@@ -1,5 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { missingArgsForAction, type ContractTool } from "@tracer-agent/llm";
 import { logInfo } from "@tracer-agent/platform";
+import { ChatToolArgumentsMissingError } from "~agent-api/domain/chat/model/chat.errors.js";
 import { ChatPendingTool } from "~agent-api/domain/chat/model/chat.pending.tool.model.js";
 import {
     CHAT_CONFIRM_TOOLS,
@@ -66,6 +68,9 @@ export class ProposeToolUseCase {
         if (thread === null || !thread.isOwnedBy(input.userId)) throw new NotFoundException("Thread not found");
 
         const args = this.parseArgs(input.toolName, input.args);
+        // 세운 뒤에 거절하면 사용자가 성공할 수 없는 일을 승인하고 그 값을 치른다.
+        const missing = missingArgsForAction(CHAT_TOOL_CONTRACT.tools[input.toolName] as ContractTool, args);
+        if (missing !== null) throw new ChatToolArgumentsMissingError(missing);
         // 이 턴의 어시스턴트 메시지는 아직 적재 전이라 messageId는 확정할 수 없어 null로 둔다.
         const pending = ChatPendingTool.create({
             id: this.ids.next(),

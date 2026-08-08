@@ -7,6 +7,7 @@ import { InMemoryChatPendingToolRepository } from "~agent-api/domain/chat/port/_
 import { InMemoryChatThreadRepository } from "~agent-api/domain/chat/port/__fakes__/in-memory.chat.thread.repository.js";
 import { RecordingChatExecutionUpdates } from "~agent-api/domain/chat/port/__fakes__/recording.chat.execution.updates.js";
 import { SequentialChatIdGenerator } from "~agent-api/domain/chat/port/__fakes__/sequential.chat.id.generator.js";
+import { ChatToolArgumentsMissingError } from "~agent-api/domain/chat/model/chat.errors.js";
 import { ProposeToolUseCase } from "./propose.tool.usecase.js";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
@@ -101,5 +102,70 @@ describe("ProposeToolUseCase", () => {
 
         await expect(useCase.execute({ userId: "other", threadId: "t1", toolName: "propose_task_write", args: { action: "archive", taskId: "task-1" } }))
             .rejects.toThrow("Thread not found");
+    });
+});
+
+describe("action 이 요구하는 인자", () => {
+    it("그 action 에 필요한 인자가 빠지면 대기 행을 세우지 않는다", async () => {
+        const { useCase, pendingTools } = makeUseCase();
+
+        await expect(useCase.execute({
+            userId: "local",
+            threadId: "t1",
+            toolName: "propose_task_write",
+            args: { action: "update", status: "running" },
+        })).rejects.toBeInstanceOf(ChatToolArgumentsMissingError);
+        expect(await pendingTools.listByThread("t1")).toHaveLength(0);
+    });
+
+    it("무엇이 빠졌는지 실어 모델이 같은 호출을 고쳐 부를 수 있게 한다", async () => {
+        const { useCase } = makeUseCase();
+
+        const error = await useCase.execute({
+            userId: "local",
+            threadId: "t1",
+            toolName: "propose_memo_write",
+            args: { action: "create", body: "본문" },
+        }).then(() => null).catch((caught: unknown) => caught as ChatToolArgumentsMissingError);
+
+        expect(error?.details).toEqual({ action: "create", missing: ["taskId"] });
+    });
+
+    it("빈 배열은 인자를 채운 것으로 보지 않는다", async () => {
+        const { useCase } = makeUseCase();
+
+        const error = await useCase.execute({
+            userId: "local",
+            threadId: "t1",
+            toolName: "propose_tag_write",
+            args: { action: "assign", taskId: "task-1", tagIds: [] },
+        }).then(() => null).catch((caught: unknown) => caught as ChatToolArgumentsMissingError);
+
+        expect(error?.details).toEqual({ action: "assign", missing: ["tagIds"] });
+    });
+
+    it("빈 문자열은 인자 스키마가 먼저 거절한다", async () => {
+        const { useCase } = makeUseCase();
+
+        await expect(useCase.execute({
+            userId: "local",
+            threadId: "t1",
+            toolName: "propose_task_write",
+            args: { action: "delete", taskId: "   " },
+        })).rejects.toThrow(/arguments are invalid/);
+    });
+
+    it("그 action 에 필요한 인자를 갖추면 대기 행을 세운다", async () => {
+        const { useCase, pendingTools } = makeUseCase();
+
+        const result = await useCase.execute({
+            userId: "local",
+            threadId: "t1",
+            toolName: "propose_task_write",
+            args: { action: "update", taskId: "task-1", status: "running" },
+        });
+
+        expect(result.status).toBe("pending");
+        expect(await pendingTools.listByThread("t1")).toHaveLength(1);
     });
 });
