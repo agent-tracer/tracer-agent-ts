@@ -10,7 +10,8 @@ import { BUDGETS, ID_GENERATION_GUARDED, ROOTS, SERVICE_LOG_DOMAINS, UNITS } fro
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SKIP_DIRS = new Set(["node_modules", "dist", "build", "coverage", ".venv", "__pycache__"]);
 const SOURCE = /\.(?:ts|tsx)$/;
-const TEST = /\.(?:test|spec)\.tsx?$/;
+// 이 저장소의 *.spec.ts 는 테스트가 아니라 명세 상수 모듈이므로 예산과 검사를 그대로 받는다.
+const TEST = /\.test\.tsx?$/;
 const DECLARATION = /\.d\.ts$/;
 const LOG_NAME = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 const GUARDED_DIRS = UNITS
@@ -36,10 +37,13 @@ export function findOversized(files, maxLines) {
     .sort((left, right) => right.lines - left.lines);
 }
 
-/** 유스케이스는 예외 없이 인접 테스트를 갖는다. */
+/** 포트를 받아 한 가지 일을 끝내는 단위는 이름이 무엇이든 인접 테스트를 갖는다. */
+const TESTED_UNIT = /\.(?:usecase|projection)\.ts$/;
+
+/** 유스케이스와 프로젝션은 예외 없이 인접 테스트를 갖는다. */
 export function findUntestedUsecases(files) {
   return files
-    .filter((file) => file.endsWith(".usecase.ts"))
+    .filter((file) => TESTED_UNIT.test(file))
     .filter((file) => !fs.existsSync(file.replace(/\.ts$/, ".test.ts")))
     .map((file) => ({ file }));
 }
