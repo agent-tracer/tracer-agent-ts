@@ -84,6 +84,11 @@ export function pushValidationFailed(segments: RunSegment[], nodeName: string, c
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
 }
 
+/** 조각을 모으는 자리가 아니라 실행 안에서 검증 사유를 남길 때 쓰는 한 줄이다. */
+export function validationFailedStep(nodeName: string, content: string): JobStepPayload {
+    return orchestrationStep(nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
+}
+
 /** 노드 하나를 감싸 진입과 완료와 실패를 궤적에 남기며, 실패하면 실패를 남긴 뒤 그대로 다시 던진다. */
 export async function withNodeTrajectory<T>(
     segments: RunSegment[],

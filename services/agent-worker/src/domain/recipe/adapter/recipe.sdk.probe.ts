@@ -1,7 +1,9 @@
 import type { JobStepPayload } from "@tracer-agent/llm";
 import {
   AgentExecutionFailure,
+  lastStructuredAttempt,
 } from "@tracer-agent/llm";
+import { validationFailedStep } from "~agent-worker/support/llm/run.segment.js";
 import { type AgentBudgetLease } from "~agent-worker/support/llm/agent.budget.js";
 import { weightedWallClockMs } from "~agent-worker/support/llm/agent.deadline.js";
 import { agentFailureAccounting, type AgentCallAccounting } from "~agent-worker/support/llm/agent.accounting.js";
@@ -11,6 +13,7 @@ import {
 } from "~agent-worker/domain/recipe/model/recipe.prompt.js";
 import {
   probeReportSchema,
+  salvageProbeReport,
   type ProbeAssignment,
   type ProbeReport,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
@@ -87,12 +90,22 @@ export async function runRecipeProbe(
       steps: run.steps,
     };
   } catch (error) {
+    const steps = error instanceof AgentExecutionFailure ? error.steps : [];
+    const salvaged = salvageProbeReport(assignment.probe, lastStructuredAttempt(steps));
     return {
-      report: buildProbeFailureReport(assignment.probe, error),
+      report: salvaged ?? buildProbeFailureReport(assignment.probe, error),
       ledger,
       accounting: agentFailureAccounting(error, recipeModelName(ctx.input)),
-      steps: error instanceof AgentExecutionFailure ? error.steps : [],
+      steps: salvaged === null ? steps : [...steps, salvageTrace(assignment)],
     };
   }
+}
+
+// 잘라 낸 보고와 처음부터 상한 안에 들어온 보고는 조율자에게 구분되지 않으므로 궤적에 남긴다.
+function salvageTrace(assignment: ProbeAssignment): JobStepPayload {
+  return validationFailedStep(
+    "probe",
+    `${assignment.probe}: report exceeded its limits and was clamped to fit`,
+  );
 }
 

@@ -21,8 +21,12 @@ import {
 } from "./recipe.prompt.js";
 import type { ProbeAssignment } from "./recipe.dispatch.schema.js";
 import {
+    MAX_DISPATCH_PROBES,
+    MAX_EXCERPTS_PER_PROBE,
+    MAX_EXCERPT_CHARS,
     MAX_REDISPATCH_PROBES,
     MAX_REDISPATCH_ROUNDS,
+    MAX_VERDICT_CHARS,
 } from "./recipe.dispatch.schema.js";
 import { RECIPE_CANDIDATE_LIMIT } from "./recipe.tool.schema.js";
 
@@ -113,6 +117,10 @@ describe("레시피 조사 프롬프트", () => {
         expect(RECIPE_CANDIDATE_LIMIT).toBe(LIMITS["recipeCandidateLimit"]);
         expect(MAX_REDISPATCH_PROBES).toBe(LIMITS["maxRedispatchProbes"]);
         expect(MAX_REDISPATCH_ROUNDS).toBe(LIMITS["maxRedispatchRounds"]);
+        expect(MAX_DISPATCH_PROBES).toBe(LIMITS["maxDispatchProbes"]);
+        expect(MAX_EXCERPTS_PER_PROBE).toBe(LIMITS["maxProbeExcerpts"]);
+        expect(MAX_EXCERPT_CHARS).toBe(LIMITS["probeExcerptChars"]);
+        expect(MAX_VERDICT_CHARS).toBe(LIMITS["probeVerdictChars"]);
     });
 });
 
@@ -135,11 +143,14 @@ interface RecipePromptParityCase {
     readonly input: Record<string, unknown>;
     readonly mustContain?: readonly string[];
     readonly mustNotContain?: readonly string[];
+    readonly mustContainLimits?: readonly string[];
 }
 
 interface RecipePromptParityCases {
     readonly survey: { readonly cases: readonly RecipePromptParityCase[] };
     readonly probe: { readonly cases: readonly RecipePromptParityCase[] };
+    readonly probeSystem: { readonly cases: readonly RecipePromptParityCase[] };
+    readonly investigateSystem: { readonly cases: readonly RecipePromptParityCase[] };
 }
 
 function assertParity(rendered: string, declared: RecipePromptParityCase): void {
@@ -148,6 +159,15 @@ function assertParity(rendered: string, declared: RecipePromptParityCase): void 
     }
     for (const needle of declared.mustNotContain ?? []) {
         expect(rendered, `${declared.name}: ${needle}`).not.toContain(needle);
+    }
+    // 케이스가 숫자를 복제하지 않도록 상한은 이름으로 적고 값은 계약에서 찾는다.
+    for (const key of declared.mustContainLimits ?? []) {
+        const value = LIMITS[key];
+        expect(value, `${declared.name}: ${key}`).toBeTypeOf("number");
+        // 12 가 1200 안에서 걸리면 싣지 않은 상한도 통과하므로 수 전체로 비교한다.
+        expect(rendered, `${declared.name}: ${key}`).toMatch(
+            new RegExp(String.raw`(?<!\d)${String(value)}(?!\d)`, "u"),
+        );
     }
 }
 
@@ -177,5 +197,17 @@ describe("두 축이 같은 글자를 내야 하는 조사 프롬프트", () => 
 
             assertParity(rendered, declared);
         }
+    });
+
+    it("전문가 시스템 프롬프트가 보고를 자르는 상한을 싣는다", () => {
+        const rendered = buildRecipeProbeSystemPrompt(RECIPE_PROMPT);
+
+        for (const declared of PROMPT_PARITY.probeSystem.cases) assertParity(rendered, declared);
+    });
+
+    it("조율자 시스템 프롬프트가 산출을 자르는 상한을 싣는다", () => {
+        const rendered = buildRecipeSystemPrompt(RECIPE_PROMPT);
+
+        for (const declared of PROMPT_PARITY.investigateSystem.cases) assertParity(rendered, declared);
     });
 });

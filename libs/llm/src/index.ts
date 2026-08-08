@@ -28,6 +28,7 @@ export * from "./runner/claude/claude.system.prompt.js";
 export * from "./runner/landing.directive.js";
 export * from "./runner/llm.runner.js";
 export * from "./runner/structured.query.js";
+export * from "./runner/structured.salvage.js";
 export * from "./support/contract.js";
 export * from "./support/parse.json.js";
 export * from "./support/redaction.js";

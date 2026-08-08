@@ -1,5 +1,6 @@
 import type { HookInput, PreToolUseHookSpecificOutput } from "@anthropic-ai/claude-agent-sdk";
 import { landingDirective, progressNotice } from "~llm/runner/landing.directive.js";
+import { OUTPUT_TOOL_NAME } from "~llm/runner/structured.salvage.js";
 
 export interface ToolPacingDecision {
     readonly hookSpecificOutput: PreToolUseHookSpecificOutput;
@@ -15,7 +16,7 @@ export interface ToolPacing {
 }
 
 /** 산출을 내는 도구는 답 자체이므로 예산이 다해도 막지 않는다. */
-const OUTPUT_TOOL = "StructuredOutput";
+const OUTPUT_TOOL = OUTPUT_TOOL_NAME;
 
 function toolNameOf(input: HookInput): string | undefined {
     return "tool_name" in input ? input.tool_name : undefined;

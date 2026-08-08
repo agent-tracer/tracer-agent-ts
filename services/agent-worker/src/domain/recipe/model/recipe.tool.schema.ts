@@ -93,6 +93,18 @@ export function probeDepthShare(depth: DispatchDepth): number {
 /** 조율자 요청이 한 줄에 적는 인용 가능한 식별자 수의 상한이다. */
 export const CITABLE_ID_LIST_LIMIT = contractLimit(RECIPE_TOOL_CONTRACT, "citableIdListLimit");
 
+/** 조율자가 한 계획에 세울 수 있는 전문가 수의 상한이다. */
+export const MAX_DISPATCH_PROBES = contractLimit(RECIPE_TOOL_CONTRACT, "maxDispatchProbes");
+
+/** 전문가 하나가 붙일 수 있는 인용 수의 상한이며 값은 계약이 갖는다. */
+export const MAX_EXCERPTS_PER_PROBE = contractLimit(RECIPE_TOOL_CONTRACT, "maxProbeExcerpts");
+
+/** 인용 하나가 담을 수 있는 글자 수의 상한이며 값은 계약이 갖는다. */
+export const MAX_EXCERPT_CHARS = contractLimit(RECIPE_TOOL_CONTRACT, "probeExcerptChars");
+
+/** 전문가 판정 하나가 담을 수 있는 글자 수의 상한이며 값은 계약이 갖는다. */
+export const MAX_VERDICT_CHARS = contractLimit(RECIPE_TOOL_CONTRACT, "probeVerdictChars");
+
 /** 검색이 걸러 낼 수 있는 이벤트 종류이며 값은 계약이 소유한다. */
 export const TIMELINE_EVENT_KINDS: readonly [string, ...string[]] = contractEnumValues(
     RECIPE_TOOL_CONTRACT,
