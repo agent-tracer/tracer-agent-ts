@@ -383,3 +383,62 @@ describe("턴 착지 판정", () => {
         expect(result.landed).toBe(true);
     });
 });
+
+/** 첫 메시지를 내기 전에 터지는 스트림이며 실패 분류만 보게 한다. */
+async function* throwingStream(error: Error): AsyncGenerator<unknown> {
+    await Promise.resolve();
+    throw error;
+    yield undefined;
+}
+
+/** 정해진 시간이 지난 뒤에야 터져 기한이 먼저 걸리게 하는 스트림이다. */
+async function* slowThrowingStream(delayMs: number): AsyncGenerator<unknown> {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    throw new Error("늦게 터졌다");
+    yield undefined;
+}
+
+describe("실행이 터진 이유", () => {
+    it("단가를 모르는 모델이 응답하면 예산을 집행할 수 없다고 적는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("이름-없는-모델"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "이름-없는-모델", maxBudgetUsd: 1 }),
+        );
+
+        expect(result.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.budgetExceeded);
+    });
+
+    it("끊긴 신호 없이 터진 실행은 하위 프로세스 오류로 적는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(throwingStream(new Error("하위 프로세스가 죽었다")));
+
+        const result = await new ClaudeQueryRunner(true).run(request());
+
+        expect(result.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.processError);
+        expect(result.errorSummary).toContain("하위 프로세스가 죽었다");
+    });
+
+    it("부모가 끊은 실행은 취소로 적는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(throwingStream(new Error("중단됐다")));
+        const parent = new AbortController();
+        parent.abort();
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ parentSignal: parent.signal }),
+        );
+
+        expect(result.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.cancelled);
+    });
+
+    it("기한이 먼저 걸린 실행은 기한 초과로 적는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(slowThrowingStream(40));
+
+        const result = await new ClaudeQueryRunner(true).run(request({ deadlineMs: 5 }));
+
+        expect(result.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.deadlineExceeded);
+    });
+});
