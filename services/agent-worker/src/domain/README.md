@@ -136,7 +136,11 @@ classDiagram
 | 정책 | 구현 위치 | 역할 |
 | --- | --- | --- |
 | 도구 허용 목록 | `chat.agent.adapter.ts`·`title.agent.adapter.ts`·`recipe.sdk.query.ts`·`cleanup.sdk.query.ts` | 단계별로 사용할 MCP 도구만 허용한다 |
-| 도구 페이싱 hook | `libs/llm/src/runner/claude/tool.pacing.hook.ts` | `PreToolUse`에서 남은 몫을 문맥으로 건네고, 예산이 다하면 그 도구만 거부하며 계약의 마무리 지시를 준다 |
+| 도구 페이싱 hook | `libs/llm/src/runner/claude/tool.pacing.hook.ts` | `PreToolUse`에서 남은 몫을 문맥으로 건네고, 종료할 때가 되면 그 도구만 거부하며 계약의 마무리 지시를 준다 |
+| 종료 시점 판정 | `libs/llm/src/runner/landing.pacer.ts` | 계약의 `landingReserve.calls`를 비용과 턴 **양쪽**에 떼어 두고 어느 쪽이든 상한에 닿으면 종료로 정하며 한 번 정하면 되돌리지 않는다 |
+| 스키마 제약 강등 | `libs/llm/src/tool/claude.output.schema.ts` | Claude 구조화 출력이 받지 않는 길이·개수·수치 제약을 지우는 대신 그 노드의 `description`에 문장으로 옮겨 모델이 상한을 읽게 한다 |
+| 사본 저장 하향 | `chat.execution.sink.ts`, `recipe.sdk.orchestration.ts` | 초안 검사점과 단계 원장은 재개를 위한 사본이므로 닿지 못해도 실행을 접지 않고 다시 적을 자리를 남긴다 |
+| 모델 목록 유일성 | `recipe.sdk.orchestration.ts`, `cleanup.sdk.orchestration.ts` | 모델이 같은 축이나 같은 태스크를 겹쳐 내도 한 라운드에 하나만 세워 요금과 재개가 겹치지 않게 한다 |
 | MCP 경계 | `libs/llm/src/tool/claude.tool.schema.ts` | 계약 도구를 SDK MCP tool로 변환하고 인자 스키마와 실패 응답을 연결한다 |
 | 결과 비식별화 | `libs/llm/src/tool/claude.tool.schema.ts`, `libs/llm/src/support/redaction.ts` | 도구 결과·답변·초안에 포함된 민감 정보를 모델과 사용자 경계 전에 제거한다 |
 | 도구 이름 정규화 | `libs/llm/src/tool/mcp.tool.prefix.ts` | `mcp__{server}__{tool}` 이름과 계약의 정규 이름 사이를 변환한다 |
