@@ -8,7 +8,8 @@ import { GEN_AI_PROVIDER } from "~llm/observability/semconv.const.js";
 import { withGenAiClientTelemetry } from "~llm/observability/telemetry.js";
 import { TrajectoryRecorder } from "~llm/observability/trajectory.js";
 import { estimateCostUsd } from "~llm/pricing/pricing.js";
-import { landingReserveCalls, providerBudgetBackstop } from "~llm/runner/landing.directive.js";
+import { providerBudgetBackstop } from "~llm/runner/landing.directive.js";
+import { LandingPacer } from "~llm/runner/landing.pacer.js";
 import type { AgentQueryRequest, AgentQueryResult, IQueryRunner } from "~llm/runner/llm.runner.js";
 import { redactText } from "~llm/support/redaction.js";
 import { logWarn } from "@tracer-agent/platform";
@@ -81,13 +82,10 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         }
 
         // 이미 실행한 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산 안에 드는지로 다음 호출 가능 여부를 예측한다.
-        let runningCostUsd = 0;
-        let peakCallCostUsd = 0;
-        let landing = false;
-        let modelTurns = 0;
+        const pacer = new LandingPacer(request.maxTurns, request.maxBudgetUsd);
         const paceToolUse = toolPacingHook({
-            landing: () => landing,
-            modelTurns: () => modelTurns,
+            landing: () => pacer.isLanding,
+            modelTurns: () => pacer.modelTurns,
             maxTurns: request.maxTurns,
             hasOutputSchema: request.outputSchema !== undefined,
         });
@@ -157,7 +155,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                     continue;
                 }
                 if (msg.type === "assistant") {
-                    modelTurns += 1;
+                    pacer.countTurn();
                     // 공급자 식별자는 모델 호출 하나를 가리키므로 마지막 호출의 값이 이 시도를 대표한다.
                     if (msg.request_id !== undefined) providerRequestId = msg.request_id;
                     let text = "";
@@ -198,9 +196,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
                             });
                             throw new UnpricedModelError(request.label, pricedModel);
                         }
-                        runningCostUsd += callCost;
-                        peakCallCostUsd = Math.max(peakCallCostUsd, callCost);
-                        landing = runningCostUsd + peakCallCostUsd * landingReserveCalls() >= request.maxBudgetUsd;
+                        pacer.spend(callCost);
                     }
                     continue;
                 }
@@ -280,7 +276,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             steps: trajectory.snapshot(),
             errorSummary,
             errorSubtype,
-            landed: landing,
+            landed: pacer.isLanding,
             actualModel,
             providerRequestId,
             ttftMs,

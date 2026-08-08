@@ -348,3 +348,38 @@ describe("예산 착지 판정", () => {
         expect(result.landed).toBe(false);
     });
 });
+
+describe("턴 착지 판정", () => {
+    it("예산을 걸지 않아도 남은 턴이 마무리 몫에 닿으면 착지한다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("claude-opus-5"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "claude-opus-5", maxTurns: 3 }),
+        );
+
+        expect(result.landed).toBe(true);
+    });
+
+    it("턴이 넉넉하면 아직 착지하지 않는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("claude-opus-5"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "claude-opus-5", maxTurns: 20 }),
+        );
+
+        expect(result.landed).toBe(false);
+    });
+
+    it("턴으로 착지한 뒤에는 비용이 남아 있어도 착지를 되돌리지 않는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([assistantFrom("claude-haiku-4-5"), done()]));
+
+        const result = await new ClaudeQueryRunner(true).run(
+            request({ model: "claude-haiku-4-5", maxTurns: 3, maxBudgetUsd: 100 }),
+        );
+
+        expect(result.landed).toBe(true);
+    });
+});
