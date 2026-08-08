@@ -25,15 +25,17 @@ export class AuthGuard implements CanActivate {
             return true;
         }
         const request = context.switchToHttp().getRequest<Request>();
+        // 자격의 수명은 이 요청 하나가 본 한 시각으로 판정한다.
+        const now = new Date();
         // 실행 범위 토큰을 들고 온 요청은 인증 강제 여부와 무관하게 그 토큰이 자기신고 헤더를 우선한다.
-        const scopedUserId = this.resolveExecutionScope(request);
+        const scopedUserId = this.resolveExecutionScope(request, now);
         if (scopedUserId !== null) {
             request.headers[MONITOR_USER_HEADER] = scopedUserId;
             return true;
         }
         if (!isAuthEnforced()) return true;
 
-        const userId = resolvePrincipal(request);
+        const userId = resolvePrincipal(request, now);
         if (userId === null) {
             logWarn({ msg: "auth.request.rejected", method: request.method, route: routePatternOf(request) });
             throw new UnauthorizedException("valid bearer token or session required");
@@ -55,10 +57,10 @@ export class AuthGuard implements CanActivate {
     }
 
     /** 실행 범위 토큰 모양의 베어러는 검증에 실패해도 다른 신원으로 되돌아가지 못하게 여기서 끊는다. */
-    private resolveExecutionScope(request: Request): string | null {
+    private resolveExecutionScope(request: Request, now: Date): string | null {
         const bearer = bearerToken(request);
         if (bearer === null || !looksLikeExecutionScopeToken(bearer)) return null;
-        const scope = verifyExecutionScopeToken(bearer);
+        const scope = verifyExecutionScopeToken(bearer, now);
         if (scope === null) {
             logWarn({ msg: "auth.execution_scope.rejected", method: request.method, route: routePatternOf(request) });
             throw new UnauthorizedException("execution scope token is invalid or expired");
@@ -72,12 +74,12 @@ function bearerToken(request: Request): string | null {
     return raw !== undefined && raw.startsWith("Bearer ") ? raw.slice("Bearer ".length).trim() : null;
 }
 
-function resolvePrincipal(request: Request): string | null {
+function resolvePrincipal(request: Request, now: Date): string | null {
     const bearer = bearerToken(request);
     if (bearer !== null) {
-        const userId = verifyAuthToken(bearer, "api");
+        const userId = verifyAuthToken(bearer, "api", now);
         if (userId !== null) return userId;
     }
     const cookie = parseCookie(request.headers["cookie"], MONITOR_SESSION_COOKIE);
-    return cookie !== null ? verifyAuthToken(cookie, "session") : null;
+    return cookie !== null ? verifyAuthToken(cookie, "session", now) : null;
 }

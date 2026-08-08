@@ -13,7 +13,7 @@ import {
     type ChatExecutionRepositoryPort,
 } from "~agent-api/domain/chat/port/chat.repository.port.js";
 
-/** 실행 식별자를 워크플로 식별자로 삼아 접수 재시도와 replica 경쟁을 하나의 실행으로 합친다. */
+/** 스레드 식별자를 워크플로 식별자로 삼아 접수 재시도와 replica 경쟁을 한 스레드 워크플로로 합치고 기동할 때 주인이 사라진 실행을 되돌린다. */
 @Injectable()
 export class ChatWorkflowDispatcher implements ChatExecutionDispatcherPort, OnModuleInit, OnModuleDestroy {
     private handle: Promise<TemporalHandle> | null = null;

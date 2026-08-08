@@ -32,7 +32,7 @@ export class RateLimitGuard implements CanActivate {
         const request = context.switchToHttp().getRequest<Request>();
         const response = context.switchToHttp().getResponse<Response>();
         const userId = headerValue(request.headers[MONITOR_USER_HEADER])?.trim() || DEFAULT_USER_ID;
-        const result = this.limiter.consume(userId);
+        const result = this.limiter.consume(userId, Date.now());
         if (result.allowed) return true;
 
         response.setHeader("Retry-After", String(Math.max(1, Math.ceil(result.retryAfterMs / 1000))));
