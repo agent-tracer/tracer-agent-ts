@@ -1,4 +1,5 @@
 import type { StructuredQueryResult } from "@tracer-agent/llm";
+import { errorMessage, logWarn } from "@tracer-agent/platform";
 import { agentFailureAccounting } from "~agent-worker/support/llm/agent.accounting.js";
 import {
   AGENT_NODE,
@@ -15,6 +16,7 @@ import { buildRecipeUserPrompt } from "~agent-worker/domain/recipe/model/recipe.
 import {
   dispatchPlanSchema,
   type DispatchPlan,
+  type ProbeAssignment,
   type ProbeReport,
     probeDepthShare,
 } from "~agent-worker/domain/recipe/model/recipe.dispatch.schema.js";
@@ -50,6 +52,34 @@ function probeSlot(round: number, probe: string): string {
     return `${round}:${probe}`;
 }
 
+/** 한 라운드의 한 축에는 전문가가 한 명뿐이므로 모델이 같은 축을 겹쳐 내면 먼저 적은 것만 남긴다. */
+export function oneProbePerAxis(
+    assignments: readonly ProbeAssignment[],
+    round: number,
+): readonly ProbeAssignment[] {
+    const seen = new Set<string>();
+    const kept: ProbeAssignment[] = [];
+    for (const assignment of assignments) {
+        if (seen.has(assignment.probe)) {
+            logWarn({ msg: "recipe.probe.duplicated", round, probe: assignment.probe });
+            continue;
+        }
+        seen.add(assignment.probe);
+        kept.push(assignment);
+    }
+    return kept;
+}
+
+/** 단계 원장은 재개를 위한 사본일 뿐이므로 닿지 못해도 이 실행을 접지 않고 다시 조사하게 둔다. */
+async function withoutStageFailure<T>(what: string, run: () => Promise<T>): Promise<T | null> {
+    try {
+        return await run();
+    } catch (error) {
+        logWarn({ msg: "recipe.stage.unavailable", stage: what, error: errorMessage(error) });
+        return null;
+    }
+}
+
 /** 원장에서 되살린 전문가 하나의 결과이며 모델을 다시 부르지 않는다. */
 function restoredProbeRun(stored: ProbeStageOutput): RecipeProbeRun {
     return {
@@ -82,10 +112,8 @@ export async function runRecipeSurveyPhase(
     degraded: false,
   };
   if (lease.maxTurns <= 0) return fallback;
-  const restored = await stages?.restore(
-    RECIPE_STAGE.survey,
-    STAGE_SINGLETON_SLOT,
-    dispatchPlanSchema,
+  const restored = await withoutStageFailure(RECIPE_STAGE.survey, async () =>
+    (await stages?.restore(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, dispatchPlanSchema)) ?? null,
   );
   // 앞선 시도가 이미 세운 계획이 있으면 조율자를 다시 부르지 않는다.
   if (restored != null)
@@ -95,7 +123,10 @@ export async function runRecipeSurveyPhase(
       runRecipeSurvey(ctx, deps, availableTurns, lease),
     );
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
-    await stages?.record(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, run.data);
+    await withoutStageFailure(RECIPE_STAGE.survey, async () => {
+      await stages?.record(RECIPE_STAGE.survey, STAGE_SINGLETON_SLOT, run.data);
+      return null;
+    });
     segments.push(toRunSegment(run, AGENT_NODE.survey));
     const chosen =
       run.data.probes.map(({ probe, depth }) => `${probe}:${depth}`).join(", ") || "no specialists";
@@ -123,15 +154,18 @@ export async function dispatchRecipeProbes(
   stages: RecipeStageResumePort | null = null,
   round = 0,
 ): Promise<ProbeReport[]> {
+  const assignments = oneProbePerAxis(plan.probes, round);
   const leases = budget.leaseMany(
-    plan.probes.map(({ depth }) => probeDepthShare(depth)),
+    assignments.map(({ depth }) => probeDepthShare(depth)),
     1,
   );
   const runs = await Promise.all(
-    plan.probes.map((assignment, index) =>
+    assignments.map((assignment, index) =>
       withNodeTrajectory(segments, AGENT_NAME, "probe", async () => {
         const slot = probeSlot(round, assignment.probe);
-        const restored = await stages?.restore(RECIPE_STAGE.probe, slot, probeStageSchema);
+        const restored = await withoutStageFailure(RECIPE_STAGE.probe, async () =>
+          (await stages?.restore(RECIPE_STAGE.probe, slot, probeStageSchema)) ?? null,
+        );
         // 앞선 시도가 이미 끝낸 전문가는 그 보고와 장부를 그대로 쓴다.
         if (restored != null) return restoredProbeRun(restored);
         const run = await runRecipeProbe(
@@ -139,12 +173,15 @@ export async function dispatchRecipeProbes(
           deps,
           assignment,
           leases[index]!,
-          plan.probes.filter((other) => other.probe !== assignment.probe),
+          assignments.filter((other) => other.probe !== assignment.probe),
         );
-        await stages?.record(RECIPE_STAGE.probe, slot, {
-          report: run.report,
-          ledger: run.ledger.snapshot(),
-          accounting: run.accounting,
+        await withoutStageFailure(RECIPE_STAGE.probe, async () => {
+          await stages?.record(RECIPE_STAGE.probe, slot, {
+            report: run.report,
+            ledger: run.ledger.snapshot(),
+            accounting: run.accounting,
+          });
+          return null;
         });
         return run;
       }),
