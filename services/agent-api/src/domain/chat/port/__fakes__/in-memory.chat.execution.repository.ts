@@ -1,3 +1,4 @@
+/** 실행 원장 포트의 대역이며 부분 유일 색인이 만드는 스레드 잠금과 축 사이의 경합을 지운다. */
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import {

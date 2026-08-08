@@ -1,3 +1,4 @@
+/** 잡 원장 포트의 대역이며 트랜잭션 되돌림과 리스 경합을 지운다. */
 import { LedgerUniqueViolationError } from "@tracer-agent/platform";
 import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";

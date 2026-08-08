@@ -5,6 +5,9 @@ import type { InMemoryChatMessageRepository } from "./in-memory.chat.message.rep
 import type { InMemoryChatPendingToolRepository } from "./in-memory.chat.pending.tool.repository.js";
 import type { InMemoryChatThreadRepository } from "./in-memory.chat.thread.repository.js";
 
+/**
+ * 대화 트랜잭션 포트의 대역이며 실물의 되돌림을 지운다.
+ */
 export function inMemoryChatTransaction(repositories: {
     readonly executions: InMemoryChatExecutionRepository;
     readonly executionSteps?: InMemoryChatExecutionStepRepository;
