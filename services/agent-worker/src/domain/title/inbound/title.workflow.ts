@@ -1,6 +1,7 @@
 import { isCancellation, proxyActivities, workflowInfo } from "@temporalio/workflow";
 import { messageOf } from "~agent-worker/support/failure.message.js";
 import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
+import { JOB_GENERATE_LIMITS } from "~agent-worker/support/job.workflow.spec.js";
 import type {
     FailTitleJobInput,
     TitleSuggestionFinalizeInput,
@@ -36,10 +37,13 @@ const { finalizeTitleSuggestion, markTitleJobFailed } = proxyActivities<TitleFin
 function generateActivities() {
     return proxyActivities<TitleGenerateActivities>({
         taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),
-        startToCloseTimeout: "5 minutes",
-        scheduleToCloseTimeout: "20 minutes",
-        heartbeatTimeout: "30 seconds",
-        retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
+        startToCloseTimeout: JOB_GENERATE_LIMITS.titleSuggestion.startToClose,
+        scheduleToCloseTimeout: JOB_GENERATE_LIMITS.titleSuggestion.scheduleToClose,
+        heartbeatTimeout: JOB_GENERATE_LIMITS.titleSuggestion.heartbeat,
+        retry: {
+            maximumAttempts: JOB_GENERATE_LIMITS.titleSuggestion.maximumAttempts,
+            initialInterval: JOB_GENERATE_LIMITS.titleSuggestion.initialInterval,
+        },
     });
 }
 

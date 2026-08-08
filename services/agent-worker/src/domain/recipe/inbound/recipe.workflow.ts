@@ -8,6 +8,7 @@ import type {
 import type { RecipeScanGenerateOutput } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { messageOf } from "~agent-worker/support/failure.message.js";
 import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
+import { JOB_GENERATE_LIMITS } from "~agent-worker/support/job.workflow.spec.js";
 
 interface RecipePrepareActivities {
     prepareRecipeScan(input: RecipeScanInput): Promise<RecipeScanPrep>;
@@ -36,10 +37,13 @@ const { finalizeRecipeScan, markRecipeJobFailed } = proxyActivities<RecipeFinali
 function generateActivities() {
     return proxyActivities<RecipeGenerateActivities>({
         taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),
-        startToCloseTimeout: "15 minutes",
-        scheduleToCloseTimeout: "1 hour",
-        heartbeatTimeout: "30 seconds",
-        retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
+        startToCloseTimeout: JOB_GENERATE_LIMITS.recipeScan.startToClose,
+        scheduleToCloseTimeout: JOB_GENERATE_LIMITS.recipeScan.scheduleToClose,
+        heartbeatTimeout: JOB_GENERATE_LIMITS.recipeScan.heartbeat,
+        retry: {
+            maximumAttempts: JOB_GENERATE_LIMITS.recipeScan.maximumAttempts,
+            initialInterval: JOB_GENERATE_LIMITS.recipeScan.initialInterval,
+        },
     });
 }
 

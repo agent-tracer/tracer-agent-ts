@@ -8,6 +8,7 @@ import type {
 import type { TaskCleanupGenerateOutput } from "~agent-worker/domain/cleanup/application/suggest.cleanup.usecase.js";
 import { messageOf } from "~agent-worker/support/failure.message.js";
 import { generateTaskQueueOf } from "~agent-worker/support/task.queue.js";
+import { JOB_GENERATE_LIMITS } from "~agent-worker/support/job.workflow.spec.js";
 
 interface CleanupPrepareActivities {
     prepareTaskCleanup(input: TaskCleanupInput): Promise<TaskCleanupPrep>;
@@ -36,10 +37,13 @@ const { finalizeTaskCleanup, markCleanupJobFailed } = proxyActivities<CleanupFin
 function generateActivities() {
     return proxyActivities<CleanupGenerateActivities>({
         taskQueue: generateTaskQueueOf(workflowInfo().taskQueue),
-        startToCloseTimeout: "10 minutes",
-        scheduleToCloseTimeout: "30 minutes",
-        heartbeatTimeout: "30 seconds",
-        retry: { maximumAttempts: 3, initialInterval: "10 seconds" },
+        startToCloseTimeout: JOB_GENERATE_LIMITS.taskCleanup.startToClose,
+        scheduleToCloseTimeout: JOB_GENERATE_LIMITS.taskCleanup.scheduleToClose,
+        heartbeatTimeout: JOB_GENERATE_LIMITS.taskCleanup.heartbeat,
+        retry: {
+            maximumAttempts: JOB_GENERATE_LIMITS.taskCleanup.maximumAttempts,
+            initialInterval: JOB_GENERATE_LIMITS.taskCleanup.initialInterval,
+        },
     });
 }
 
