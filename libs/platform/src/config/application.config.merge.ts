@@ -1,8 +1,25 @@
 import { applicationConfigSchema, type ApplicationConfig } from "./application.config.schema.js";
 
+function isSection(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function section(source: Record<string, unknown>, key: string): Record<string, unknown> {
     const value = source[key];
-    return value && typeof value === "object" ? value as Record<string, unknown> : {};
+    return isSection(value) ? value : {};
+}
+
+/** 로컬 YAML은 섹션을 통째로 대체하지 않고 섹션 안의 칸만 덮으므로, 한 칸만 적은 로컬 YAML이 같은 섹션의 나머지 칸을 지우고 기본값을 불러들이지 않는다. */
+function mergeSections(
+    base: Record<string, unknown>,
+    local: Record<string, unknown>,
+): Record<string, unknown> {
+    const merged: Record<string, unknown> = { ...base, ...local };
+    for (const key of Object.keys(local)) {
+        if (!isSection(base[key]) || !isSection(local[key])) continue;
+        merged[key] = { ...section(base, key), ...section(local, key) };
+    }
+    return merged;
 }
 
 function envInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number {
@@ -10,13 +27,13 @@ function envInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number {
     return raw ? Number(raw) : fallback;
 }
 
-/** 기본 YAML 위에 로컬 YAML과 환경변수를 적용하고 전체 설정을 검증한다. */
+/** 기본 YAML의 섹션 위에 로컬 YAML의 칸과 환경변수를 차례로 적용하고 전체 설정을 검증한다. */
 export function mergeApplicationConfig(
     base: Record<string, unknown>,
     local: Record<string, unknown>,
     env: NodeJS.ProcessEnv,
 ): ApplicationConfig {
-    const merged = { ...base, ...local };
+    const merged = mergeSections(base, local);
     const agentDb = section(merged, "agentDb");
     const kafka = section(merged, "kafka");
     const temporal = section(merged, "temporal");
