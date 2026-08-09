@@ -2,7 +2,16 @@ import "reflect-metadata";
 import { describe, expect, it } from "vitest";
 import { readContractJson } from "~agent-api/support/contract.js";
 import { RECIPE_STATUSES } from "~agent-api/domain/recipe/model/recipe.const.js";
-import { buildRecipeDocument, SEARCH_OUTBOX_BATCH_SIZE } from "~agent-api/domain/recipe/model/recipe.document.js";
+import {
+    buildRecipeDocument,
+    RECIPES_INDEX_ALIAS,
+    SEARCH_OUTBOX_BATCH_SIZE,
+} from "~agent-api/domain/recipe/model/recipe.document.js";
+import {
+    MATCH_FIELDS,
+    MINIMUM_SHOULD_MATCH,
+    RELATIVE_SCORE_CUTOFF_RATIO,
+} from "~agent-api/domain/recipe/adapter/opensearch.recipe.search.adapter.js";
 import { recipeStats } from "~agent-api/domain/recipe/model/recipe.application.model.js";
 import {
     RecipeNotActiveError,
@@ -35,8 +44,14 @@ interface SearchIndexDeclaration {
     readonly pipeline: { readonly stages: readonly { readonly name: string; readonly batchSize?: number }[] };
     readonly indices: {
         readonly recipes: {
+            readonly alias: string;
             readonly document: { readonly fields: Readonly<Record<string, unknown>> };
-            readonly query: { readonly limit: { readonly default: number; readonly min: number; readonly max: number } };
+            readonly query: {
+                readonly matchFields: readonly string[];
+                readonly minimumShouldMatch: string;
+                readonly relativeScoreCutoffRatio: number;
+                readonly limit: { readonly default: number; readonly min: number; readonly max: number };
+            };
         };
     };
 }
@@ -162,5 +177,20 @@ describe("색인 선언과 코드가 같은 값을 쓴다", () => {
         const drain = searchIndex.pipeline.stages.find((stage) => stage.name === "drain");
 
         expect(SEARCH_OUTBOX_BATCH_SIZE).toBe(drain?.batchSize);
+    });
+
+    it("문서를 쓰고 지우는 별칭이 계약이 선언한 별칭과 같다", () => {
+        expect(RECIPES_INDEX_ALIAS).toBe(searchIndex.indices.recipes.alias);
+    });
+
+    it("질의가 뒤지는 칸이 계약이 선언한 칸과 같다", () => {
+        expect([...MATCH_FIELDS]).toEqual([...searchIndex.indices.recipes.query.matchFields]);
+    });
+
+    it("적중 판정의 두 문턱이 계약이 선언한 값과 같다", () => {
+        expect({ minimumShouldMatch: MINIMUM_SHOULD_MATCH, cutoff: RELATIVE_SCORE_CUTOFF_RATIO }).toEqual({
+            minimumShouldMatch: searchIndex.indices.recipes.query.minimumShouldMatch,
+            cutoff: searchIndex.indices.recipes.query.relativeScoreCutoffRatio,
+        });
     });
 });

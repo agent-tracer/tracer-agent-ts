@@ -4,13 +4,13 @@ import { RECIPE_STATUS } from "~agent-api/domain/recipe/model/recipe.const.js";
 import type { RecipeSearchHit, RecipeSearchPort } from "~agent-api/domain/recipe/port/recipe.search.port.js";
 
 /** 얇은 코퍼스에서 실측해 정한 값이며 계약의 wire/search.index.json 이 같은 수를 갖는다. */
-const MINIMUM_SHOULD_MATCH = "30%";
+export const MINIMUM_SHOULD_MATCH = "30%";
 
-/** 가장 높은 점수의 이 비율에 못 미치는 적중을 버린다. */
-const RELATIVE_SCORE_CUTOFF_RATIO = 0.4;
+/** 가장 높은 점수의 이 비율에 못 미치는 적중을 버리며 계약이 같은 수를 갖는다. */
+export const RELATIVE_SCORE_CUTOFF_RATIO = 0.4;
 
 /** 계약이 선언한 뒤질 칸이며 색인 문서가 갖지 않는 칸을 여기에 적으면 언제나 비어서 온다. */
-const MATCH_FIELDS = ["title", "intent", "description", "useWhen", "summaryMd"];
+export const MATCH_FIELDS = ["title", "intent", "description", "useWhen", "summaryMd"];
 
 interface SearchHit {
     readonly _id: string;
