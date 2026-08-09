@@ -66,7 +66,22 @@ const pacingSchema = z.object({
     }),
 });
 
+/** 실행기가 같은 질의를 다시 부르는 두 층이며 세는 것이 다르므로 칸을 나눠 갖는다. */
+const runnerRetrySchema = z.object({
+    transient: z.object({
+        attempts: z.number().int().min(0),
+        initialDelayMs: z.number().int().min(0),
+        backoffFactor: z.number().min(1),
+        jitter: z.boolean(),
+    }),
+    schemaViolation: z.object({
+        attempts: z.number().int().min(0),
+        directive: z.string().min(1),
+    }),
+});
+
 const executionBudgetSchema = z.object({
+    runnerRetry: runnerRetrySchema,
     meaning: z.string().min(1),
     reservation: reservationSchema,
     pacing: pacingSchema,

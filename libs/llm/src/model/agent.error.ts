@@ -128,6 +128,24 @@ const NON_RETRYABLE_SUBTYPES: ReadonlySet<string> = new Set(
         .map((verdict) => verdict.subtype),
 );
 
+/** 명시적으로 재시도 가능하다고 분류된 하위 종류이며 판정이 없는 값은 여기 들어오지 않는다. */
+const RETRYABLE_SUBTYPES: ReadonlySet<string> = new Set(
+    [
+        ...CLASSIFIED_SUBTYPES,
+        ...Object.entries(ERROR_SUBTYPE_CONTRACT.provider).map(([subtype, verdict]) => ({
+            subtype,
+            ...verdict,
+        })),
+    ]
+        .filter((verdict) => verdict.retryable)
+        .map((verdict) => verdict.subtype),
+);
+
+/** 실행기가 같은 자리에서 다시 부를 수 있는 실패인지 답하며 판정이 없는 값은 다시 부르지 않는다. */
+export function isRetryableSubtype(subtype: string | null): boolean {
+    return subtype !== null && RETRYABLE_SUBTYPES.has(subtype);
+}
+
 export function isNonRetryableSubtype(subtype: string | null): boolean {
     return subtype !== null && NON_RETRYABLE_SUBTYPES.has(subtype);
 }
