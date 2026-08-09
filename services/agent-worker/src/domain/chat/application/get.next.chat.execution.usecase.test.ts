@@ -19,6 +19,15 @@ describe("GetNextChatExecutionUsecase", () => {
         expect(await new GetNextChatExecutionUsecase(executions).execute("thread-1")).toBe("exec-1");
     });
 
+    // 원장은 createdAt 을 먼저 보고 id 는 같은 시각을 구분한다.
+    it("식별자 순서가 접수 시각과 어긋나면 먼저 접수된 것을 낸다", async () => {
+        const executions = new InMemoryChatExecutionRepository();
+        executions.add(chatExecution({ id: "exec-1", createdAt: new Date("2026-01-01T00:00:10Z") }));
+        executions.add(chatExecution({ id: "exec-2", createdAt: new Date("2026-01-01T00:00:01Z") }));
+
+        expect(await new GetNextChatExecutionUsecase(executions).execute("thread-1")).toBe("exec-2");
+    });
+
     it("이미 실행 중인 것은 다시 가져가지 않는다", async () => {
         const executions = new InMemoryChatExecutionRepository();
         executions.add(chatExecution({ id: "exec-1", status: CHAT_EXECUTION_STATUS.running }));

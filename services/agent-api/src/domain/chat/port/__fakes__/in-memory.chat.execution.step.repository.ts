@@ -1,6 +1,7 @@
 import type { ChatExecutionStep } from "~agent-api/domain/chat/model/chat.execution.step.model.js";
 import type { ChatExecutionStepRepositoryPort } from "~agent-api/domain/chat/port/chat.repository.port.js";
 
+/** 단계 원장 포트의 인메모리 대역이며 행을 id 하나로만 가르므로 실물이 갖는 다른 유일 제약을 지운다. */
 export class InMemoryChatExecutionStepRepository implements ChatExecutionStepRepositoryPort {
     private readonly rows = new Map<string, ChatExecutionStep>();
 

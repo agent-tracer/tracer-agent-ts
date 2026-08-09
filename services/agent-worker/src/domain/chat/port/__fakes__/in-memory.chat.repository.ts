@@ -20,6 +20,7 @@ import type {
     ChatThreadRepositoryPort,
 } from "~agent-worker/domain/chat/port/chat.repository.port.js";
 
+/** 실행 원장 포트의 대역이며 스레드가 바쁜지를 행을 세지 않고 아래 플래그로 정하므로 부분 유일 색인이 만드는 경합과 트랜잭션 되돌림을 지운다. */
 export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryPort {
     readonly rows = new Map<string, ChatExecution>();
 
@@ -41,7 +42,8 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
                 row.threadId === threadId
                 && row.status === CHAT_EXECUTION_STATUS.queued
                 && row.requestedBackend === AGENT_BACKEND)
-            .sort((left, right) => left.id.localeCompare(right.id));
+            .sort((left, right) =>
+                left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id));
     }
 
     async recoverStaleRunning(idleBefore: Date, now: Date, threadId?: string): Promise<number> {
