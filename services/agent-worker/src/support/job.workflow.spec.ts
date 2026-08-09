@@ -1,12 +1,7 @@
-import { readContractYaml } from "~agent-worker/support/contract.js";
-
-export interface DeclaredActivity {
-    readonly name: string;
-    readonly startToCloseSeconds?: number;
-    readonly scheduleToCloseSeconds?: number;
-    readonly heartbeatTimeoutSeconds?: number;
-    readonly maximumAttempts?: number;
-}
+import {
+    DECLARED_JOB_ACTIVITIES,
+    type DeclaredJobActivity,
+} from "~agent-worker/support/job.workflow.declaration.js";
 
 /** 잡 워크플로 하나의 생성 활동이 갖는 벽시계 상한과 시도 수다. */
 export interface JobGenerateLimits {
@@ -17,14 +12,9 @@ export interface JobGenerateLimits {
     readonly initialInterval: string;
 }
 
-interface DeclaredWorkflows {
-    readonly jobWorkflows: { readonly perKind: Readonly<Record<string, { readonly activities: readonly DeclaredActivity[] }>> };
-}
-
 /** 계약이 그 종류의 상한을 적었으면 그 값을 낸다. */
-function declaredActivity(kind: string, name: string): DeclaredActivity | undefined {
-    const perKind = readContractYaml<DeclaredWorkflows>("workflow/queues.yaml").jobWorkflows.perKind;
-    return perKind[kind]?.activities.find((activity) => activity.name === name);
+function declaredActivity(kind: string, name: string): DeclaredJobActivity | undefined {
+    return DECLARED_JOB_ACTIVITIES[kind]?.find((activity) => activity.name === name);
 }
 
 function seconds(value: number): string {
@@ -33,7 +23,7 @@ function seconds(value: number): string {
 
 /** 계약이 적은 상한을 그대로 옮기며 계약이 그 종류를 적지 않으면 이 축이 정한 값을 쓴다. */
 export function generateLimitsOf(
-    declared: DeclaredActivity | undefined,
+    declared: DeclaredJobActivity | undefined,
     own: JobGenerateLimits,
 ): JobGenerateLimits {
     if (declared?.startToCloseSeconds === undefined) return own;

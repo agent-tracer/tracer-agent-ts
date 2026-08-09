@@ -174,7 +174,7 @@ tracer-agent-ts/
 
 파일의 역할은 `.controller.ts`, `.usecase.ts`, `.port.ts`, `.adapter.ts`, `.workflow.ts`, `.activity.ts` 접미사로 드러냅니다. TypeORM·NestJS·Temporal SDK·zod는 manifest가 정한 경계에서만 씁니다. workspace import는 `@tracer-agent/*`와 생성된 `~unit/*` alias를 사용하고 깊은 상대 경로를 피합니다. 파일당 300줄, 테스트 없는 유스케이스, 직접 ID 생성은 자동 검사가 막습니다.
 
-규칙의 정본은 `architecture.manifest.mjs`와 이를 읽는 검사기입니다. 생성되는 path alias 파일은 `npm run check:paths`로 신선도를 확인합니다. 계약·DB 스키마·큐를 바꾸면 `contract` submodule과 적합성 케이스를 먼저 갱신합니다.
+규칙의 정본은 `architecture.manifest.mjs`와 이를 읽는 검사기입니다. 생성되는 path alias 파일과 계약에서 만든 잡 워크플로 활동 선언은 `npm run check:paths`로 신선도를 확인합니다. 워크플로는 결정적 샌드박스에서 실행되므로 파일과 Node 내장 모듈을 부르지 못하며, 계약의 값은 `npm run gen:job-workflow-activities`가 만든 상수 모듈로 읽습니다. 계약·DB 스키마·큐를 바꾸면 `contract` submodule과 적합성 케이스를 먼저 갱신합니다.
 
 ## 에이전트 구현 문서
 
