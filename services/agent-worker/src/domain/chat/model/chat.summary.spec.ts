@@ -1,10 +1,10 @@
-import { featureModels } from "@tracer-agent/llm";
+import { codePointLength, featureModels } from "@tracer-agent/llm";
 import { readContractJson } from "~agent-worker/support/contract.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 
 interface ChatSummaryContract {
     readonly production: {
-        readonly trigger: { readonly messages: number; readonly chars: number };
+        readonly trigger: { readonly messages: number; readonly chars: number; readonly charsUnit: string };
         readonly recentKeepCount: number;
     };
 
@@ -18,6 +18,7 @@ export const CHAT_SUMMARY_SPEC = {
     triggerMessageCount: DECLARED.production.trigger.messages,
     recentKeepCount: DECLARED.production.recentKeepCount,
     triggerCharBudget: DECLARED.production.trigger.chars,
+    triggerCharUnit: DECLARED.production.trigger.charsUnit,
     limits: {
         model: featureModels("title-suggestion")!.default,
         maxOutputTokens: DECLARED.limits.maxOutputTokens,
@@ -25,10 +26,10 @@ export const CHAT_SUMMARY_SPEC = {
     },
 } as const;
 
-/** 메시지 수 또는 누적 글자 수 중 하나라도 문턱을 넘으면 압축한다. */
+/** 메시지 수 또는 누적 글자 수 중 하나라도 문턱을 넘으면 압축하며 글자는 계약이 정한 코드포인트로 센다. */
 export function shouldSummarize(messages: readonly { readonly content: string }[]): boolean {
     if (messages.length > CHAT_SUMMARY_SPEC.triggerMessageCount) return true;
-    const totalChars = messages.reduce((sum, message) => sum + message.content.length, 0);
+    const totalChars = messages.reduce((sum, message) => sum + codePointLength(message.content), 0);
     return totalChars > CHAT_SUMMARY_SPEC.triggerCharBudget;
 }
 
