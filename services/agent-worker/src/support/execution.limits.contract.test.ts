@@ -12,6 +12,7 @@ interface DeclaredLimits {
     readonly deadlineMs: number;
     readonly stallMs?: number;
     readonly effort?: string;
+    readonly allowedModels: readonly string[];
 }
 
 const DECLARED = readContractJson<{ readonly kinds: Readonly<Record<string, DeclaredLimits>> }>(
@@ -44,6 +45,11 @@ describe("계약이 소유한 실행 한도", () => {
             defaultModel: declared.defaultModel,
             fallbackModel: declared.fallbackModel,
         });
+    });
+
+    // 허용 목록과 예산은 한 쌍이라 이 축만 목록을 넓히면 같은 예산으로 더 비싼 모델을 실행한다.
+    it.each(KINDS)("$kind 가 쓸 수 있는 모델이 계약이 적은 목록과 같다", ({ kind, declared }) => {
+        expect(featureModels(kind)?.allowed).toEqual(declared.allowedModels);
     });
 
     // 계약이 적지 않은 칸을 이 축이 들고 있으면 상대 축이 모르는 상한으로 실행한다.
