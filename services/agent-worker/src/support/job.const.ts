@@ -3,18 +3,16 @@ export const JOB_KIND = {
     titleSuggestion: "title.suggestion",
     recipeScan: "recipe.scan",
     taskCleanup: "task.cleanup",
-    ruleGeneration: "rule.generation",
 } as const;
 
 export type JobKind = (typeof JOB_KIND)[keyof typeof JOB_KIND];
 
-/** 잡 하나를 실제로 실행하는 주체이며 워크플로가 실행하는 것과 플러그인이 궤적을 넘기는 것을 구분한다. */
+/** 잡 하나를 실제로 실행하는 주체이며 이 축의 잡은 모두 워크플로가 실행한다. */
 export const JOB_EXECUTOR = {
     [JOB_KIND.titleSuggestion]: "temporal",
     [JOB_KIND.recipeScan]: "temporal",
     [JOB_KIND.taskCleanup]: "temporal",
-    [JOB_KIND.ruleGeneration]: "local",
-} as const satisfies Record<JobKind, "temporal" | "local">;
+} as const satisfies Record<JobKind, "temporal">;
 
 export type JobExecutor = (typeof JOB_EXECUTOR)[JobKind];
 

@@ -64,12 +64,6 @@ export class AiJobEntity {
     @Column({ name: "completed_at", type: "timestamptz", nullable: true })
     completedAt!: Date | null;
 
-    @Column({ name: "lease_owner", type: "text", nullable: true })
-    leaseOwner!: string | null;
-
-    @Column({ name: "lease_expires_at", type: "timestamptz", nullable: true })
-    leaseExpiresAt!: Date | null;
-
     start(now: Date): void {
         // 활동 재시도로 인한 재진입은 시도 횟수만 늘리는 멱등 처리로 병합한다.
         if (this.status === JOB_STATUS.running) {
