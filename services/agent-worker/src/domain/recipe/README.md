@@ -61,6 +61,22 @@ flowchart LR
 - repetition 역할은 유사 task와 반복 이벤트를 조사한다.
 - coordinator는 인용 완전성을 검사하고 provenance와 연결된 후보만 합성한다.
 
+## 자기 원장에 적는 후보
+
+`adapter/recipe.output.adapter.ts`의 `toRow`가 후보의 칸을 `agent-db`의 `recipes` 열로 옮긴다.
+후보는 `candidate` 상태로 들어가고 `userEdited`는 거짓, `lastEditedBy`는 `agent`로 적힌다.
+모델이 실은 `parentRecipeId`는 그 부모가 이 사용자의 것이고 부모의 `rev`가 실행이 관측한
+`parentRecipeSeenRev`와 같을 때만 적히며, 어긋나면 부모를 비우고 판을 1로 둔다. 적는 칸과
+종결 단계가 정하는 값은 계약의 `conformance/cases/recipe.ledger.json`의 `ledgerWrite`가 소유한다.
+
+후보 한 벌과 그 색인 적재 행은 한 트랜잭션에 함께 적힌다. 색인 적재 행은 `search_outbox` 표에
+대상이 `recipe`인 행 하나로 남고 `agent-api`의 배출기가 뒤에서 반영한다. 같은 `sourceJobId`로
+적힌 후보가 이미 있으면 아무것도 쓰지 않으므로 같은 잡의 재시도가 후보를 두 벌 만들지 않는다.
+
+답변 언어는 후보가 아니라 이 실행이 갖는 값이라 종결이 요청에서 꺼내 배치로 넘기고 `toRow`가
+행마다 적는다. 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 가림 단계 `output`을 이
+자리에서 지난다.
+
 ## 도구 타입
 
 도메인 MCP server 이름은 `monitor-recipe-scan`이다. `recipe.sdk.query.ts`가 단계별 allowed tools와 MCP server와 모델 옵션을 조합하고, `ClaudeQueryRunner`가 deadline·landing hook·trajectory·redaction·fallback model을 적용한다.
@@ -163,15 +179,6 @@ trajectory 수집과 redaction과 fallback model을 적용한다.
 출력 타입은 `DispatchPlan` → `ProbeReport` → `RecipeSynthesis` 순서로 좁혀진다. 최종
 `RecipeSynthesis`가 검증을 통과해야 recipe 후보와 provenance가 된다.
 
-## 초안 배달
-
-산출 어댑터가 배치의 `language`를 초안마다 실어 보내므로 원장의 레시피가 어느 언어로 쓰였는지를
-갖는다. 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 가림 단계 `output`을 이 자리에서
-지난다.
-
-산출 어댑터가 배치의 `language` 를 초안마다 실어 보내며 Python 구현도 종결이 요청에서 꺼낸 같은
-값을 싣는다.
-
 ## Temporal 워크플로
 
 `recipe.workflow.ts`는 prepare → generate → finalize 순서를 사용한다. generate activity는 `generate` task queue에서 15분 start-to-close, 1시간 schedule-to-close, 30초 heartbeat와 최대 3회 재시도를 적용한다. prepare·finalize·fail은 짧은 activity retry 정책을 사용한다.
@@ -196,5 +203,5 @@ stateDiagram-v2
 - `model/recipe.dispatch.policy.ts`: 전문 역할별 도구 선택
 - `model/recipe.outcome.model.ts`: 빈 결과의 사유 어휘와 판정
 - `model/recipe.prompt.ts`: 단계별 prompt 조립
-- `adapter/recipe.output.adapter.ts`: 초안 배달과 언어 부착과 output 단계 가림
+- `adapter/recipe.output.adapter.ts`: 후보와 색인 반영 요청의 원장 적재와 언어 부착과 output 단계 가림
 - `inbound/recipe.workflow.ts`: Temporal workflow
