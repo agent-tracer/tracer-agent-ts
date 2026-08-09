@@ -22,7 +22,7 @@ export function runCleanupDecision(
     lease: AgentBudgetLease,
     label: string,
 ): Promise<CleanupDecisionRun> {
-    const systemPrompt = buildCleanupSystemPrompt(ctx.prompt, ctx.input.language);
+    const systemPrompt = buildCleanupSystemPrompt(ctx.prompt);
     return runCleanupQuery(ctx, {
         label: `${TASK_CLEANUP_SPEC.name}:${label}`,
         prompt,

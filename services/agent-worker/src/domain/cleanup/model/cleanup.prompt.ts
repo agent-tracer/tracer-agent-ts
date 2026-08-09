@@ -17,7 +17,7 @@ export const CLEANUP_TRIAGE_USER_TEMPLATE_KEY = "task-cleanup.triage.user" as co
 
 
 // 프롬프트 캐시는 접두사 일치라 시스템 프롬프트에 요청마다 바뀌는 값이 섞이면 매 요청 무효화된다.
-export function buildCleanupSystemPrompt(prompt: AgentPrompt, language: OutputLanguage): string {
+export function buildCleanupSystemPrompt(prompt: AgentPrompt): string {
     const slot = (name: string): string => prompt.slot(CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY, name);
     return [
         "You are the coordinator of a task-cleanup scan for Agent Tracer, an observability tool that",
@@ -36,8 +36,6 @@ export function buildCleanupSystemPrompt(prompt: AgentPrompt, language: OutputLa
         slot("suggestionRules"),
         "",
         slot("redispatchProtocol"),
-        "",
-        `Output language: ${prompt.languageDirective(language)}`,
         "",
         "Return the suggestions as structured output conforming to the provided schema.",
     ].join("\n");
@@ -64,13 +62,17 @@ export function buildCleanupRepairPrompt(
 }
 
 export function buildCleanupUserPrompt(
+    prompt: AgentPrompt,
     maxSuggestions: number,
     scannedAt: string,
+    language: OutputLanguage,
     reports: readonly InspectReport[] = [],
 ): string {
     const lines = [
         `Scan time: ${scannedAt}`,
         `Propose at most ${maxSuggestions} archive suggestions.`,
+        "",
+        `Output language: ${prompt.languageDirective(language)}`,
     ];
     return lines.join("\n") + renderInspectReports(reports);
 }

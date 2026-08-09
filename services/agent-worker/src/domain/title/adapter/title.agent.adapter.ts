@@ -84,10 +84,10 @@ export class TitleAgentAdapter implements TitleAgentPort {
         input: GenerateTitleSuggestionsInput,
     ): Promise<GenerateTitleSuggestionsOutput> {
         const prompt = await this.prompts.resolve(TITLE_SUGGESTION_SPEC.name);
-        const systemPrompt = buildTitleSystemPrompt(prompt, input.language);
+        const systemPrompt = buildTitleSystemPrompt(prompt);
 
         const handlers = buildTitleToolHandlers(input.userId, this.events);
-        const basePrompt = TITLE_SUGGESTION_SPEC.userPrompt({
+        const basePrompt = TITLE_SUGGESTION_SPEC.userPrompt(prompt, {
             taskId: input.taskId,
             language: input.language,
             context: input.context,

@@ -21,9 +21,10 @@ export interface TitlePromptInput {
 /** 두 구현체가 같은 명세를 읽고 서로 다른 방언으로 렌더링하는 제목 제안 정의다. */
 export const TITLE_SUGGESTION_SPEC = {
     name: AGENT.titleSuggestion.id,
-    systemPrompt: (prompt: AgentPrompt, language: OutputLanguage): string =>
-        buildTitleSystemPrompt(prompt, language),
-    userPrompt: (input: TitlePromptInput): string => buildTitleUserPrompt(input.taskId, input.context),
+    // 시스템 프롬프트가 호출마다 같아야 캐시가 걸리므로 언어 지시는 사용자 프롬프트가 싣는다.
+    systemPrompt: (prompt: AgentPrompt): string => buildTitleSystemPrompt(prompt),
+    userPrompt: (prompt: AgentPrompt, input: TitlePromptInput): string =>
+        buildTitleUserPrompt(prompt, input.taskId, input.context, input.language),
     outputSchema: titleSuggestionsListSchema,
     tools: TITLE_SUGGESTION_TOOLS,
     failures: TITLE_SUGGESTION_FAILURES,

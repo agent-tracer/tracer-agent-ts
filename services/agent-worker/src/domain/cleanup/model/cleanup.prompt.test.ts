@@ -11,6 +11,7 @@ import {
     buildCleanupRepairPrompt,
     buildCleanupSystemPrompt,
     buildCleanupTriageSystemPrompt,
+    buildCleanupUserPrompt,
     CLEANUP_INSPECT_SYSTEM_TEMPLATE_KEY,
     CLEANUP_INVESTIGATOR_REPAIR_TEMPLATE_KEY,
     CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY,
@@ -59,8 +60,8 @@ function declaredSlots(templateKey: string): string[] {
 
 describe("정리 제안 프롬프트", () => {
     it("결정 템플릿이 선언한 슬롯을 빠짐없이 쓴다", () => {
-        expect(used(buildCleanupSystemPrompt(labelled(), "auto"))).toEqual(
-            [...declaredSlots(CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY), "languageDirective"].sort(),
+        expect(used(buildCleanupSystemPrompt(labelled()))).toEqual(
+            declaredSlots(CLEANUP_INVESTIGATOR_SYSTEM_TEMPLATE_KEY).sort(),
         );
     });
 
@@ -82,19 +83,28 @@ describe("정리 제안 프롬프트", () => {
         );
     });
 
-    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 사용자 프롬프트가 싣는다", () => {
         for (const declared of LANGUAGE.cases) {
             const expected = variant(declared.expect.variant);
             const language = normalizeOutputLanguage(declared.input.language);
-            const rendered = buildCleanupSystemPrompt(CLEANUP_PROMPT, language);
+            const rendered = buildCleanupUserPrompt(CLEANUP_PROMPT, 5, "2026-01-01T00:00:00Z", language);
 
             expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
             expect(rendered, declared.expect.variant).toContain(expected);
         }
     });
 
+    // 시스템 프롬프트가 언어를 실으면 캐시가 언어 수만큼 갈라져 어느 실행도 앞 실행의 접두사를 쓰지 못한다.
+    it("시스템 프롬프트가 어느 언어의 지시문도 싣지 않는다", () => {
+        const rendered = buildCleanupSystemPrompt(CLEANUP_PROMPT);
+
+        for (const declared of LANGUAGE.cases) {
+            expect(rendered, declared.expect.variant).not.toContain(variant(declared.expect.variant));
+        }
+    });
+
     it("자리표시자를 계약의 상한 값으로 치환한다", () => {
-        const rendered = buildCleanupSystemPrompt(CLEANUP_PROMPT, "auto");
+        const rendered = buildCleanupSystemPrompt(CLEANUP_PROMPT);
 
         expect(rendered).not.toContain("${");
         expect(rendered).toContain(String(LIMITS["maxEvidenceEventIds"]));

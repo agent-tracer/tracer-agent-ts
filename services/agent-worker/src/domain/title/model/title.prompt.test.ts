@@ -56,8 +56,8 @@ function used(rendered: string): readonly string[] {
 
 describe("제목 제안 프롬프트", () => {
     it("조사 템플릿이 선언한 슬롯을 빠짐없이 쓴다", () => {
-        expect(used(buildTitleSystemPrompt(labelled(), "auto"))).toEqual(
-            [...DECLARED.templates[TITLE_SYSTEM_TEMPLATE_KEY]!.slots, "languageDirective"].sort(),
+        expect(used(buildTitleSystemPrompt(labelled()))).toEqual(
+            [...DECLARED.templates[TITLE_SYSTEM_TEMPLATE_KEY]!.slots].sort(),
         );
     });
 
@@ -71,18 +71,28 @@ describe("제목 제안 프롬프트", () => {
         expect(() => TITLE_PROMPT.slot(TITLE_SYSTEM_TEMPLATE_KEY, "toneOfVoice")).toThrow();
     });
 
-    it("계약의 언어 케이스마다 그 변형의 조각 본문을 싣는다", () => {
+    it("계약의 언어 케이스마다 그 변형의 조각 본문을 사용자 프롬프트가 싣는다", () => {
         for (const declared of CONTRACT.language.cases) {
             const expected = variant(declared.expect.variant);
             const language = normalizeOutputLanguage(declared.input.language);
+            const rendered = buildTitleUserPrompt(TITLE_PROMPT, "task-1", CONTRACT.contextExample, language);
 
             expect(expected.length, declared.expect.variant).toBeGreaterThan(0);
-            expect(buildTitleSystemPrompt(TITLE_PROMPT, language), declared.expect.variant).toContain(expected);
+            expect(rendered, declared.expect.variant).toContain(expected);
+        }
+    });
+
+    // 시스템 프롬프트가 언어를 실으면 캐시가 언어 수만큼 갈라져 어느 실행도 앞 실행의 접두사를 쓰지 못한다.
+    it("시스템 프롬프트가 어느 언어의 지시문도 싣지 않는다", () => {
+        const rendered = buildTitleSystemPrompt(TITLE_PROMPT);
+
+        for (const declared of CONTRACT.language.cases) {
+            expect(rendered, declared.expect.variant).not.toContain(variant(declared.expect.variant));
         }
     });
 
     it("계약이 예시로 적은 컨텍스트의 문장을 사용자 프롬프트가 빠짐없이 싣는다", () => {
-        const rendered = buildTitleUserPrompt("task-1", CONTRACT.contextExample);
+        const rendered = buildTitleUserPrompt(TITLE_PROMPT, "task-1", CONTRACT.contextExample, "auto");
 
         for (const text of texts(CONTRACT.contextExample)) expect(rendered).toContain(text);
     });

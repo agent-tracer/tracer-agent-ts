@@ -146,7 +146,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
             return this.settleOutput(ctx, segments, [], decision.modelUsed, FAILED, demoted);
         }
 
-        const decisionPrompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
+        const decisionPrompt = buildCleanupUserPrompt(ctx.prompt, input.maxSuggestions, input.scannedAt, input.language, reports);
         const repairPrompt = buildCleanupRepairPrompt(ctx.prompt, decisionPrompt, decision.data, checked.errors);
         let repaired: CleanupDecisionRun;
         try {

@@ -114,7 +114,7 @@ export async function decideCleanup(
     segments: RunSegment[],
 ): Promise<CleanupDecisionRun> {
     const lease = budget.combine([floorLease, budget.lease(1)]);
-    const prompt = buildCleanupUserPrompt(input.maxSuggestions, input.scannedAt, reports);
+    const prompt = buildCleanupUserPrompt(ctx.prompt, input.maxSuggestions, input.scannedAt, input.language, reports);
     const run = await runCleanupDecision(ctx, deps, batch, coordinatorLedger, prompt, lease, AGENT_NODE.investigate);
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });
     segments.push(toRunSegment(run, AGENT_NODE.investigate));

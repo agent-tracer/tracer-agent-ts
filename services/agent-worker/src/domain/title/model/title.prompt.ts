@@ -17,7 +17,7 @@ const PULL_MORE_EVIDENCE = [
 ].join("\n");
 
 /** 도구 접두사가 붙지 않은 기준 시스템 프롬프트다. */
-export function buildTitleSystemPrompt(prompt: AgentPrompt, language: OutputLanguage): string {
+export function buildTitleSystemPrompt(prompt: AgentPrompt): string {
     const slot = (name: string): string => prompt.slot(TITLE_SYSTEM_TEMPLATE_KEY, name);
     return [
         "You rename recorded coding-agent tasks so the title actually reflects what happened.",
@@ -29,8 +29,6 @@ export function buildTitleSystemPrompt(prompt: AgentPrompt, language: OutputLang
         slot("titleSpec"),
         "",
         slot("answerShape"),
-        "",
-        `Output language: ${prompt.languageDirective(language)}`,
         "",
         "Return the suggestions as structured output conforming to the provided schema.",
     ].join("\n");
@@ -64,7 +62,12 @@ export function buildTitleRepairPrompt(
     ].join("\n");
 }
 
-export function buildTitleUserPrompt(taskId: string, context: TitleContext): string {
+export function buildTitleUserPrompt(
+    prompt: AgentPrompt,
+    taskId: string,
+    context: TitleContext,
+    language: OutputLanguage,
+): string {
     const lines: string[] = [
         `Task ID: ${taskId}`,
         `Current title: ${context.title}`,
@@ -92,6 +95,8 @@ export function buildTitleUserPrompt(taskId: string, context: TitleContext): str
     }
     lines.push(
         "If the current title already reads cleanly, return an empty suggestions list. Otherwise propose 2-3 alternative titles.",
+        "",
+        `Output language: ${prompt.languageDirective(language)}`,
     );
     return lines.join("\n");
 }
