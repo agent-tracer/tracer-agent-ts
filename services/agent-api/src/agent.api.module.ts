@@ -19,7 +19,9 @@ import { SurfaceController } from "~agent-api/domain/health/inbound/surface.cont
 import { READINESS_PROBE } from "~agent-api/domain/health/port/readiness.probe.port.js";
 import { SERVED_SURFACE } from "~agent-api/domain/health/port/served.surface.port.js";
 import { chatFeature } from "./chat.feature.js";
+import { cleanupFeature } from "./cleanup.feature.js";
 import { jobFeature } from "./job.feature.js";
+import { recipeFeature } from "./recipe.feature.js";
 import { settingsFeature } from "./settings.feature.js";
 
 @Module({})
@@ -32,6 +34,8 @@ export class AgentApiModule {
                 ...chatFeature.controllers,
                 ...jobFeature.controllers,
                 ...settingsFeature.controllers,
+                ...recipeFeature.controllers,
+                ...cleanupFeature.controllers,
                 HealthController,
                 SurfaceController,
             ],
@@ -41,6 +45,8 @@ export class AgentApiModule {
                 ...chatFeature.providers,
                 ...jobFeature.providers,
                 ...settingsFeature.providers,
+                ...recipeFeature.providers,
+                ...cleanupFeature.providers,
                 DataSourceReadinessProbeAdapter,
                 { provide: READINESS_PROBE, useExisting: DataSourceReadinessProbeAdapter },
                 CheckReadinessUseCase,

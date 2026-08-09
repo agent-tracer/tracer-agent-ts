@@ -2,11 +2,19 @@ import "reflect-metadata";
 import type { DataSource } from "typeorm";
 import { createDataSource, loadApplicationConfig } from "@tracer-agent/platform";
 import { CHAT_ENTITIES } from "./chat.feature.js";
+import { CLEANUP_ENTITIES } from "./cleanup.feature.js";
 import { JOB_ENTITIES } from "./job.feature.js";
+import { RECIPE_ENTITIES } from "./recipe.feature.js";
 import { SETTING_ENTITIES } from "./settings.feature.js";
 
 /** 에이전트 원장의 표를 TypeScript로 비추는 엔티티이며 스키마의 진실은 계약의 SQL이다. */
-export const AGENT_ENTITIES = [...CHAT_ENTITIES, ...JOB_ENTITIES, ...SETTING_ENTITIES] as const;
+export const AGENT_ENTITIES = [
+    ...CHAT_ENTITIES,
+    ...JOB_ENTITIES,
+    ...SETTING_ENTITIES,
+    ...RECIPE_ENTITIES,
+    ...CLEANUP_ENTITIES,
+] as const;
 
 export function createAgentDataSource(): DataSource {
     return createDataSource({ db: loadApplicationConfig().agentDb, entities: [...AGENT_ENTITIES] });

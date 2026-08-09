@@ -15,6 +15,8 @@ const COVERED_BY: Readonly<Record<string, string>> = {
     chat_execution_steps_execution_attempt_seq: "chat.step.sequence.contract.test.ts",
     chat_user_memories_unique: "chat.user.memory.contract.test.ts",
     chat_executions_requested_backend_check: "chat.thread.lock.contract.test.ts",
+    cleanup_pending_task_kind_unique: "../../cleanup/adapter/cleanup.suggestion.contract.test.ts",
+    search_outbox_target_check: "../../recipe/adapter/search.outbox.contract.test.ts",
 };
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
@@ -32,6 +34,8 @@ const MIMICKED_BY: Readonly<Record<string, string>> = {
     chat_user_memories_unique: "거절이 아니라 덮어쓰기로 흉내 낸다",
     chat_execution_steps_execution_attempt_seq: "흉내 내지 않는다",
     ai_job_steps_job_attempt_seq: "흉내 내지 않는다",
+    cleanup_pending_task_kind_unique: "흉내 내지 않는다",
+    search_outbox_target_check: "흉내 내지 않는다",
 };
 
 function migrationText(): string {
