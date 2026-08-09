@@ -33,7 +33,11 @@ const featureSchema = z.object({
     limits: limitsSchema.optional(),
 });
 
+/** 캐시 쓰기 단가의 배수를 정하는 수명이며 값의 목록은 계약의 model.rates.json 이 갖는다. */
+const CACHE_WRITE_TTL_VALUES = ["5m", "1h"] as const;
+
 const catalogSchema = z.object({
+    cacheWriteTtl: z.enum(CACHE_WRITE_TTL_VALUES),
     models: z.record(rateSchema),
     features: z.record(featureSchema),
 });
@@ -76,6 +80,11 @@ let cached: LlmCatalog | null = null;
 export function loadLlmCatalog(): LlmCatalog {
     cached ??= readCatalog();
     return cached;
+}
+
+/** 이 축의 실행이 요청하는 캐시 수명이며 표의 캐시 단가는 이 수명의 배수를 따른다. */
+export function cacheWriteTtl(): (typeof CACHE_WRITE_TTL_VALUES)[number] {
+    return loadLlmCatalog().cacheWriteTtl;
 }
 
 /** 단가를 아는 모델인지 답하며, 모르는 모델은 접수 단계에서 막는다. */
