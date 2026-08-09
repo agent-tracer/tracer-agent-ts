@@ -36,6 +36,7 @@ export class CleanupOutputAdapter implements CleanupOutputPort {
                     manager,
                     batch,
                     suggestion.taskId,
+                    // 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 output 단계를 여기서 지난다.
                     redactText(suggestion.rationale),
                     observedLastEventAt.get(suggestion.taskId) ?? null,
                     now,
@@ -85,7 +86,6 @@ function newRow(
     row.kind = CLEANUP_SUGGESTION_KIND_ARCHIVE;
     row.currentValue = null;
     row.proposedValue = null;
-    // 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 output 단계를 여기서 지난다.
     row.rationale = rationale;
     row.status = PENDING_STATUS;
     row.error = null;

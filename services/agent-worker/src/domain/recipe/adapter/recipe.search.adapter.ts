@@ -9,7 +9,7 @@ import type {
     RecipeSlimTask,
 } from "~agent-worker/domain/recipe/port/recipe.search.port.js";
 
-/** 검색 결과에 접혀 오는 메모 히트를 가리는 표식이며 값은 추적 API가 소유한다. */
+/** 검색 결과에 함께 오는 메모 히트를 걸러 내는 표식이며 값은 추적 API가 소유한다. */
 const MEMO_HIT_TYPE = "memo";
 
 /** 사건과 태스크는 추적이 소유하고 레시피는 이 축이 소유하므로 창구를 나눠 부른다. */
