@@ -5,6 +5,13 @@ import { CHAT_EXECUTION_STATUS } from "~agent-api/domain/chat/model/chat.const.j
 import { CONTRACT_ROOT } from "~agent-api/support/contract.js";
 import { ChatExecutionEntity } from "./chat.execution.entity.js";
 
+/** 어느 제약이 거절했는지까지 보지 않으면 다른 색인이 먼저 걸린 것을 이 제약의 거절로 읽는다. */
+const CONSTRAINT = "chat_executions_running_thread";
+
+function refusedBy(error: unknown): string | undefined {
+    return (error as { driverError?: { constraint?: string } }).driverError?.constraint;
+}
+
 let ledger: StartedLedger;
 
 /** 멱등 색인이 먼저 걸리면 보려던 제약에 닿지 못하므로 접수 좌표는 행마다 다르게 둔다. */
@@ -45,7 +52,9 @@ describe("한 스레드에 실행 중인 실행은 하나다", () => {
         const rows = ledger.repository(ChatExecutionEntity);
         await rows.save(execution());
 
-        await expect(rows.save(execution({ id: "exec-2" }))).rejects.toThrow();
+        await expect(rows.save(execution({ id: "exec-2" }))).rejects.toSatisfy(
+            (error: unknown) => refusedBy(error) === CONSTRAINT,
+        );
     });
 
     // 색인이 running 에만 걸리므로 끝난 실행은 몇 개든 남는다.
@@ -75,6 +84,6 @@ describe("한 스레드에 실행 중인 실행은 하나다", () => {
 
         await expect(
             rows.save(execution({ id: "exec-2", requestedBackend: "python" })),
-        ).rejects.toThrow();
+        ).rejects.toSatisfy((error: unknown) => refusedBy(error) === CONSTRAINT);
     });
 });

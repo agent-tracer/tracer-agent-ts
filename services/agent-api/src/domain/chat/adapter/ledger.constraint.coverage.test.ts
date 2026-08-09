@@ -43,12 +43,15 @@ describe("실물 원장의 제약과 그것에 부딪히는 자리", () => {
     // 파일이 있다는 것만으로는 그 제약에 부딪혔는지 알 수 없으므로 그 자리가 갖는 성질을 본다.
     it.each(COVERED.map(([name, where]) => ({ name, where })))(
         "$name 에 부딪히는 $where 가 실물 원장에 실제로 부딪힌다",
-        ({ where }) => {
+        ({ name, where }) => {
             const text = readFileSync(path.join(HERE, where), "utf8");
 
-            // 거절을 단언하는 모양은 toThrow 만이 아니므로 그 앞의 rejects 까지만 본다.
-            expect({ 실물: text.includes("startLedger"), 거절: text.includes(".rejects.") })
-                .toEqual({ 실물: true, 거절: true });
+            // 거절이 있다는 것만 보면 다른 제약이 먼저 걸린 것을 이 제약의 거절로 읽는다.
+            expect({
+                실물: text.includes("startLedger"),
+                거절: text.includes(".rejects."),
+                이제약: text.includes(name),
+            }).toEqual({ 실물: true, 거절: true, 이제약: true });
         },
     );
 });

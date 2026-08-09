@@ -37,6 +37,12 @@ const DATE_KEYS = new Set(["createdAt", "updatedAt", "startedAt", "completedAt"]
 
 let ledger: StartedLedger;
 
+/** 번역한 오류가 원인을 그대로 들고 있으므로 어느 제약이 거절했는지는 그 사슬 안쪽이 안다. */
+function refusedBy(error: unknown): string | undefined {
+    const cause = (error as { cause?: unknown }).cause;
+    return (cause as { driverError?: { constraint?: string } } | undefined)?.driverError?.constraint;
+}
+
 beforeAll(async () => {
     ledger = await startLedger(path.join(CONTRACT_ROOT, "db", "migrations"), [ChatExecutionEntity]);
 }, LEDGER_CONTAINER_STARTUP_MS);
@@ -95,6 +101,16 @@ describe("실행 원장의 멱등 제약", () => {
 
         await expect(repository.insert(turn("execution-2")))
             .rejects.toBeInstanceOf(LedgerUniqueViolationError);
+    });
+
+    // 어느 색인이 거절했는지까지 보지 않으면 다른 유일 색인이 먼저 걸린 것을 이 색인의 거절로 읽는다.
+    it("거절한 색인이 멱등 좌표의 색인이다", async () => {
+        const repository = new TypeOrmChatExecutionRepository(ledger.repository(ChatExecutionEntity));
+        await repository.insert(turn("execution-1"));
+
+        await expect(repository.insert(turn("execution-2"))).rejects.toSatisfy(
+            (error: unknown) => refusedBy(error) === "chat_executions_idempotency",
+        );
     });
 
     it("멱등 좌표가 다르면 그대로 적는다", async () => {

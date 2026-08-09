@@ -4,6 +4,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CONTRACT_ROOT } from "~agent-api/support/contract.js";
 import { ChatThreadEntity } from "./chat.thread.entity.js";
 
+/** 어느 제약이 거절했는지까지 보지 않으면 다른 제약이 먼저 걸린 것을 이 제약의 거절로 읽는다. */
+const CONSTRAINT = "chat_threads_summary_pairing";
+
+function refusedBy(error: unknown): string | undefined {
+    return (error as { driverError?: { constraint?: string } }).driverError?.constraint;
+}
+
 let ledger: StartedLedger;
 
 function thread(overrides: Partial<ChatThreadEntity> = {}): ChatThreadEntity {
@@ -36,13 +43,17 @@ describe("요약과 그 지점의 짝을 원장이 강제한다", () => {
     it("요약만 있고 지점이 없는 행을 거절한다", async () => {
         const rows = ledger.repository(ChatThreadEntity);
 
-        await expect(rows.save(thread({ summary: "접은 이야기" }))).rejects.toThrow();
+        await expect(rows.save(thread({ summary: "접은 이야기" }))).rejects.toSatisfy(
+            (error: unknown) => refusedBy(error) === CONSTRAINT,
+        );
     });
 
     it("지점만 있고 요약이 없는 행을 거절한다", async () => {
         const rows = ledger.repository(ChatThreadEntity);
 
-        await expect(rows.save(thread({ summaryThroughMessageId: "message-9" }))).rejects.toThrow();
+        await expect(rows.save(thread({ summaryThroughMessageId: "message-9" }))).rejects.toSatisfy(
+            (error: unknown) => refusedBy(error) === CONSTRAINT,
+        );
     });
 
     it("둘 다 없는 행을 받는다", async () => {
