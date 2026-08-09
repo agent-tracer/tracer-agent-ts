@@ -13,6 +13,7 @@ interface RedactionRule {
         readonly words: readonly string[];
         readonly requiresTrailingBody: {
             readonly skipSpaceBetween: boolean;
+            readonly spaceCharacters: readonly string[];
             readonly minLength: number;
         };
     };
@@ -23,6 +24,9 @@ const RULE = readContractJson<RedactionRule>("agent/shared/redaction.json");
 
 // 계약의 charset 은 영문자와 숫자와 - 와 _ 와 . 이며 자격의 몸통은 이 글자로만 이어진다.
 const BODY_CHARACTER = /[A-Za-z0-9._-]/u;
+
+// 언어의 공백 판정에 맡기면 두 축이 다른 글자에서 몸통을 찾으므로 무엇이 공백인지는 계약이 갖는다.
+const SPACE_CHARACTERS = new Set(RULE.values.requiresTrailingBody.spaceCharacters);
 const DISCARD = "discard";
 
 const NORMALIZERS: Readonly<Record<string, (text: string) => string>> = {
@@ -90,7 +94,7 @@ function suspectSpans(text: string): readonly SuspectSpan[] {
     for (const word of VALUE_WORDS) {
         for (let at = folded.indexOf(word); at >= 0; at = folded.indexOf(word, at + word.length)) {
             let body = at + word.length;
-            while (skipSpaceBetween && /\s/u.test(folded[body] ?? "")) body += 1;
+            while (skipSpaceBetween && SPACE_CHARACTERS.has(folded[body] ?? "")) body += 1;
             let end = body;
             while (BODY_CHARACTER.test(folded[end] ?? "")) end += 1;
             if (end - body >= minLength) spans.push({ start: at, end });

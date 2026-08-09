@@ -18,7 +18,10 @@ interface RedactionRule {
     readonly keys: { readonly words: readonly string[] };
     readonly values: {
         readonly words: readonly string[];
-        readonly requiresTrailingBody: { readonly minLength: number };
+        readonly requiresTrailingBody: {
+            readonly minLength: number;
+            readonly spaceCharacters: readonly string[];
+        };
         readonly matching: { readonly normalize: readonly string[] };
     };
     readonly stages: Readonly<Record<string, { readonly onSuspect: string }>>;
@@ -79,6 +82,20 @@ describe("값을 견주는 절차", () => {
 
     it("낱말과 몸통 사이의 공백을 건너뛰고 가린다", () => {
         expect(redactText(`Authorization: Bearer ${BODY}`)).toBe(`Authorization: ${RULE.marker}`);
+    });
+
+    it("계약이 공백으로 적은 글자가 사이에 있어도 가린다", () => {
+        for (const space of RULE.values.requiresTrailingBody.spaceCharacters) {
+            expect(redactText(`Authorization: Bearer${space}${BODY}`)).toBe(`Authorization: ${RULE.marker}`);
+        }
+    });
+
+    it("계약이 공백으로 적지 않은 글자 뒤는 몸통으로 보지 않는다", () => {
+        const nonBreaking = "\u00a0";
+        const sentence = `Authorization: Bearer${nonBreaking}${BODY}`;
+
+        expect(RULE.values.requiresTrailingBody.spaceCharacters).not.toContain(nonBreaking);
+        expect(redactText(sentence)).toBe(sentence);
     });
 
     it("가린 자리 밖의 본문은 그대로 낸다", () => {
