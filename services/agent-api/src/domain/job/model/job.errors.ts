@@ -10,16 +10,6 @@ export class LlmKeyMissingError extends DomainError {
     }
 }
 
-/** 리스를 쥔 실행기의 이름이 없어 어느 실행기의 요청인지 가릴 수 없음을 알린다. */
-export class LeaseOwnerMissingError extends DomainError {
-    readonly httpStatus = 400;
-    readonly code = "job.lease-owner-missing";
-
-    constructor() {
-        super("Lease owner header is required");
-    }
-}
-
 /** 같은 멱등키를 서로 다른 요청 본문으로 재사용했음을 알린다. */
 export class JobIdempotencyConflictError extends DomainError {
     readonly httpStatus = 409;
@@ -27,26 +17,6 @@ export class JobIdempotencyConflictError extends DomainError {
 
     constructor() {
         super("Idempotency key was already used with different job input");
-    }
-}
-
-/** 규칙 생성의 근거가 요청 사용자의 태스크에 속한 사용자 발화가 아님을 알린다. */
-export class InvalidRuleAnchorError extends DomainError {
-    readonly httpStatus = 400;
-    readonly code = "job.invalid-rule-anchor";
-
-    constructor() {
-        super("Rule generation requires an owned user-message anchor");
-    }
-}
-
-/** 리스를 쥔 실행기만 잡을 종결하거나 반납하므로 회수당한 실행기는 이 거절을 받는다. */
-export class JobLeaseHeldError extends DomainError {
-    readonly httpStatus = 409;
-    readonly code = "job.lease-held";
-
-    constructor() {
-        super("Job lease is held by another runner");
     }
 }
 

@@ -55,11 +55,6 @@ export class Job {
 
     completedAt!: Date | null;
 
-    /** 로컬 실행 잡의 리스 소유자이며, 리스를 쥔 실행기만 결과와 실패를 제출할 수 있다. */
-    leaseOwner!: string | null;
-
-    leaseExpiresAt!: Date | null;
-
     static create(
         id: string,
         userId: string,
@@ -87,8 +82,6 @@ export class Job {
         job.updatedAt = now;
         job.startedAt = null;
         job.completedAt = null;
-        job.leaseOwner = null;
-        job.leaseExpiresAt = null;
         return job;
     }
 

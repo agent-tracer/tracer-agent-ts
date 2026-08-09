@@ -7,9 +7,6 @@ import { Job } from "~agent-api/domain/job/model/job.model.js";
 @Entity({ name: "ai_jobs" })
 @Index("ai_jobs_user_kind", ["userId", "kind", "createdAt"])
 @Index("ai_jobs_kind_status", ["kind", "status"])
-@Index("ai_jobs_lease_expiry", ["leaseExpiresAt"], {
-    where: "\"status\" = 'running' AND \"lease_expires_at\" IS NOT NULL",
-})
 @Index("ai_jobs_active_status_kind_executor", ["status", "kind", "executor"], {
     where: "\"status\" IN ('pending', 'running')",
 })
@@ -74,12 +71,6 @@ export class JobEntity {
 
     @Column({ name: "completed_at", type: "timestamptz", nullable: true })
     completedAt!: Date | null;
-
-    @Column({ name: "lease_owner", type: "text", nullable: true })
-    leaseOwner!: string | null;
-
-    @Column({ name: "lease_expires_at", type: "timestamptz", nullable: true })
-    leaseExpiresAt!: Date | null;
 }
 
 export function toJob(row: JobEntity): Job {
@@ -102,8 +93,6 @@ export function toJob(row: JobEntity): Job {
     job.updatedAt = row.updatedAt;
     job.startedAt = row.startedAt;
     job.completedAt = row.completedAt;
-    job.leaseOwner = row.leaseOwner;
-    job.leaseExpiresAt = row.leaseExpiresAt;
     return job;
 }
 
@@ -127,7 +116,5 @@ export function toJobRow(job: Job): JobEntity {
     row.updatedAt = job.updatedAt;
     row.startedAt = job.startedAt;
     row.completedAt = job.completedAt;
-    row.leaseOwner = job.leaseOwner;
-    row.leaseExpiresAt = job.leaseExpiresAt;
     return row;
 }

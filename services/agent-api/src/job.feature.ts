@@ -67,9 +67,8 @@ export const jobFeature = {
         { provide: LOCAL_CLI_AUTH_ENABLED, useFactory: () => loadApplicationConfig().profile === "local" },
         {
             provide: JOB_REPOSITORY,
-            inject: [AGENT_DATA_SOURCE, JobUlidGenerator],
-            useFactory: (source: DataSource, ids: JobUlidGenerator) =>
-                new TypeOrmJobRepository(source.getRepository(JobEntity), source, ids),
+            inject: [AGENT_DATA_SOURCE],
+            useFactory: (source: DataSource) => new TypeOrmJobRepository(source.getRepository(JobEntity)),
         },
         {
             provide: JOB_STEP_REPOSITORY,

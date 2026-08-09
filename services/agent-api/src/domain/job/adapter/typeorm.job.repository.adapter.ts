@@ -1,5 +1,5 @@
 import { translatingUniqueViolation } from "@tracer-agent/platform";
-import type { DataSource, EntityManager, QueryDeepPartialEntity, Repository } from "typeorm";
+import type { QueryDeepPartialEntity, Repository } from "typeorm";
 import { JOB_STATUS, type JobKind } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
 import type {
@@ -7,19 +7,11 @@ import type {
     JobHistoryQuery,
     JobRepositoryPort,
 } from "~agent-api/domain/job/port/job.repository.port.js";
-import type { JobExecutionStep, JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
-import type { JobIdGeneratorPort } from "~agent-api/domain/job/port/job.id.generator.port.js";
-import { JobEntity } from "./job.entity.js";
-import { JobStepEntity } from "./job.step.entity.js";
-import { toJob, toJobRow } from "./job.entity.js";
+import { toJob, toJobRow, type JobEntity } from "./job.entity.js";
 import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 
 export class TypeOrmJobRepository implements JobRepositoryPort {
-    constructor(
-        private readonly repo: Repository<JobEntity>,
-        private readonly dataSource: DataSource,
-        private readonly ids: JobIdGeneratorPort,
-    ) {}
+    constructor(private readonly repo: Repository<JobEntity>) {}
 
     async findById(id: string): Promise<Job | null> {
         const row = await this.repo.findOne({ where: { id } });
@@ -90,110 +82,6 @@ export class TypeOrmJobRepository implements JobRepositoryPort {
                 SELECT 1 FROM "agent_run_observations" observation
                 WHERE observation."execution_id" = "ai_jobs"."id"
             ))`, { pending: JOB_STATUS.pending })
-            .execute();
-        return (result.affected ?? 0) > 0;
-    }
-
-    async claimLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
-        const result = await this.repo
-            .createQueryBuilder()
-            .update()
-            .set({ status: JOB_STATUS.running, leaseOwner: owner, leaseExpiresAt: expiresAt, startedAt: now, updatedAt: now })
-            .where("id = :id", { id })
-            // 살아 있는 리스를 남이 가지고 있으면 가져가지 못하고, 만료된 리스는 누구든 가져간다.
-            .andWhere("status IN (:...claimable)", { claimable: [JOB_STATUS.pending, JOB_STATUS.running] })
-            .andWhere("(lease_owner IS NULL OR lease_owner = :owner OR lease_expires_at IS NULL OR lease_expires_at <= :now)", { owner, now })
-            .execute();
-        return (result.affected ?? 0) > 0;
-    }
-
-    async renewLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean> {
-        const result = await this.repo
-            .createQueryBuilder()
-            .update()
-            .set({ leaseExpiresAt: expiresAt, updatedAt: now })
-            .where("id = :id", { id })
-            .andWhere("status = :running", { running: JOB_STATUS.running })
-            .andWhere("lease_owner = :owner", { owner })
-            .andWhere("lease_expires_at > :now", { now })
-            .execute();
-        return (result.affected ?? 0) > 0;
-    }
-
-    async settleWithLease(id: string, owner: string, outcome: JobSettlement, now: Date): Promise<boolean> {
-        // 궤적이 종결과 한 트랜잭션에 있어야 종결만 남고 단계가 사라지는 상태가 생기지 않는다.
-        return this.dataSource.transaction(async (manager) => {
-            const row = await manager.findOne(JobEntity, { where: { id } });
-            const result = await manager
-                .createQueryBuilder()
-                .update(JobEntity)
-                .set({
-                    status: outcome.status,
-                    ...(outcome.result !== undefined ? { result: outcome.result } : {}),
-                    ...(outcome.error !== undefined ? { error: outcome.error } : {}),
-                    usage: outcome.usage,
-                    leaseOwner: null,
-                    leaseExpiresAt: null,
-                    completedAt: now,
-                    updatedAt: now,
-                })
-                .where("id = :id", { id })
-                .andWhere("status = :running", { running: JOB_STATUS.running })
-                .andWhere("lease_owner = :owner", { owner })
-                .execute();
-            if ((result.affected ?? 0) === 0 || row === null) return false;
-            await this.insertSteps(manager, row, outcome.steps, now);
-            return true;
-        });
-    }
-
-    /** 실행기가 남긴 궤적을 그 잡의 시도 회차로 단계 원장에 적는다. */
-    private async insertSteps(
-        manager: EntityManager,
-        job: JobEntity,
-        steps: readonly JobExecutionStep[],
-        now: Date,
-    ): Promise<void> {
-        if (steps.length === 0) return;
-        await manager
-            .createQueryBuilder()
-            .insert()
-            .into(JobStepEntity)
-            .values(steps.map((step) => ({
-                id: this.ids.next(),
-                jobId: job.id,
-                userId: job.userId,
-                // 계약이 회차를 1부터 세므로 리스만 쥔 잡의 첫 시도를 1로 적는다.
-                attempt: Math.max(job.attempts, 1),
-                seq: step.seq,
-                role: step.role,
-                content: step.content,
-                truncated: step.truncated,
-                toolCalls: step.toolCalls.length > 0 ? [...step.toolCalls] : null,
-                toolName: step.toolName ?? null,
-                toolCallId: step.toolCallId ?? null,
-                inputTokens: step.inputTokens ?? null,
-                outputTokens: step.outputTokens ?? null,
-                cacheReadTokens: step.cacheReadTokens ?? null,
-                cacheCreationTokens: step.cacheCreationTokens ?? null,
-                stopReason: step.stopReason ?? null,
-                nodeName: step.nodeName ?? null,
-                eventKind: step.eventKind ?? null,
-                durationMs: step.durationMs ?? null,
-                createdAt: now,
-            })) as QueryDeepPartialEntity<JobStepEntity>[])
-            .orIgnore()
-            .execute();
-    }
-
-    async releaseLease(id: string, owner: string, now: Date): Promise<boolean> {
-        const result = await this.repo
-            .createQueryBuilder()
-            .update()
-            .set({ status: JOB_STATUS.pending, leaseOwner: null, leaseExpiresAt: null, startedAt: null, updatedAt: now })
-            .where("id = :id", { id })
-            .andWhere("status = :running", { running: JOB_STATUS.running })
-            .andWhere("lease_owner = :owner", { owner })
             .execute();
         return (result.affected ?? 0) > 0;
     }

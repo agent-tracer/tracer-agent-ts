@@ -1,4 +1,3 @@
-import type { JobSettlement } from "~agent-api/domain/job/model/job.settlement.model.js";
 import type { JobKind, JobStatus } from "~agent-api/domain/job/model/job.const.js";
 import type { Job } from "~agent-api/domain/job/model/job.model.js";
 
@@ -27,8 +26,4 @@ export interface JobRepositoryPort {
     insert(job: Job): Promise<void>;
     upsert(job: Job): Promise<void>;
     transitionToCanceled(id: string, now: Date): Promise<boolean>;
-    claimLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean>;
-    renewLease(id: string, owner: string, expiresAt: Date, now: Date): Promise<boolean>;
-    settleWithLease(id: string, owner: string, outcome: JobSettlement, now: Date): Promise<boolean>;
-    releaseLease(id: string, owner: string, now: Date): Promise<boolean>;
 }

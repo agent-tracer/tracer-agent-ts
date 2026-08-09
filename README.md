@@ -11,7 +11,6 @@
 - chat, recipe scan, task cleanup, title suggestion 에이전트
 - 실행 단계·토큰 사용량·비용·모델 호출의 관측 정보 기록
 - 추적 API를 사용하는 도구와 산출물 연동
-- 로컬 실행기가 잡을 가져가고 되돌리는 리스 창구
 - 자격 증명이 답과 초안과 도구 결과로 새지 않도록 가리는 절차
 - OpenTelemetry와 선택적 LangSmith 연동
 
