@@ -125,10 +125,17 @@ export default {
     },
     {
       name: "workflow-is-deterministic",
-      comment: "워크플로는 활동 구현과 어댑터와 배선과 Node API를 모른다",
+      comment: "워크플로는 활동 구현과 어댑터와 배선을 모른다",
       severity: "error",
       from: { path: suffixOf("workflow") },
-      to: { path: `${suffixOf("activity")}|/(?:adapter|config)/|^node:` },
+      to: { path: `${suffixOf("activity")}|/(?:adapter|config)/` },
+    },
+    {
+      name: "workflow-has-no-node-api",
+      comment: "워크플로는 결정적 샌드박스에서 실행되므로 Node 내장 모듈을 부르지 않는다",
+      severity: "error",
+      from: { path: suffixOf("workflow") },
+      to: { dependencyTypes: ["core"] },
     },
     {
       name: "inbound-not-to-projection",
