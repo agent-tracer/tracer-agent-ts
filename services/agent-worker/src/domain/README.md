@@ -2,7 +2,7 @@
 
 이 문서는 `services/agent-worker/src/domain`에 구현된 TypeScript 에이전트의 실행 구조를 정리한다. 설명의 기준은 실제 코드와 계약 저장소이며, 노드·미들웨어·도구·프롬프트·워크플로 사이의 경계를 한 문서에서 확인할 수 있도록 구성한다.
 
-현재 이 디렉터리에서 Claude Agent SDK를 호출하는 도메인 에이전트는 Chat·Recipe·Cleanup·Title이다. 계약과 API에는 `rule.generation` 잡 타입이 정의되어 있지만, `workflows.ts`와 `jobs.main.ts`에 해당 워크플로와 activity가 등록되어 있지 않으므로 별도 에이전트 문서의 대상으로 분류하지 않는다.
+현재 이 디렉터리에서 Claude Agent SDK를 호출하는 도메인 에이전트는 Chat·Recipe·Cleanup·Title이다. 계약의 잡 종류는 `title.suggestion`·`recipe.scan`·`task.cleanup` 셋이다. 이 저장소의 `support/job.const.ts`가 그 밖에 `rule.generation`을 더 들고 있으나 계약에도 워크플로 등록에도 그 자리가 없다.
 
 ## 먼저 확인할 결론
 

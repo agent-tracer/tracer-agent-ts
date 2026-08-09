@@ -169,10 +169,8 @@ trajectory 수집과 redaction과 fallback model을 적용한다.
 갖는다. 모델이 지은 글이 사용자에게 닿기 전 자리이므로 계약의 가림 단계 `output`을 이 자리에서
 지난다.
 
-이 자리는 두 축이 갈린다. `conformance/cases/divergence.json`의 `recipe.draft.language`가 그
-차이를 갖고 이 축을 canonical 로 적는다. 파이썬 축은 산출을 종결하는 자리가 요청 payload 를 받지
-못해 언어가 빈 채 저장되며, 잡 산출을 종결하는 공유 표면이 요청 payload 를 함께 받도록 계약이 그
-자리를 갖는 뒤에 좁힌다.
+산출 어댑터가 배치의 `language` 를 초안마다 실어 보내며 Python 구현도 종결이 요청에서 꺼낸 같은
+값을 싣는다.
 
 ## Temporal 워크플로
 
