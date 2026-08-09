@@ -1,5 +1,7 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { logWarn } from "@tracer-agent/platform";
 import { buildChatReplay } from "~agent-api/domain/chat/model/chat.replay.js";
+import { CHAT_REPLAY_MAX_MESSAGES } from "~agent-api/domain/chat/model/chat.replay.spec.js";
 import type { ChatTurnMessage, ChatUserFact } from "~agent-api/domain/chat/model/chat.turn.model.js";
 import {
     CHAT_EXECUTION_REPOSITORY,
@@ -47,8 +49,19 @@ export class GetChatReplayUseCase {
             this.memories.listByUser(userId),
         ]);
         if (thread === null || !thread.isOwnedBy(userId)) throw new NotFoundException("Thread not found");
+        const messages = buildChatReplay(rows, execution.replayAnchorMessageId, thread.summary);
+        // 정상 흐름은 이 상한에 닿지 않으므로 닿았다는 것은 요약이 여러 번 실패했다는 신호다.
+        if (messages.length >= CHAT_REPLAY_MAX_MESSAGES) {
+            logWarn({
+                msg: "chat.replay.truncated",
+                threadId,
+                executionId,
+                kept: messages.length,
+                stored: rows.length,
+            });
+        }
         return {
-            messages: buildChatReplay(rows, execution.replayAnchorMessageId, thread.summary),
+            messages,
             summary: thread.summary,
             facts: facts.map(({ key, content }) => ({ key, content })),
         };

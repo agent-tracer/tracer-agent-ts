@@ -4,7 +4,7 @@ import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 
 interface ChatSummaryContract {
     readonly production: { readonly trigger: { readonly messages: number; readonly chars: number } };
-    readonly consumption: { readonly recentKeepCount: number };
+    readonly consumption: { readonly recentKeepCount: number; readonly maxReplayMessages: number };
     readonly limits: { readonly maxOutputTokens: number; readonly deadlineMs: number };
 }
 
@@ -15,6 +15,7 @@ export const CHAT_SUMMARY_SPEC = {
     triggerMessageCount: DECLARED.production.trigger.messages,
     recentKeepCount: DECLARED.consumption.recentKeepCount,
     triggerCharBudget: DECLARED.production.trigger.chars,
+    maxReplayMessages: DECLARED.consumption.maxReplayMessages,
     limits: {
         model: featureModels("title-suggestion")!.default,
         maxOutputTokens: DECLARED.limits.maxOutputTokens,
@@ -36,6 +37,17 @@ interface RoledMessage {
 
 /** 요약이 있으면 최근 대화 턴만 남기고 도구 결과는 세지 않는다. */
 export function selectReplayMessages<T extends RoledMessage>(
+    messages: readonly T[],
+    hasSummary: boolean,
+): readonly T[] {
+    const window = withinTurnWindow(messages, hasSummary);
+    // 재생이 상한에서 잘리면 그 앞은 실리지 않으므로 접을 것에 들어가야 한다.
+    return window.length > CHAT_SUMMARY_SPEC.maxReplayMessages
+        ? window.slice(window.length - CHAT_SUMMARY_SPEC.maxReplayMessages)
+        : window;
+}
+
+function withinTurnWindow<T extends RoledMessage>(
     messages: readonly T[],
     hasSummary: boolean,
 ): readonly T[] {
