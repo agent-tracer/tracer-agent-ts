@@ -13,8 +13,8 @@ const COVERED_BY: Readonly<Record<string, string>> = {
     ai_jobs_idempotency_key: "../../job/adapter/job.idempotency.contract.test.ts",
     ai_job_steps_job_attempt_seq: "아직 없음",
     chat_execution_steps_execution_attempt_seq: "아직 없음",
-    chat_user_memories_unique: "아직 없음",
-    chat_executions_requested_backend_check: "아직 없음",
+    chat_user_memories_unique: "chat.user.memory.contract.test.ts",
+    chat_executions_requested_backend_check: "chat.thread.lock.contract.test.ts",
 };
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);

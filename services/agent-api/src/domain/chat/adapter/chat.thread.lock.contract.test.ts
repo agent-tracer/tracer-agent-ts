@@ -87,3 +87,33 @@ describe("한 스레드에 실행 중인 실행은 하나다", () => {
         ).rejects.toSatisfy((error: unknown) => refusedBy(error) === CONSTRAINT);
     });
 });
+
+describe("접수가 적는 축은 계약이 아는 둘뿐이다", () => {
+    // 상류가 실어 보낸 값을 옮겨 적으면 원장에 모르는 축이 들어오므로 원장이 그 자리를 막는다.
+    it("계약이 모르는 축을 거절한다", async () => {
+        const rows = ledger.repository(ChatExecutionEntity);
+
+        await expect(
+            rows.save(execution({ requestedBackend: "rust" })),
+        ).rejects.toSatisfy(
+            (error: unknown) => refusedBy(error) === "chat_executions_requested_backend_check",
+        );
+    });
+
+    it.each(["ts", "python"])("%s 는 받는다", async (axis) => {
+        const rows = ledger.repository(ChatExecutionEntity);
+
+        await expect(
+            rows.save(execution({ id: `exec-${axis}`, requestedBackend: axis })),
+        ).resolves.toBeDefined();
+    });
+
+    // 아직 축이 정해지지 않은 행이 있으므로 빈 값은 막지 않는다.
+    it("축이 비어 있는 행은 받는다", async () => {
+        const rows = ledger.repository(ChatExecutionEntity);
+
+        await expect(
+            rows.save(execution({ requestedBackend: null })),
+        ).resolves.toBeDefined();
+    });
+});
