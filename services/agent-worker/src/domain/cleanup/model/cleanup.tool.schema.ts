@@ -26,6 +26,10 @@ export interface CleanupToolContract extends ContractToolFile {
     readonly orchestration: {
         readonly workerMaxTurns: number;
         readonly inspectDepth: Readonly<Record<string, number>>;
+        readonly workerReport: {
+            readonly maxReasonChars: number;
+            readonly maxCitedEventIds: number;
+        };
     };
 }
 

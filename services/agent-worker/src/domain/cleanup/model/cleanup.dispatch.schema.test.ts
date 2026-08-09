@@ -8,6 +8,12 @@ import {
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])/u;
 
 describe("상한을 넘긴 검토 보고", () => {
+    // 계약의 칸 이름이 바뀌면 파생이 undefined 가 되는데 아래 검사들은 그 값을 같이 쓰므로 알아채지 못한다.
+    it("계약이 적은 두 상한을 읽어 왔다", () => {
+        expect({ reason: MAX_INSPECT_REASON_CHARS, cited: MAX_INSPECT_EXCERPTS })
+            .toEqual({ reason: 400, cited: 6 });
+    });
+
     it("판정 사유를 상한까지 잘라 세운다", () => {
         const report = salvageInspectReport("task-1", {
             archivable: true,

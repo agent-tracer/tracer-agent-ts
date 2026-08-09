@@ -4,6 +4,7 @@ import { clampText } from "~agent-worker/support/clamp.js";
 import { cleanupSuggestionsListSchema } from "./cleanup.suggestion.schema.js";
 import {
     CLEANUP_MAX_SUGGESTIONS,
+    CLEANUP_TOOL_CONTRACT,
     MAX_REDISPATCH_ROUNDS,
     inspectDepthShare,
 } from "./cleanup.tool.schema.js";
@@ -13,10 +14,9 @@ export { MAX_REDISPATCH_ROUNDS };
 // SDK 백엔드가 조사를 조율자와 후보별 조사로 나눌 때만 쓰는 내부 계획·보고 스키마이며, 계약이
 // 고정하는 도구·출력·예산 계약과는 분리된 오케스트레이션 지식이다.
 
-// 검토 보고를 자르는 상한이며 스키마와 프롬프트와 구제가 모두 이 두 값에서 파생하고, 계약의
-// limits 로 올려야 Python 축이 같은 값을 읽는다.
-export const MAX_INSPECT_EXCERPTS = 6;
-export const MAX_INSPECT_REASON_CHARS = 400;
+// 검토 보고를 자르는 상한이며 스키마와 프롬프트와 구제가 모두 이 두 값에서 파생한다.
+export const MAX_INSPECT_EXCERPTS = CLEANUP_TOOL_CONTRACT.orchestration.workerReport.maxCitedEventIds;
+export const MAX_INSPECT_REASON_CHARS = CLEANUP_TOOL_CONTRACT.orchestration.workerReport.maxReasonChars;
 
 
 export const inspectAssignmentSchema = z.object({
