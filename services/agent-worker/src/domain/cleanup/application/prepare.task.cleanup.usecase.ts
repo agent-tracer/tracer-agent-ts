@@ -54,6 +54,12 @@ export class PrepareTaskCleanupUsecase {
         const model = chosenJobModel(await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.anthropicModel), AGENT.taskCleanup.id);
         const prompt = resolveCleanupPromptPin(await this.prompts.resolve(AGENT.taskCleanup.id));
 
+        // 전이 뒤에 자격을 보면 화면이 실행 중을 한 번 보고 실패로 뒤집히므로 앞에서 본다.
+        if (this.agent.requiresLocalApiKey()) {
+            const apiKey = await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.anthropicApiKey);
+            if (apiKey === null) throw new MissingApiKeyError(CLEANUP_SETTING_KEY.anthropicApiKey);
+        }
+
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
         await this.notification.jobUpdated(job.userId, {
@@ -61,11 +67,6 @@ export class PrepareTaskCleanupUsecase {
             kind: JOB_KIND.taskCleanup,
             status: JOB_STATUS.running,
         });
-
-        if (this.agent.requiresLocalApiKey()) {
-            const apiKey = await this.repository.readSetting(job.userId, CLEANUP_SETTING_KEY.anthropicApiKey);
-            if (apiKey === null) throw new MissingApiKeyError(CLEANUP_SETTING_KEY.anthropicApiKey);
-        }
         const maxSuggestions = await this.resolveMaxSuggestions(job.userId, input.maxSuggestions);
 
         const batch = await this.repository.loadScanBatch(job.userId);

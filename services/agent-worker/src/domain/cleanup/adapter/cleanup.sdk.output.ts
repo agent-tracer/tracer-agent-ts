@@ -1,4 +1,4 @@
-import { attemptedRepair, pushEmptyResult, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
+import { attemptedRepair, pushRouteSelected, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import {
     EMPTY_RESULT_NODE,
     renderEmptyResultReason,
@@ -25,7 +25,7 @@ export function buildEmptyCleanupOutput(
     validation: CleanupValidationOutcome,
     reason: EmptyResultReason,
 ): GenerateCleanupSuggestionsOutput {
-    pushEmptyResult(segments, EMPTY_RESULT_NODE, renderEmptyResultReason(reason));
+    pushRouteSelected(segments, EMPTY_RESULT_NODE, renderEmptyResultReason(reason));
     return buildCleanupOutput(ctx, segments, [], modelUsed, validation);
 }
 

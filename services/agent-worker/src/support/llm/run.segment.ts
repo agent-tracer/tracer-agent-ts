@@ -76,11 +76,6 @@ export function pushRouteSelected(segments: RunSegment[], nodeName: string, cont
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.routeSelected, content);
 }
 
-/** 빈 결과로 끝난 실행이 왜 비었는지를 실행이 고른 갈래로 보아 route.selected 자리에 남긴다. */
-export function pushEmptyResult(segments: RunSegment[], nodeName: string, content: string): void {
-    pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.routeSelected, content);
-}
-
 /** 검증이 걸러낸 사유를 궤적에 남긴다. */
 export function pushValidationFailed(segments: RunSegment[], nodeName: string, content: string): void {
     pushEvent(segments, nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);

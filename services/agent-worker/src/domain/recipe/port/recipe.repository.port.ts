@@ -13,7 +13,6 @@ export interface RecipeJobSnapshot {
 
 /** 스캔 앵커 자격 판정에 필요한 태스크 상태다. */
 export interface RecipeAnchorSnapshot {
-    readonly ownedByUser: boolean;
     readonly scanEligible: boolean;
     readonly sessionScanEligible: boolean;
 }

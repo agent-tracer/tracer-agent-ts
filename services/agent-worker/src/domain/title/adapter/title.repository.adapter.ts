@@ -84,7 +84,7 @@ export class TitleRepositoryAdapter implements TitleRepositoryPort {
             })),
             totalEventCount,
         );
-        return { ownedByUser: true, totalEventCount, context };
+        return { totalEventCount, context };
     }
 
     readSetting(scope: string, key: string): Promise<string | null> {

@@ -1,4 +1,4 @@
-import { attemptedRepair, pushEmptyResult, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
+import { attemptedRepair, pushRouteSelected, type RunSegment } from "~agent-worker/support/llm/run.segment.js";
 import {
     recipeEmptyResultReason,
     renderEmptyResultReason,
@@ -27,7 +27,7 @@ export function buildEmptyRecipeOutput(
   ledger: ProvenanceLedger,
   signals: RecipeEmptyResultSignals,
 ): GenerateRecipeCandidatesOutput {
-  pushEmptyResult(segments, EMPTY_RESULT_NODE, renderEmptyResultReason(recipeEmptyResultReason(signals)));
+  pushRouteSelected(segments, EMPTY_RESULT_NODE, renderEmptyResultReason(recipeEmptyResultReason(signals)));
   return buildRecipeOutput(ctx, segments, [], modelUsed, ledger);
 }
 

@@ -1,4 +1,4 @@
-import { AGENT_BACKEND } from "@tracer-agent/llm";
+import { AGENT_BACKEND, AGENT_RUN_OBSERVATION_STATUS } from "@tracer-agent/llm";
 import { LessThan, type QueryDeepPartialEntity, type Repository } from "typeorm";
 import {
     CHAT_EXECUTION_CLAIM,
@@ -121,7 +121,7 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
             .set(spendPatch(assistantMessageId, spend, now, { phase: CHAT_EXECUTION_PHASE.done }))
             .where("id = :id", { id })
             .andWhere("assistant_message_id IS NULL")
-            .andWhere(observedTerminalCondition("cancelled"), {
+            .andWhere(observedTerminalCondition(AGENT_RUN_OBSERVATION_STATUS.cancelled), {
                 settled: CHAT_EXECUTION_STATUS.canceled,
                 running: CHAT_EXECUTION_STATUS.running,
             })

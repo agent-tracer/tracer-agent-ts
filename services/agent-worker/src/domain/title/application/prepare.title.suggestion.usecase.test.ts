@@ -110,18 +110,9 @@ describe("PrepareTitleSuggestionUsecase", () => {
         );
     });
 
-    it("남의 태스크는 찾지 못한 것으로 본다", async () => {
-        const { repository, usecase } = setup();
-        repository.taskContext = { ownedByUser: false, totalEventCount: 1, context: null };
-
-        await expect(usecase.execute({ jobId: "job-1", taskId: "task-1" })).rejects.toBeInstanceOf(
-            TaskNotFoundError,
-        );
-    });
-
     it("근거 이벤트가 없는 태스크는 제목을 짓지 않는다", async () => {
         const { repository, usecase } = setup();
-        repository.taskContext = { ownedByUser: true, totalEventCount: 0, context: null };
+        repository.taskContext = { totalEventCount: 0, context: null };
 
         await expect(usecase.execute({ jobId: "job-1", taskId: "task-1" })).rejects.toBeInstanceOf(
             TaskNotFoundError,
@@ -131,7 +122,6 @@ describe("PrepareTitleSuggestionUsecase", () => {
     it("컨텍스트는 있는데 이벤트 수가 0이면 근거 없음으로 거절한다", async () => {
         const { repository, usecase } = setup();
         repository.taskContext = {
-            ownedByUser: true,
             totalEventCount: 0,
             context: repository.taskContext!.context,
         };
@@ -156,5 +146,15 @@ describe("PrepareTitleSuggestionUsecase", () => {
         await expect(usecase.execute({ jobId: "job-1", taskId: "task-1" })).rejects.toBeInstanceOf(
             MissingApiKeyError,
         );
+    });
+
+    it("자격이 없으면 잡을 실행 중으로 옮기지도 알리지도 않는다", async () => {
+        const { usecase, repository, notification } = setup(true);
+
+        await expect(usecase.execute({ jobId: "job-1", taskId: "task-1" })).rejects.toBeInstanceOf(
+            MissingApiKeyError,
+        );
+        expect(repository.started).toBe(false);
+        expect(notification.sent).toHaveLength(0);
     });
 });

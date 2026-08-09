@@ -125,7 +125,6 @@ export class InMemoryTitleRepository implements TitleRepositoryPort {
     job: TitleJobSnapshot | null = { id: "job-1", userId: "user-1", taskId: "task-1", usage: {} };
 
     taskContext: TitleTaskContext | null = {
-        ownedByUser: true,
         totalEventCount: 12,
         context: titleContext(),
     };
@@ -147,7 +146,11 @@ export class InMemoryTitleRepository implements TitleRepositoryPort {
         return this.job !== null && this.job.id === jobId ? this.job : null;
     }
 
+    /** 자격 검사가 전이 앞에 서는지 보려면 대역이 전이 사실을 남겨야 한다. */
+    started = false;
+
     async startJob(): Promise<boolean> {
+        this.started = true;
         return this.startable;
     }
 

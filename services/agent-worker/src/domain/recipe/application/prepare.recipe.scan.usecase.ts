@@ -50,7 +50,7 @@ export class PrepareRecipeScanUsecase {
         if (job === null) throw new JobNotFoundError(input.jobId);
 
         const anchor = await this.repository.findAnchor(job.userId, input.taskId);
-        if (anchor === null || !anchor.ownedByUser) throw new TaskNotFoundError(input.taskId);
+        if (anchor === null) throw new TaskNotFoundError(input.taskId);
         const eligible = input.trigger === RECIPE_SCAN_TRIGGER.session
             ? anchor.sessionScanEligible
             : anchor.scanEligible;
@@ -64,6 +64,15 @@ export class PrepareRecipeScanUsecase {
         // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
         const model = chosenJobModel(await this.repository.readSetting(job.userId, RECIPE_SETTING_KEY.anthropicModel), AGENT.recipeScan.id);
         const prompt = resolveRecipePromptPin(await this.prompts.resolve(AGENT.recipeScan.id));
+        // 전이 뒤에 자격을 보면 화면이 실행 중을 한 번 보고 실패로 뒤집히므로 앞에서 본다.
+        if (this.agent.requiresLocalApiKey()) {
+            const apiKey = await this.repository.readSetting(
+                job.userId,
+                RECIPE_SETTING_KEY.anthropicApiKey,
+            );
+            if (apiKey === null) throw new MissingApiKeyError(RECIPE_SETTING_KEY.anthropicApiKey);
+        }
+
         if (!(await this.repository.startJob(job.id, this.clock.now()))) {
             throw new JobAlreadySettledError(job.id);
         }
@@ -73,14 +82,6 @@ export class PrepareRecipeScanUsecase {
             status: JOB_STATUS.running,
             taskId: input.taskId,
         });
-
-        if (this.agent.requiresLocalApiKey()) {
-            const apiKey = await this.repository.readSetting(
-                job.userId,
-                RECIPE_SETTING_KEY.anthropicApiKey,
-            );
-            if (apiKey === null) throw new MissingApiKeyError(RECIPE_SETTING_KEY.anthropicApiKey);
-        }
 
         return {
             jobId: job.id,

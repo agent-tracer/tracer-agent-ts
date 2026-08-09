@@ -193,7 +193,6 @@ export function seedRepository(): InMemoryRecipeRepository {
     repository.seedJob({ id: "job-1", userId: "user-1", taskId: "task-1", usage: {} });
     repository.settings.set(RECIPE_SETTING_KEY.anthropicApiKey, "sk-test");
     repository.anchors.set("task-1", {
-        ownedByUser: true,
         scanEligible: true,
         sessionScanEligible: true,
     });

@@ -98,7 +98,6 @@ describe("PrepareRecipeScanUsecase", () => {
     it("세션 트리거는 세션 앵커 자격으로 판정한다", async () => {
         const repository = seedRepository();
         repository.anchors.set("task-1", {
-            ownedByUser: true,
             scanEligible: false,
             sessionScanEligible: true,
         });
@@ -114,19 +113,6 @@ describe("PrepareRecipeScanUsecase", () => {
         );
     });
 
-    it("사용자 소유가 아닌 태스크는 앵커로 쓰지 않는다", async () => {
-        const repository = seedRepository();
-        repository.anchors.set("task-1", {
-            ownedByUser: false,
-            scanEligible: true,
-            sessionScanEligible: true,
-        });
-
-        await expect(usecase(repository).target.execute({
-            jobId: "job-1",
-            taskId: "task-1",
-        })).rejects.toThrow("task not found: task-1");
-    });
 
     it("자격 증명이 필요한 실행에 키가 없으면 실패한다", async () => {
         const repository = seedRepository();

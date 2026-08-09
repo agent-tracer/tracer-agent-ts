@@ -13,7 +13,6 @@ export interface TitleJobSnapshot {
 
 /** 제목 제안이 보는 태스크의 대화 컨텍스트다. */
 export interface TitleTaskContext {
-    readonly ownedByUser: boolean;
     readonly totalEventCount: number;
     readonly context: TitleContext | null;
 }

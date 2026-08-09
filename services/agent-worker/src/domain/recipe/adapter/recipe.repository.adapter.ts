@@ -60,7 +60,6 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
             && (wireText(task["parentTaskId"]) === null) === RECIPE_ANCHOR.root.value;
         const status = wireText(task["status"]);
         return {
-            ownedByUser: true,
             scanEligible: rootUserTask && status !== null && RECIPE_ANCHOR.status.oneOf.includes(status),
             sessionScanEligible: rootUserTask,
         };

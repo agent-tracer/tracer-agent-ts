@@ -1,3 +1,4 @@
+import { AGENT_RUN_OBSERVATION_STATUS } from "@tracer-agent/llm";
 import { errorMessage, logError, logInfo, type IClock } from "@tracer-agent/platform";
 import {
     CHAT_EXECUTION_STATUS,
@@ -41,7 +42,7 @@ export class FinalizeChatExecutionUsecase {
             throw new Error("Chat observation identity does not match execution attempt");
         }
         const canceled =
-            execution.status === CHAT_EXECUTION_STATUS.canceled || observation.status === "cancelled";
+            execution.status === CHAT_EXECUTION_STATUS.canceled || observation.status === AGENT_RUN_OBSERVATION_STATUS.cancelled;
         if (!canceled && execution.status !== CHAT_EXECUTION_STATUS.running) {
             throw new Error("Chat execution is not running");
         }

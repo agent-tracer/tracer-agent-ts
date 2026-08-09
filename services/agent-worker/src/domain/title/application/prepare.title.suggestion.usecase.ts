@@ -35,7 +35,7 @@ export class PrepareTitleSuggestionUsecase {
         if (job === null) throw new JobNotFoundError(input.jobId);
 
         const found = await this.repository.findTaskContext(job.userId, input.taskId);
-        if (found === null || !found.ownedByUser || found.context === null) {
+        if (found === null || found.context === null) {
             throw new TaskNotFoundError(input.taskId);
         }
         if (found.totalEventCount === 0) throw new TaskHasNoEventsError(input.taskId);
@@ -47,6 +47,12 @@ export class PrepareTitleSuggestionUsecase {
         const model = chosenJobModel(await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicModel), AGENT.titleSuggestion.id);
         const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id));
 
+        // 전이 뒤에 자격을 보면 화면이 실행 중을 한 번 보고 실패로 뒤집히므로 앞에서 본다.
+        if (this.agent.requiresLocalApiKey()) {
+            const apiKey = await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicApiKey);
+            if (apiKey === null) throw new MissingApiKeyError(TITLE_SETTING_KEY.anthropicApiKey);
+        }
+
         const now = this.clock.now();
         if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
         await this.notification.jobUpdated(job.userId, {
@@ -55,11 +61,6 @@ export class PrepareTitleSuggestionUsecase {
             status: JOB_STATUS.running,
             taskId: input.taskId,
         });
-
-        if (this.agent.requiresLocalApiKey()) {
-            const apiKey = await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicApiKey);
-            if (apiKey === null) throw new MissingApiKeyError(TITLE_SETTING_KEY.anthropicApiKey);
-        }
         return {
             jobId: job.id,
             userId: job.userId,
