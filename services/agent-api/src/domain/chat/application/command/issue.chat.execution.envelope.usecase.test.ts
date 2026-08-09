@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ChatExecution } from "~agent-api/domain/chat/model/chat.execution.model.js";
 import { FakeChatSettingReader } from "~agent-api/domain/chat/port/__fakes__/fake.chat.setting.reader.js";
-import { FixedChatDraftToken } from "~agent-api/domain/chat/port/__fakes__/fixed.chat.draft.token.js";
 import { FixedChatScopeToken } from "~agent-api/domain/chat/port/__fakes__/fixed.chat.scope.token.js";
 import { FixedClock } from "~agent-api/domain/chat/port/__fakes__/fixed.clock.js";
 import { InMemoryChatExecutionRepository } from "~agent-api/domain/chat/port/__fakes__/in-memory.chat.execution.repository.js";
@@ -29,10 +28,8 @@ function makeUseCase(options: {
     return new IssueChatExecutionEnvelopeUseCase(
         executions,
         new FakeChatSettingReader(options.apiKey === undefined ? "sk-test" : options.apiKey),
-        new FixedChatDraftToken(),
         new FixedChatScopeToken(options.scopeToken === undefined ? "scope-token" : options.scopeToken),
         "http://tracer-api:3902",
-        "http://agent-api:3904",
         new FixedClock(NOW),
     );
 }
@@ -53,11 +50,10 @@ describe("IssueChatExecutionEnvelopeUseCase", () => {
         expect(envelope.model).toBe("claude-opus-5");
     });
 
-    it("도구가 되읽을 기점과 통지가 되돌아올 기점을 나눠 싣는다", async () => {
+    it("도구가 되읽을 기점을 싣는다", async () => {
         const envelope = await makeUseCase().execute("e1");
 
         expect(envelope.readApiBaseUrl).toBe("http://tracer-api:3902");
-        expect(envelope.draft.url).toBe("http://agent-api:3904/api/agent/chat/executions/e1/drafts");
     });
 
     it("자격을 만들 수 없는 환경에서는 범위 자격을 비운다", async () => {

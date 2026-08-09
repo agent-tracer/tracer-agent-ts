@@ -30,7 +30,6 @@ import { ChatScheduler } from "~agent-worker/domain/chat/adapter/chat.scheduler.
 import { ChatSettingReaderAdapter } from "~agent-worker/domain/chat/adapter/chat.setting.reader.adapter.js";
 import { ChatSummarizerAdapter } from "~agent-worker/domain/chat/adapter/chat.summarizer.adapter.js";
 import {
-    ChatDraftTokenAdapter,
     ChatScopeTokenAdapter,
 } from "~agent-worker/domain/chat/adapter/chat.token.adapter.js";
 import { ChatTransactionAdapter } from "~agent-worker/domain/chat/adapter/chat.transaction.adapter.js";
@@ -104,7 +103,6 @@ async function bootstrap(): Promise<void> {
             settings,
             sinks,
             executions,
-            new ChatDraftTokenAdapter(),
             new ChatScopeTokenAdapter(),
             clock,
             scheduler,

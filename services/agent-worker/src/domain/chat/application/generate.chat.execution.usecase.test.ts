@@ -10,7 +10,6 @@ import type {
 } from "~agent-worker/domain/chat/port/chat.execution.sink.port.js";
 import type { ChatReplayPort } from "~agent-worker/domain/chat/port/chat.replay.port.js";
 import type {
-    ChatDraftTokenPort,
     ChatScopeTokenPort,
 } from "~agent-worker/domain/chat/port/chat.token.port.js";
 import type { ChatSettingReaderPort } from "~agent-worker/domain/chat/port/setting.reader.port.js";
@@ -91,10 +90,6 @@ class ManualScheduler implements ChatSchedulerPort {
     }
 }
 
-const draftTokens: ChatDraftTokenPort = {
-    issue: () => ({ token: "draft-token", hash: "draft-hash" }),
-    hash: () => "draft-hash",
-};
 
 const scopeTokens: ChatScopeTokenPort = { issue: () => "scope-token" };
 
@@ -129,7 +124,6 @@ function setup(agent: ChatAgentPort, reader: ChatSettingReaderPort = settings(nu
             reader,
             sinks,
             executions,
-            draftTokens,
             scopeTokens,
             clock,
             scheduler,

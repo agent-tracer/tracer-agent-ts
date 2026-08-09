@@ -3,16 +3,13 @@ import { featureLimits, featureModels, wireModelRates } from "@tracer-agent/llm"
 import { CHAT_FEATURE } from "~agent-api/domain/chat/model/chat.const.js";
 import { ChatMissingApiKeyError } from "~agent-api/domain/chat/model/chat.errors.js";
 import type { ChatExecutionEnvelope } from "~agent-api/domain/chat/model/chat.execution.envelope.js";
-import { CHAT_DRAFT_TOKEN, type ChatDraftTokenPort } from "~agent-api/domain/chat/port/chat.draft.token.port.js";
 import {
     CHAT_EXECUTION_REPOSITORY,
     type ChatExecutionRepositoryPort,
 } from "~agent-api/domain/chat/port/chat.repository.port.js";
 import { CHAT_SCOPE_TOKEN, type ChatScopeTokenPort } from "~agent-api/domain/chat/port/chat.scope.token.port.js";
 import {
-    CHAT_AGENT_API_BASE_URL,
     CHAT_TRACER_API_BASE_URL,
-    type ChatAgentApiBaseUrlPort,
     type ChatTracerApiBaseUrlPort,
 } from "~agent-api/domain/chat/port/chat.tracer.api.port.js";
 import { CHAT_CLOCK, type ClockPort } from "~agent-api/domain/chat/port/clock.port.js";
@@ -28,10 +25,8 @@ export class IssueChatExecutionEnvelopeUseCase {
     constructor(
         @Inject(CHAT_EXECUTION_REPOSITORY) private readonly executions: ChatExecutionRepositoryPort,
         @Inject(CHAT_SETTING_READER) private readonly settings: ChatSettingReaderPort,
-        @Inject(CHAT_DRAFT_TOKEN) private readonly draftTokens: ChatDraftTokenPort,
         @Inject(CHAT_SCOPE_TOKEN) private readonly scopeTokens: ChatScopeTokenPort,
         @Inject(CHAT_TRACER_API_BASE_URL) private readonly tracerApiBaseUrl: ChatTracerApiBaseUrlPort,
-        @Inject(CHAT_AGENT_API_BASE_URL) private readonly agentApiBaseUrl: ChatAgentApiBaseUrlPort,
         @Inject(CHAT_CLOCK) private readonly clock: ClockPort,
     ) {}
 
@@ -42,7 +37,6 @@ export class IssueChatExecutionEnvelopeUseCase {
         if (apiKey === null || apiKey.length === 0) throw new ChatMissingApiKeyError();
 
         const limits = featureLimits(CHAT_FEATURE);
-        const grant = this.draftTokens.issue();
         return {
             model: execution.model ?? featureModels(CHAT_FEATURE)!.default,
             apiKey,
@@ -60,14 +54,6 @@ export class IssueChatExecutionEnvelopeUseCase {
                 this.clock.now(),
             ) ?? "",
             toolDescriptions: CHAT_TOOL_DESCRIPTIONS,
-            draft: {
-                url: new URL(
-                    `/api/agent/chat/executions/${encodeURIComponent(executionId)}/drafts`,
-                    this.agentApiBaseUrl,
-                ).toString(),
-                token: grant.token,
-                tokenHash: grant.hash,
-            },
         };
     }
 }

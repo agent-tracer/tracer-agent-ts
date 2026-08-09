@@ -109,7 +109,7 @@ function invoke(
         case "claimQueued":
             return repository.claimQueued(id, now);
         case "beginAttempt":
-            return repository.beginAttempt(id, Number(call["attempt"]), String(call["draftTokenHash"]), now);
+            return repository.beginAttempt(id, Number(call["attempt"]), now);
         case "checkpointRunning":
             return repository.checkpointRunning(
                 id,

@@ -11,7 +11,7 @@ export interface ChatExecutionRepositoryPort {
     claimQueued(id: string, now: Date): Promise<ChatExecutionClaim>;
     /** 갱신이 끊긴 running을 queued로 되돌리며 threadId를 주면 그 스레드만 조회한다. */
     recoverStaleRunning(idleBefore: Date, now: Date, threadId?: string): Promise<number>;
-    beginAttempt(id: string, attempt: number, draftTokenHash: string, now: Date): Promise<boolean>;
+    beginAttempt(id: string, attempt: number, now: Date): Promise<boolean>;
     checkpointRunning(
         id: string,
         attempt: number,

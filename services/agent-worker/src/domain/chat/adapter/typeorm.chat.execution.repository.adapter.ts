@@ -59,20 +59,19 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
         return result.affected === 1 ? CHAT_EXECUTION_CLAIM.claimed : CHAT_EXECUTION_CLAIM.stale;
     }
 
-    async beginAttempt(id: string, attempt: number, draftTokenHash: string, now: Date): Promise<boolean> {
+    async beginAttempt(id: string, attempt: number, now: Date): Promise<boolean> {
         const result = await this.repo
             .createQueryBuilder()
             .update()
             .set({
                 attempt,
                 // 시도가 올라도 살아 있던 실행은 처음 받은 자격을 그대로 들고 있으므로 창구를 닫지 않는다.
-                draftTokenHash: () => `COALESCE("draft_token_hash", :draftTokenHash)`,
                 draftText: "",
                 draftSeq: 0,
                 updatedAt: now,
             })
             .where("id = :id AND status = :status AND attempt <= :attempt")
-            .setParameters({ id, status: CHAT_EXECUTION_STATUS.running, attempt, draftTokenHash })
+            .setParameters({ id, status: CHAT_EXECUTION_STATUS.running, attempt })
             .execute();
         return result.affected === 1;
     }

@@ -21,7 +21,6 @@ import type {
 import type { ChatReplayClientFactory } from "~agent-worker/domain/chat/port/chat.replay.port.js";
 import type { ChatExecutionRepositoryPort } from "~agent-worker/domain/chat/port/chat.repository.port.js";
 import type {
-    ChatDraftTokenPort,
     ChatScopeTokenPort,
 } from "~agent-worker/domain/chat/port/chat.token.port.js";
 import type { ChatSettingReaderPort } from "~agent-worker/domain/chat/port/setting.reader.port.js";
@@ -35,7 +34,6 @@ export class GenerateChatExecutionUsecase {
         private readonly settings: ChatSettingReaderPort,
         private readonly sinks: ChatExecutionSinkFactoryPort,
         private readonly executions: ChatExecutionRepositoryPort,
-        private readonly draftTokens: ChatDraftTokenPort,
         private readonly scopeTokens: ChatScopeTokenPort,
         private readonly clock: IClock,
         private readonly scheduler: ChatSchedulerPort,
@@ -48,9 +46,8 @@ export class GenerateChatExecutionUsecase {
         abortSignal: AbortSignal,
         attempt: number,
     ): Promise<GeneratedChatExecution> {
-        const grant = this.draftTokens.issue();
         // 시도를 열어야 이전 시도의 늦은 draft가 이 시도의 상태를 되돌리지 못한다.
-        if (!(await this.executions.beginAttempt(prepared.executionId, attempt, grant.hash, this.clock.now()))) {
+        if (!(await this.executions.beginAttempt(prepared.executionId, attempt, this.clock.now()))) {
             throw new Error("Chat execution attempt is stale");
         }
         // 이 쓰기가 초안을 비우므로 알리지 않으면 화면이 이전 시도의 글을 재전송 주기까지 그대로 둔다.
@@ -69,7 +66,7 @@ export class GenerateChatExecutionUsecase {
         const stopWatching = this.watchForStall(watch, stall, abortSignal);
         try {
             const apiKey = await this.resolveApiKey(prepared.userId, this.agent.requiresLocalApiKey());
-            const input = await this.input(prepared, apiKey, stall.signal, attempt, grant.token, scopeToken);
+            const input = await this.input(prepared, apiKey, stall.signal, attempt, scopeToken);
             const result = await this.agent.converse(input, watch.wrap(sink.sink));
             await sink.flush();
             // 취소로 끊긴 턴은 아무 말도 못 받고 끝날 수 있고 그것은 실패가 아니다.
@@ -110,7 +107,6 @@ export class GenerateChatExecutionUsecase {
         apiKey: string | null,
         abortSignal: AbortSignal,
         attempt: number,
-        draftToken: string,
         scopeToken: string | null,
     ): Promise<ChatTurnInput> {
         const common = {
@@ -120,7 +116,6 @@ export class GenerateChatExecutionUsecase {
             language: prepared.language,
             deadlineMs: CHAT_SPEC.limits.deadlineMs,
             attempt,
-            draftToken,
             ...(scopeToken !== null ? { scopeToken } : {}),
             ...(prepared.model !== undefined ? { model: prepared.model } : {}),
             ...(apiKey !== null ? { apiKey } : {}),

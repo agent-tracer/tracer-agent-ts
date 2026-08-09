@@ -74,13 +74,12 @@ export class InMemoryChatExecutionRepository implements ChatExecutionRepositoryP
         return CHAT_EXECUTION_CLAIM.claimed;
     }
 
-    async beginAttempt(id: string, attempt: number, draftTokenHash: string, now: Date): Promise<boolean> {
+    async beginAttempt(id: string, attempt: number, now: Date): Promise<boolean> {
         const row = this.rows.get(id);
         if (row === undefined || row.status !== CHAT_EXECUTION_STATUS.running || row.attempt > attempt) {
             return false;
         }
         row.attempt = attempt;
-        row.draftTokenHash ??= draftTokenHash;
         row.draftText = "";
         row.draftSeq = 0;
         row.updatedAt = now;

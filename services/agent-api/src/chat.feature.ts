@@ -2,7 +2,6 @@ import { loadApplicationConfig, SystemClock } from "@tracer-agent/platform";
 import { TracerApiClient } from "@tracer-agent/tracer-client";
 import type { DataSource } from "typeorm";
 import { AGENT_DATA_SOURCE } from "~agent-api/config/agent.datasource.token.js";
-import { ChatDraftTokenAdapter } from "~agent-api/domain/chat/adapter/chat.draft.token.adapter.js";
 import { ChatExecutionEvents } from "~agent-api/domain/chat/adapter/chat.execution.events.js";
 import { ChatExecutionUpdatePublisher } from "~agent-api/domain/chat/adapter/chat.execution.update.publisher.js";
 import { ChatScopeTokenAdapter } from "~agent-api/domain/chat/adapter/chat.scope.token.adapter.js";
@@ -24,7 +23,6 @@ import { TypeOrmChatThreadRepository } from "~agent-api/domain/chat/adapter/type
 import { TypeOrmChatUserMemoryRepository } from "~agent-api/domain/chat/adapter/typeorm.chat.user.memory.repository.adapter.js";
 import { AppendUserMessageUseCase } from "~agent-api/domain/chat/application/command/append.user.message.usecase.js";
 import { CancelChatExecutionUseCase } from "~agent-api/domain/chat/application/command/cancel.chat.execution.usecase.js";
-import { CheckpointChatDraftUseCase } from "~agent-api/domain/chat/application/command/checkpoint.chat.draft.usecase.js";
 import { ConfirmToolUseCase } from "~agent-api/domain/chat/application/command/confirm.tool.usecase.js";
 import { CreateThreadUseCase } from "~agent-api/domain/chat/application/command/create.thread.usecase.js";
 import { DeleteThreadUseCase } from "~agent-api/domain/chat/application/command/delete.thread.usecase.js";
@@ -45,10 +43,8 @@ import { ChatConfirmationController } from "~agent-api/domain/chat/inbound/chat.
 import { ChatStreamController } from "~agent-api/domain/chat/inbound/chat.stream.controller.js";
 import { ChatThreadController } from "~agent-api/domain/chat/inbound/chat.thread.controller.js";
 import { ChatTurnController } from "~agent-api/domain/chat/inbound/chat.turn.controller.js";
-import { ChatDraftController } from "~agent-api/domain/chat/inbound/chat.draft.controller.js";
 import { ChatInternalController } from "~agent-api/domain/chat/inbound/chat.internal.controller.js";
 import { ChatMemoryController } from "~agent-api/domain/chat/inbound/chat.memory.controller.js";
-import { CHAT_DRAFT_TOKEN } from "~agent-api/domain/chat/port/chat.draft.token.port.js";
 import { CHAT_EXECUTION_DISPATCHER } from "~agent-api/domain/chat/port/chat.execution.dispatcher.port.js";
 import {
     CHAT_EXECUTION_UPDATE_PUBLISHER,
@@ -91,14 +87,12 @@ export const chatFeature = {
         ChatTurnController,
         ChatStreamController,
         ChatConfirmationController,
-        ChatDraftController,
         ChatMemoryController,
         ChatInternalController,
     ],
     providers: [
         AppendUserMessageUseCase,
         CancelChatExecutionUseCase,
-        CheckpointChatDraftUseCase,
         ConfirmToolUseCase,
         CreateThreadUseCase,
         DeleteThreadUseCase,
@@ -115,8 +109,6 @@ export const chatFeature = {
         ListThreadsUseCase,
         RecallFactsUseCase,
         WatchChatExecutionUseCase,
-        ChatDraftTokenAdapter,
-        { provide: CHAT_DRAFT_TOKEN, useExisting: ChatDraftTokenAdapter },
         ChatScopeTokenAdapter,
         { provide: CHAT_SCOPE_TOKEN, useExisting: ChatScopeTokenAdapter },
         ChatExecutionEvents,
