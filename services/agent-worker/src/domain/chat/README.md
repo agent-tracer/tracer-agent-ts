@@ -63,8 +63,8 @@ Chat 계약에는 24개 도구가 정의되어 있다. 실행 권한은 도구 s
 
 | 타입 | 수량 | 예시 | 실행 경계 |
 | --- | ---: | --- | --- |
-| 읽기 도구 | 14 | `find_tasks`, `search_tasks`, `get_task`, `get_timeline` 등 | tracer API |
-| Agent read | 1 | `get_job` | agent API 내부 surface |
+| 읽기 도구 | 10 | `find_tasks`, `search_tasks`, `get_task`, `get_timeline` 등 | tracer API |
+| Agent read | 5 | `get_job`, `find_recipes`, `get_recipe`, `list_recipes`, `list_cleanup_suggestions` | agent API 내부 surface |
 | memory | 1 | `recall_facts` | memory API |
 | 확인 쓰기 | 8 | `remember_fact`, `enqueue_job`, `propose_task_write`, `propose_memo_write` 등 | confirmation API |
 
