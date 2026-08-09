@@ -81,7 +81,3 @@ features:
       maxTurns: 16
       maxOutputTokens: 16000
       deadlineMs: 600000
-  rule-generation:
-    default: claude-sonnet-4-6
-    fallback: claude-haiku-4-5
-    allowed: [claude-sonnet-4-6, claude-sonnet-5, claude-haiku-4-5]

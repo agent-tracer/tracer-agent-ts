@@ -28,7 +28,7 @@ const featureSchema = z.object({
     default: z.string().min(1),
     fallback: z.string().min(1).optional(),
     allowed: z.array(z.string().min(1)).min(1),
-    limits: limitsSchema.optional(),
+    limits: limitsSchema,
 });
 
 /** 캐시 쓰기 단가의 배수를 정하는 수명이며 값의 목록은 계약의 model.rates.json 이 갖는다. */
@@ -116,11 +116,11 @@ export function featureModels(feature: string): FeatureModels | null {
     return loadLlmCatalog().features[feature] ?? null;
 }
 
-/** 한 기능의 실행 한도이며 한도를 적지 않은 기능은 이 창구로 집행되지 않는다. */
+/** 한 기능의 실행 한도이며 카탈로그가 선언하지 않은 기능은 이 창구로 집행되지 않는다. */
 export function featureLimits(feature: string): FeatureLimits {
-    const limits = loadLlmCatalog().features[feature]?.limits;
-    if (limits === undefined) throw new Error(`llm.yaml: feature ${feature} has no limits`);
-    return limits;
+    const declared = loadLlmCatalog().features[feature];
+    if (declared === undefined) throw new Error(`llm.yaml: feature ${feature} is not declared`);
+    return declared.limits;
 }
 
 /** 모델별 출력 한도가 있으면 그 값을, 없으면 기능의 출력 한도를 낸다. */
