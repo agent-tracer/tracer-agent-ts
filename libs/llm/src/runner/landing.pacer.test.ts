@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { landingReserveCalls } from "./landing.directive.js";
-import { LandingPacer } from "./landing.pacer.js";
+import { hardTurnCeiling, LandingPacer } from "./landing.pacer.js";
 
 const RESERVE = landingReserveCalls();
 
@@ -13,12 +13,20 @@ describe("마무리 몫을 남기는 착지 판정", () => {
         expect(pacer.isLanding).toBe(false);
     });
 
-    it("남은 턴이 마무리 몫에 닿으면 착지한다", () => {
-        const pacer = new LandingPacer(RESERVE + 1, undefined);
+    it("모델에게 알린 턴을 다 쓰면 착지한다", () => {
+        const pacer = new LandingPacer(1, undefined);
 
         pacer.countTurn();
 
         expect(pacer.isLanding).toBe(true);
+    });
+
+    it("마무리 몫은 착지 시점을 앞당기지 않는다", () => {
+        const pacer = new LandingPacer(RESERVE + 1, undefined);
+
+        for (let turn = 0; turn < RESERVE; turn += 1) pacer.countTurn();
+
+        expect(pacer.isLanding).toBe(false);
     });
 
     it("턴 상한이 없는 실행은 턴으로 착지하지 않는다", () => {
@@ -70,5 +78,25 @@ describe("마무리 몫을 남기는 착지 판정", () => {
         pacer.countTurn();
 
         expect(pacer.modelTurns).toBe(2);
+    });
+});
+
+describe("모델에게 알린 턴과 하드 상한", () => {
+    it("하드 상한은 마무리 호출 몫만큼 위에 둔다", () => {
+        expect(hardTurnCeiling(10)).toBe(10 + RESERVE);
+    });
+
+    it("턴 상한이 없는 실행에는 몫을 더하지 않는다", () => {
+        expect(hardTurnCeiling(0)).toBe(0);
+    });
+
+    it("알린 턴을 다 쓴 뒤에도 마무리 호출이 설 자리가 남는다", () => {
+        const declared = 4;
+        const pacer = new LandingPacer(declared, undefined);
+
+        for (let turn = 0; turn < declared; turn += 1) pacer.countTurn();
+
+        expect(pacer.isLanding).toBe(true);
+        expect(hardTurnCeiling(declared) - pacer.modelTurns).toBe(RESERVE);
     });
 });

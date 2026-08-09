@@ -5,6 +5,7 @@ import { buildAgentEnv } from "./claude.env.js";
 import { resolveClaudeExecutablePath } from "./claude.executable.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
 import { buildQueryPermissions } from "./claude.query.permissions.js";
+import { hardTurnCeiling } from "~llm/runner/landing.pacer.js";
 import { buildSystemPrompt } from "./claude.system.prompt.js";
 import type { ToolPacingDecision } from "./tool.pacing.hook.js";
 
@@ -34,7 +35,7 @@ export function buildClaudeQueryOptions(input: ClaudeQueryOptionsInput): Options
         allowedTools: [...permissions.allowedTools],
         disallowedTools: [...permissions.disallowedTools],
         tools: [...(options?.builtInTools ?? [])],
-        maxTurns: request.maxTurns,
+        maxTurns: hardTurnCeiling(request.maxTurns),
         systemPrompt: buildSystemPrompt(request, options),
         ...(request.outputSchema !== undefined
             ? { outputFormat: { type: "json_schema" as const, schema: request.outputSchema } }

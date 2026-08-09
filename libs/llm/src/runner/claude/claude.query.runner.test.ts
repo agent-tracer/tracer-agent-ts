@@ -350,12 +350,12 @@ describe("예산 착지 판정", () => {
 });
 
 describe("턴 착지 판정", () => {
-    it("예산을 걸지 않아도 남은 턴이 마무리 몫에 닿으면 착지한다", async () => {
+    it("예산을 걸지 않아도 모델에게 알린 턴을 다 쓰면 착지한다", async () => {
         queryMock.mockClear();
         queryMock.mockReturnValue(stream([assistantFrom("claude-opus-5"), done()]));
 
         const result = await new ClaudeQueryRunner(true).run(
-            request({ model: "claude-opus-5", maxTurns: 3 }),
+            request({ model: "claude-opus-5", maxTurns: 1 }),
         );
 
         expect(result.landed).toBe(true);
@@ -377,7 +377,7 @@ describe("턴 착지 판정", () => {
         queryMock.mockReturnValue(stream([assistantFrom("claude-haiku-4-5"), done()]));
 
         const result = await new ClaudeQueryRunner(true).run(
-            request({ model: "claude-haiku-4-5", maxTurns: 3, maxBudgetUsd: 100 }),
+            request({ model: "claude-haiku-4-5", maxTurns: 1, maxBudgetUsd: 100 }),
         );
 
         expect(result.landed).toBe(true);
