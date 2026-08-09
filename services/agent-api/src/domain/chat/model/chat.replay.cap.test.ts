@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_MESSAGE_ROLE } from "~agent-api/domain/chat/model/chat.const.js";
 import { readContractJson } from "~agent-api/support/contract.js";
 import {
     CHAT_REPLAY_MAX_MESSAGES,
@@ -13,8 +12,8 @@ interface DeclaredSummary {
 
 const DECLARED = readContractJson<DeclaredSummary>("agent/chat/summary.json");
 
-function turns(count: number): { readonly role: string }[] {
-    return Array.from({ length: count }, () => ({ role: CHAT_MESSAGE_ROLE.user }));
+function stored(count: number): { readonly id: string }[] {
+    return Array.from({ length: count }, (_unused, index) => ({ id: `m-${index}` }));
 }
 
 describe("한 턴이 되돌려 주는 메시지의 절대 상한", () => {
@@ -28,21 +27,43 @@ describe("한 턴이 되돌려 주는 메시지의 절대 상한", () => {
     });
 
     // 요약이 없는 스레드에 상한이 없던 것이 이 검사가 막는 자리다.
-    it("요약이 없어도 상한을 넘겨 싣지 않는다", () => {
-        const kept = selectReplayMessages(turns(CHAT_REPLAY_MAX_MESSAGES + 20), false);
-
-        expect(kept).toHaveLength(CHAT_REPLAY_MAX_MESSAGES);
+    it("접은 지점이 없어도 상한을 넘겨 싣지 않는다", () => {
+        expect(selectReplayMessages(stored(CHAT_REPLAY_MAX_MESSAGES + 20), null))
+            .toHaveLength(CHAT_REPLAY_MAX_MESSAGES);
     });
 
-    it("요약이 없고 상한 안이면 이력을 그대로 싣는다", () => {
-        const stored = turns(CHAT_REPLAY_MAX_MESSAGES - 1);
+    it("접은 지점이 없고 상한 안이면 이력을 그대로 싣는다", () => {
+        const rows = stored(CHAT_REPLAY_MAX_MESSAGES - 1);
 
-        expect(selectReplayMessages(stored, false)).toHaveLength(stored.length);
+        expect(selectReplayMessages(rows, null)).toHaveLength(rows.length);
     });
 
     it("자를 때 최근 것을 남긴다", () => {
-        const stored = [...turns(CHAT_REPLAY_MAX_MESSAGES), { role: CHAT_MESSAGE_ROLE.assistant }];
+        const rows = stored(CHAT_REPLAY_MAX_MESSAGES + 1);
 
-        expect(selectReplayMessages(stored, false).at(-1)?.role).toBe(CHAT_MESSAGE_ROLE.assistant);
+        expect(selectReplayMessages(rows, null).at(-1)?.id).toBe(rows.at(-1)?.id);
+    });
+});
+
+describe("요약이 접은 지점", () => {
+    it("그 지점 다음 메시지부터 싣는다", () => {
+        const rows = stored(10);
+
+        expect(selectReplayMessages(rows, "m-3").map((row) => row.id)).toEqual(
+            rows.slice(4).map((row) => row.id),
+        );
+    });
+
+    // 지점이 이 창에 없으면 그 요약이 이 이력을 덮지 않는다는 뜻이라 자르면 앞이 통째로 사라진다.
+    it("지점을 못 찾으면 자르지 않는다", () => {
+        const rows = stored(10);
+
+        expect(selectReplayMessages(rows, "m-999")).toHaveLength(rows.length);
+    });
+
+    it("지점 뒤가 상한을 넘기면 최근 것만 싣는다", () => {
+        const rows = stored(CHAT_REPLAY_MAX_MESSAGES + 30);
+
+        expect(selectReplayMessages(rows, "m-0")).toHaveLength(CHAT_REPLAY_MAX_MESSAGES);
     });
 });

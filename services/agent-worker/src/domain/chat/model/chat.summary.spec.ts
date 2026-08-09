@@ -3,8 +3,11 @@ import { readContractJson } from "~agent-worker/support/contract.js";
 import { CHAT_MESSAGE_ROLE } from "./chat.const.js";
 
 interface ChatSummaryContract {
-    readonly production: { readonly trigger: { readonly messages: number; readonly chars: number } };
-    readonly consumption: { readonly recentKeepCount: number; readonly maxReplayMessages: number };
+    readonly production: {
+        readonly trigger: { readonly messages: number; readonly chars: number };
+        readonly recentKeepCount: number;
+    };
+
     readonly limits: { readonly maxOutputTokens: number; readonly deadlineMs: number };
 }
 
@@ -13,9 +16,8 @@ const DECLARED = readContractJson<ChatSummaryContract>("agent/chat/summary.json"
 /** 압축 문턱과 재생 창 크기는 계약이 갖고 도구 없는 단발 호출이라 요약 모델은 가장 싼 등급으로 충분하다. */
 export const CHAT_SUMMARY_SPEC = {
     triggerMessageCount: DECLARED.production.trigger.messages,
-    recentKeepCount: DECLARED.consumption.recentKeepCount,
+    recentKeepCount: DECLARED.production.recentKeepCount,
     triggerCharBudget: DECLARED.production.trigger.chars,
-    maxReplayMessages: DECLARED.consumption.maxReplayMessages,
     limits: {
         model: featureModels("title-suggestion")!.default,
         maxOutputTokens: DECLARED.limits.maxOutputTokens,
@@ -35,19 +37,8 @@ interface RoledMessage {
     readonly role: string;
 }
 
-/** 요약이 있으면 최근 대화 턴만 남기고 도구 결과는 세지 않는다. */
-export function selectReplayMessages<T extends RoledMessage>(
-    messages: readonly T[],
-    hasSummary: boolean,
-): readonly T[] {
-    const window = withinTurnWindow(messages, hasSummary);
-    // 재생이 상한에서 잘리면 그 앞은 실리지 않으므로 접을 것에 들어가야 한다.
-    return window.length > CHAT_SUMMARY_SPEC.maxReplayMessages
-        ? window.slice(window.length - CHAT_SUMMARY_SPEC.maxReplayMessages)
-        : window;
-}
-
-function withinTurnWindow<T extends RoledMessage>(
+/** 접지 않고 남길 최근 대화 턴이며 도구 결과는 턴으로 세지 않는다. */
+export function selectMessagesToKeep<T extends RoledMessage>(
     messages: readonly T[],
     hasSummary: boolean,
 ): readonly T[] {
@@ -63,6 +54,6 @@ function withinTurnWindow<T extends RoledMessage>(
 
 /** 요약에 접어 넣을 오래된 메시지이며 재생 창 바깥에 남는 나머지다. */
 export function selectMessagesToFold<T extends RoledMessage>(messages: readonly T[]): readonly T[] {
-    const kept = selectReplayMessages(messages, true).length;
+    const kept = selectMessagesToKeep(messages, true).length;
     return messages.slice(0, messages.length - kept);
 }

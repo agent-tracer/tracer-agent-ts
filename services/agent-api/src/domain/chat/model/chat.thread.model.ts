@@ -15,6 +15,9 @@ export class ChatThread {
 
     summary!: string | null;
 
+    /** 그 요약이 접은 마지막 메시지이며 읽는 쪽은 이 뒤부터 이력을 싣는다. */
+    summaryThroughMessageId!: string | null;
+
     /** 이 스레드에서 마지막으로 턴을 실행한 구현체이며, 첫 턴 전에는 아직 없어 null이다. */
     implementation!: string | null;
 
@@ -28,6 +31,7 @@ export class ChatThread {
         thread.userId = input.userId;
         thread.title = input.title;
         thread.summary = null;
+        thread.summaryThroughMessageId = null;
         thread.implementation = null;
         thread.createdAt = input.now;
         thread.updatedAt = input.now;

@@ -1,29 +1,34 @@
-import { CHAT_MESSAGE_ROLE } from "~agent-api/domain/chat/model/chat.const.js";
 import { readContractJson } from "~agent-api/support/contract.js";
 
 interface DeclaredSummary {
-    readonly consumption: { readonly recentKeepCount: number; readonly maxReplayMessages: number };
+    readonly consumption: { readonly maxReplayMessages: number };
 }
-
-/** 요약이 있으면 이 수만큼의 최근 대화 턴만 재생 창에 남으며 그 수는 계약이 갖는다. */
-const DECLARED = readContractJson<DeclaredSummary>("agent/chat/summary.json").consumption;
-
-export const CHAT_REPLAY_RECENT_KEEP_COUNT = DECLARED.recentKeepCount;
 
 /** 요약이 있든 없든 한 턴이 되돌려 주는 메시지의 절대 상한이며 요약이 실패해 쌓이는 스레드를 여기서 끊는다. */
-export const CHAT_REPLAY_MAX_MESSAGES = DECLARED.maxReplayMessages;
+export const CHAT_REPLAY_MAX_MESSAGES =
+    readContractJson<DeclaredSummary>("agent/chat/summary.json").consumption.maxReplayMessages;
 
-/** 창 계산의 단위는 대화 턴이며, 도구 결과는 자기 턴에 딸려 함께 실린다. */
-interface RoledMessage {
-    readonly role: string;
+/** 재생 창을 자를 때 보는 칸이며 접은 지점 뒤부터가 이 턴이 되돌려 줄 이력이다. */
+interface IdentifiedMessage {
+    readonly id: string;
 }
 
-/** 재생 창이며 요약이 있으면 계약이 정한 수만큼의 최근 대화 턴만 남기고 도구 결과는 세지 않는다. */
-export function selectReplayMessages<T extends RoledMessage>(
+/** 재생 창이며 요약이 접은 지점 뒤부터 싣고 지점이 없으면 이력을 그대로 싣는다. */
+export function selectReplayMessages<T extends IdentifiedMessage>(
     messages: readonly T[],
-    hasSummary: boolean,
+    summaryThroughMessageId: string | null,
 ): readonly T[] {
-    return capReplay(withinTurnWindow(messages, hasSummary));
+    return capReplay(afterFoldPoint(messages, summaryThroughMessageId));
+}
+
+/** 접은 지점을 못 찾으면 그 요약이 이 이력을 덮지 않는다는 뜻이므로 자르지 않는다. */
+function afterFoldPoint<T extends IdentifiedMessage>(
+    messages: readonly T[],
+    throughMessageId: string | null,
+): readonly T[] {
+    if (throughMessageId === null) return messages;
+    const index = messages.findIndex((message) => message.id === throughMessageId);
+    return index < 0 ? messages : messages.slice(index + 1);
 }
 
 /** 절대 상한을 넘긴 이력은 최근 것만 남기며 잘린 사실은 부르는 쪽이 길이로 안다. */
@@ -33,16 +38,3 @@ function capReplay<T>(messages: readonly T[]): readonly T[] {
         : messages;
 }
 
-function withinTurnWindow<T extends RoledMessage>(
-    messages: readonly T[],
-    hasSummary: boolean,
-): readonly T[] {
-    if (!hasSummary) return messages;
-    let turns = 0;
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-        if (messages[index]!.role === CHAT_MESSAGE_ROLE.tool) continue;
-        turns += 1;
-        if (turns > CHAT_REPLAY_RECENT_KEEP_COUNT) return messages.slice(index + 1);
-    }
-    return messages;
-}

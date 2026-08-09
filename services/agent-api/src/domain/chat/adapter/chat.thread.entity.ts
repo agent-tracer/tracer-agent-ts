@@ -17,6 +17,9 @@ export class ChatThreadEntity {
     @Column({ type: "text", nullable: true })
     summary!: string | null;
 
+    @Column({ name: "summary_through_message_id", type: "text", nullable: true })
+    summaryThroughMessageId!: string | null;
+
     @Column({ type: "text", nullable: true })
     backend!: string | null;
 
@@ -33,6 +36,7 @@ export function toChatThread(row: ChatThreadEntity): ChatThread {
     thread.userId = row.userId;
     thread.title = row.title;
     thread.summary = row.summary;
+    thread.summaryThroughMessageId = row.summaryThroughMessageId;
     thread.implementation = row.backend;
     thread.createdAt = row.createdAt;
     thread.updatedAt = row.updatedAt;
@@ -45,6 +49,7 @@ export function toChatThreadRow(thread: ChatThread): ChatThreadEntity {
     row.userId = thread.userId;
     row.title = thread.title;
     row.summary = thread.summary;
+    row.summaryThroughMessageId = thread.summaryThroughMessageId;
     row.backend = thread.implementation;
     row.createdAt = thread.createdAt;
     row.updatedAt = thread.updatedAt;

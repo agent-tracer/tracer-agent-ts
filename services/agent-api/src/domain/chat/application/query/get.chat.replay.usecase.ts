@@ -49,7 +49,7 @@ export class GetChatReplayUseCase {
             this.memories.listByUser(userId),
         ]);
         if (thread === null || !thread.isOwnedBy(userId)) throw new NotFoundException("Thread not found");
-        const messages = buildChatReplay(rows, execution.replayAnchorMessageId, thread.summary);
+        const messages = buildChatReplay(rows, execution.replayAnchorMessageId, thread.summaryThroughMessageId);
         // 정상 흐름은 이 상한에 닿지 않으므로 닿았다는 것은 요약이 여러 번 실패했다는 신호다.
         if (messages.length >= CHAT_REPLAY_MAX_MESSAGES) {
             logWarn({

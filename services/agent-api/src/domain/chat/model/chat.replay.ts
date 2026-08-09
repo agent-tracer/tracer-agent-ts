@@ -7,12 +7,9 @@ import { toChatTurnMessage, type ChatTurnMessage } from "~agent-api/domain/chat/
 export function buildChatReplay(
     messages: readonly ChatMessage[],
     replayAnchorMessageId: string,
-    summary: string | null,
+    summaryThroughMessageId: string | null,
 ): readonly ChatTurnMessage[] {
-    const window = selectReplayMessages(
-        untilAnchor(messages, replayAnchorMessageId),
-        summary !== null && summary.trim().length > 0,
-    );
+    const window = selectReplayMessages(untilAnchor(messages, replayAnchorMessageId), summaryThroughMessageId);
     const paired = pairedCallIds(window);
     return window.flatMap((message) => replayMessage(message, paired));
 }

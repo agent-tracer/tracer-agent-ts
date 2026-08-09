@@ -45,7 +45,8 @@ export class SummarizeThreadProjection {
                 prompt: renderChatSummaryPrompt(older.map(toChatTurnMessage), thread.summary),
                 ...(apiKey !== null ? { apiKey } : {}),
             });
-            thread.updateSummary(summary.trim(), this.clock.now());
+            // 접은 마지막 메시지를 함께 적어야 읽는 쪽이 그 뒤부터 실어 빈 구간이 생기지 않는다.
+            thread.updateSummary(summary.trim(), older[older.length - 1]!.id, this.clock.now());
             await this.threads.update(thread);
             logInfo({ msg: "chat.summary.updated", threadId: thread.id, foldedMessages: older.length });
         } catch (error) {
