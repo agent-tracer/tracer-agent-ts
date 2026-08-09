@@ -27,6 +27,7 @@ export interface ContractToolArg {
     readonly description: string;
     readonly trim?: boolean;
     readonly minLength?: number;
+    readonly maxLength?: number;
     readonly values?: readonly string[];
     readonly min?: number;
     readonly max?: number;
@@ -92,6 +93,7 @@ function stringArg(arg: ContractToolArg): ZodTypeAny {
     let schema = z.string();
     if (arg.trim === true) schema = schema.trim();
     if (arg.minLength !== undefined) schema = schema.min(arg.minLength);
+    if (arg.maxLength !== undefined) schema = schema.max(arg.maxLength);
     return schema;
 }
 
@@ -165,6 +167,13 @@ export function contractToolArg(
     const arg = file.tools[toolName]?.args[argName];
     if (arg === undefined) throw new Error(`contract-tool.arg-missing:${toolName}.${argName}`);
     return arg;
+}
+
+/** 문자열 인자의 길이 상한이며 계약이 적지 않은 인자는 거절한다. */
+export function contractArgMaxLength(file: ContractToolFile, toolName: string, argName: string): number {
+    const value = contractToolArg(file, toolName, argName).maxLength;
+    if (value === undefined) throw new Error(`contract-tool.max-length-missing:${toolName}.${argName}`);
+    return value;
 }
 
 /** 정수 인자가 값을 주지 않았을 때 쓰는 계약의 기본값이다. */
