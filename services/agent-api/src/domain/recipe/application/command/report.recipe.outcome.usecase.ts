@@ -40,16 +40,16 @@ export class ReportRecipeOutcomeUseCase {
         // 남의 레시피는 존재 자체를 알리지 않는다.
         if (recipe === null || recipe.userId !== input.userId) throw new NotFoundException("Recipe not found");
 
-        const opened = await this.applications.findByTask(input.taskId);
-        const existing = opened.find((application) => application.recipeId === input.recipeId);
-        const application = existing ?? this.manual(input, this.clock.now());
+        const recorded = await this.applications.findByTask(input.taskId);
+        const existing = recorded.find((application) => application.recipeId === input.recipeId);
+        const application = existing ?? this.buildManualApplication(input, this.clock.now());
         application.reportOutcome(input.outcome, input.note ?? null);
         await this.applications.upsert(application);
         return { application: mapRecipeApplication(application) };
     }
 
     /** 사건에서 오지 않은 행이므로 사건 좌표를 비운다. */
-    private manual(input: ReportRecipeOutcomeInput, now: Date): RecipeApplication {
+    private buildManualApplication(input: ReportRecipeOutcomeInput, now: Date): RecipeApplication {
         const application = new RecipeApplication();
         application.id = this.ids.next();
         application.userId = input.userId;

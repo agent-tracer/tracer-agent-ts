@@ -89,7 +89,7 @@ beforeEach(() => {
 describe("색인 반영 요청을 배출한다", () => {
     it("대상 레시피를 다시 조회해 문서로 덮어쓴다", async () => {
         recipes.seed(recipeRow({ touchedFiles: [{ path: "src/a.ts", role: "write" }] }));
-        outbox.seed(SearchOutboxRow.enqueueRecipe("outbox-1", "local", "recipe-1", NOW));
+        outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-1", NOW));
 
         await expect(target.runOnce()).resolves.toBe(1);
         expect(index.indexed[0]).toEqual({
@@ -113,7 +113,7 @@ describe("색인 반영 요청을 배출한다", () => {
 
     it("반영한 행은 줄에서 지운다", async () => {
         recipes.seed(recipeRow());
-        outbox.seed(SearchOutboxRow.enqueueRecipe("outbox-1", "local", "recipe-1", NOW));
+        outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-1", NOW));
 
         await target.runOnce();
 
@@ -121,7 +121,7 @@ describe("색인 반영 요청을 배출한다", () => {
     });
 
     it("조회로 잡히지 않는 대상은 색인에서 문서를 지운다", async () => {
-        outbox.seed(SearchOutboxRow.enqueueRecipe("outbox-1", "local", "recipe-없음", NOW));
+        outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-없음", NOW));
 
         await expect(target.runOnce()).resolves.toBe(1);
         expect(index.deleted).toEqual([{ alias: RECIPES_INDEX_ALIAS, id: "recipe-없음" }]);
@@ -129,7 +129,7 @@ describe("색인 반영 요청을 배출한다", () => {
 
     it("색인 쓰기가 실패하면 행을 남기고 시도 수를 올린다", async () => {
         recipes.seed(recipeRow());
-        outbox.seed(SearchOutboxRow.enqueueRecipe("outbox-1", "local", "recipe-1", NOW));
+        outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-1", NOW));
         index.failure = new Error("색인이 응답하지 않는다");
 
         await expect(target.runOnce()).resolves.toBe(0);
@@ -141,7 +141,7 @@ describe("색인 반영 요청을 배출한다", () => {
 
     it("잠금을 얻지 못하면 아무것도 배출하지 않는다", async () => {
         recipes.seed(recipeRow());
-        outbox.seed(SearchOutboxRow.enqueueRecipe("outbox-1", "local", "recipe-1", NOW));
+        outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-1", NOW));
         lock.acquired = false;
 
         await expect(target.runOnce()).resolves.toBe(0);

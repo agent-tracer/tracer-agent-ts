@@ -108,5 +108,5 @@ export async function enqueueRecipeIndex(
     recipeId: string,
     now: Date,
 ): Promise<void> {
-    await tx.searchOutbox.enqueue(SearchOutboxRow.enqueueRecipe(id, userId, recipeId, now));
+    await tx.searchOutbox.enqueue(SearchOutboxRow.createForRecipe(id, userId, recipeId, now));
 }

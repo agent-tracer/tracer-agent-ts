@@ -25,9 +25,9 @@ export class RecipeProjection implements LedgerEventHandlerPort {
         // 행의 식별자와 대상이 없으면 만들 수 있는 행이 없다.
         if (applicationId === null || recipeId === null) return;
 
-        const opened = await this.applications.findByTask(record.taskId);
+        const recorded = await this.applications.findByTask(record.taskId);
         // 같은 레시피를 한 태스크에서 여러 번 끌어와도 성공률의 분모가 부풀지 않게 한다.
-        if (opened.some((application) => application.recipeId === recipeId)) return;
+        if (recorded.some((application) => application.recipeId === recipeId)) return;
 
         await this.applications.upsert(toApplication(applicationId, recipeId, record));
     }

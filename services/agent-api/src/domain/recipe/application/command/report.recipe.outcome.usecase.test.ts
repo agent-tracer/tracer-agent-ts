@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 
 describe("레시피를 쓴 결과를 자기보고한다", () => {
-    it("그 태스크에 열린 적용 이력이 있으면 그 행에 결과를 적는다", async () => {
+    it("그 태스크에 적힌 적용 이력이 있으면 그 행에 결과를 적는다", async () => {
         applications.seed(applicationRow());
 
         const { application } = await target.execute({

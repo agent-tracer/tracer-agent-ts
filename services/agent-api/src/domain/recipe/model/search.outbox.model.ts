@@ -16,7 +16,7 @@ export class SearchOutboxRow {
 
     createdAt!: Date;
 
-    static enqueueRecipe(id: string, userId: string, recipeId: string, now: Date): SearchOutboxRow {
+    static createForRecipe(id: string, userId: string, recipeId: string, now: Date): SearchOutboxRow {
         const row = new SearchOutboxRow();
         row.id = id;
         row.userId = userId;
