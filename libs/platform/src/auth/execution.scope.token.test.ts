@@ -29,6 +29,18 @@ describe("실행 범위 토큰", () => {
         expect(verifyExecutionScopeToken(token, new Date(NOW.getTime() + 60_001))).toBeNull();
     });
 
+    it("만료 시각과 같은 순간의 자격을 거절한다", () => {
+        const token = issueExecutionScopeToken(GRANT)!;
+
+        expect(verifyExecutionScopeToken(token, new Date(NOW.getTime() + 60_000))).toBeNull();
+    });
+
+    it("만료 직전의 자격은 받는다", () => {
+        const token = issueExecutionScopeToken(GRANT)!;
+
+        expect(verifyExecutionScopeToken(token, new Date(NOW.getTime() + 59_999))).not.toBeNull();
+    });
+
     it("서명이 다른 자격을 거절한다", () => {
         const token = issueExecutionScopeToken(GRANT)!;
         process.env["MONITOR_AUTH_TOKEN_SECRET"] = "other";

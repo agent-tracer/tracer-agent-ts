@@ -69,6 +69,7 @@ export function verifyExecutionScopeToken(token: string, now: Date): ExecutionSc
     }
     if (typeof payload.userId !== "string" || payload.userId.length === 0) return null;
     if (typeof payload.executionId !== "string" || payload.executionId.length === 0) return null;
-    if (typeof payload.expiresAt !== "number" || payload.expiresAt < now.getTime()) return null;
+    // 계약의 expiryBoundary 는 exclusive 이므로 지금이 expiresAt 과 같으면 이미 만료다.
+    if (typeof payload.expiresAt !== "number" || payload.expiresAt <= now.getTime()) return null;
     return { userId: payload.userId, executionId: payload.executionId };
 }
