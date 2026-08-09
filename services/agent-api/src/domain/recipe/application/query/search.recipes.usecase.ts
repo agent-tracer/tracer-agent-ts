@@ -24,7 +24,7 @@ export interface SearchRecipesInput {
 /** 적중 수의 기본값과 상한이며 계약의 검색 창구가 같은 수를 선언한다. */
 export const RECIPE_SEARCH_LIMIT = { default: 3, min: 1, max: 10 } as const;
 
-/** 레시피를 본문 유사도로 찾으며 다듬은 질의가 비면 색인을 부르지 않는다. */
+/** 레시피를 본문 유사도로 찾아 모델이 고르는 데 필요한 칸만 낸다. */
 @Injectable()
 export class SearchRecipesUseCase {
     constructor(@Inject(RECIPE_SEARCH) private readonly search: RecipeSearchPort) {}

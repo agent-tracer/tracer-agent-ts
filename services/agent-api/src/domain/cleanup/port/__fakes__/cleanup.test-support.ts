@@ -14,7 +14,7 @@ function cloneRow<T extends object>(row: T): T {
     return Object.assign(Object.create(Object.getPrototypeOf(row) as object) as T, row);
 }
 
-/** 시계 포트의 고정 시각 대역이다. */
+/** 시험이 기준시각을 소유해 시간에 걸린 판정을 결정적으로 검증하게 한다. */
 export class FixedClock implements IClock {
     constructor(private readonly current: Date) {}
 
@@ -62,7 +62,7 @@ export class InMemoryCleanupSuggestionRepository implements CleanupSuggestionRep
     }
 }
 
-/** 아직 구현되지 않은 추적의 조건부 보관을 대신하며 계약이 적은 낡음 판정과 멱등만 재현한다. */
+/** 추적의 조건부 보관을 대신하며 계약이 적은 낡음 판정만 재현하고 보관 상태는 들지 않는다. */
 export class FakeTaskArchiver implements CleanupTaskArchiverPort {
     readonly calls: {
         readonly userId: string;

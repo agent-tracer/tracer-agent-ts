@@ -10,7 +10,7 @@ import { SearchOutboxEntity } from "./search.outbox.entity.js";
 import { TypeOrmRecipeRepository } from "./typeorm.recipe.repository.adapter.js";
 import { TypeOrmSearchOutboxRepository } from "./typeorm.search.outbox.repository.adapter.js";
 
-/** 색인 배출의 자문 잠금 열쇠이며 이 값을 바꾸면 옛 배출기와 새 배출기가 함께 실행된다. */
+/** 색인 배출의 자문 잠금 열쇠이며 모든 배출기가 같은 값을 써야 한 번에 하나만 배출한다. */
 const DRAIN_LOCK_KEY = 8_140_101;
 
 /** 배출기는 자문 잠금 하나를 얻은 뒤 실행하므로 replica 가 여럿이어도 한 번에 하나만 배출한다. */

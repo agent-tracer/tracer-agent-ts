@@ -25,7 +25,7 @@ export interface ReportRecipeOutcomeInput {
     readonly note?: string | undefined;
 }
 
-/** 에이전트의 자기보고이며 이 태스크에 열린 적용 이력이 없으면 즉석에서 하나 만든다. */
+/** 에이전트의 자기보고이며 이 태스크에 적용 이력이 없으면 즉석에서 하나 만들어 결과를 적는다. */
 @Injectable()
 export class ReportRecipeOutcomeUseCase {
     constructor(

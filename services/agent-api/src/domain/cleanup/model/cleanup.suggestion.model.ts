@@ -48,7 +48,7 @@ export class CleanupSuggestion {
         this.resolvedAt = now;
     }
 
-    /** 추적이 조건이 깨졌다고 알리면 수용을 되돌려 대기로 남긴다. */
+    /** 보관이 서지 못하면 수용을 되돌려 서지 않은 수용이 원장에 남지 않게 한다. */
     revertAcceptance(): void {
         this.status = CLEANUP_SUGGESTION_STATUS.pending;
         this.resolvedAt = null;

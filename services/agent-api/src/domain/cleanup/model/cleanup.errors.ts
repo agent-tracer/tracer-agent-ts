@@ -10,7 +10,7 @@ export class CleanupNotPendingError extends DomainError {
     }
 }
 
-/** 제안이 관측한 뒤에 그 태스크에 활동이 있어 수용이 서지 못했음을 알린다. */
+/** 태스크를 소유한 추적이 내는 낡음 거절의 어휘이며 이 축은 던지지 않고 계약과 대조하는 자리가 쓴다. */
 export class CleanupStaleError extends DomainError {
     readonly httpStatus = 409;
     readonly code = "cleanup.stale";

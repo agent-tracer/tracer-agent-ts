@@ -6,7 +6,7 @@ export const RECIPE_STATUS = {
     retired: "retired",
 } as const;
 
-/** 목록 창구가 상태를 싣지 않았을 때 결과를 이어 붙이는 순서다. */
+/** 레시피 상태 어휘의 정본이며 조회 스키마와 상태 없는 목록의 이어 붙이는 순서가 이 순서를 쓴다. */
 export const RECIPE_STATUSES = [
     RECIPE_STATUS.candidate,
     RECIPE_STATUS.active,
