@@ -12,6 +12,7 @@
     "gen:paths": "node scripts/gen-paths.mjs",
     "check:paths": "node scripts/gen-paths.mjs --check",
     "check:coauthors": "node scripts/check-coauthors.mjs",
+    "schema:apply": "docker run --rm -v \"$PWD/contract/db/migrations:/flyway/sql:ro\" -e FLYWAY_URL=\"${FLYWAY_URL:-jdbc:postgresql://host.docker.internal:5434/agent}\" -e FLYWAY_USER=\"${POSTGRES_USER:-root}\" -e FLYWAY_PASSWORD=\"${POSTGRES_PASSWORD:-root}\" flyway/flyway:11-alpine migrate",
     "lint": "npm run lint:format && npm run lint:types && npm run lint:structure && npm run lint:deps",
     "lint:format": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -20,7 +20,7 @@ Python 구현은 별도의 저장소입니다. 두 구현체의 현재 차이는
 ```bash
 npm ci
 git submodule update --init --recursive
-npm run schema:apply --workspace=@tracer-agent/agent-api
+npm run schema:apply
 
 npm run start --workspace=@tracer-agent/agent-api
 npm run start:chat --workspace=@tracer-agent/agent-worker
@@ -29,6 +29,8 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 ```
 
 기본 API 포트는 `3904`입니다. API와 각 워커는 별도의 프로세스로 실행합니다. 설정은 `application.yaml` → `application.local.yaml` → 환경변수 순서로 병합됩니다.
+
+`schema:apply`는 계약의 `db/migrations`를 Flyway 이미지로 적용하며 도커를 요구합니다. 이 구현체는 DDL 을 실행하지 않고 배포도 같은 도구를 씁니다. 원장의 주소가 기본값과 다르면 `FLYWAY_URL`을 지정합니다.
 
 `MONITOR_PROFILE=local`로 API와 세 워커를 모두 실행하면 사용자별 Anthropic API key 없이 사용자의 로컬 Claude CLI 인증을 사용합니다. API는 Claude를 실행하지 않으므로 프로파일만 필요하고, `HOME`과 `CLAUDE_CODE_OAUTH_TOKEN`은 워커의 하위 Claude 프로세스에만 전달됩니다. `prd` 프로파일은 설정 API의 암호화된 Anthropic API key를 사용하며 `MONITOR_SETTINGS_ENCRYPTION_KEY`를 운영 값으로 지정합니다. 이 로컬 CLI 인증 경로는 TypeScript 구현에만 해당합니다.
 

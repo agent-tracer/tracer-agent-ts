@@ -80,8 +80,8 @@ npm ci
 # 이미 clone 한 경우
 git submodule update --init --recursive
 
-# agent-db 스키마 적용
-npm run schema:apply --workspace=@tracer-agent/agent-api
+# agent-db 스키마 적용 — 계약의 DDL 을 Flyway 가 적용하며 도커를 요구한다
+npm run schema:apply
 
 # API 와 세 워커를 각각 실행
 npm run start --workspace=@tracer-agent/agent-api

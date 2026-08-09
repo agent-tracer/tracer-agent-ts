@@ -6,7 +6,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "lint:types": "tsc -p tsconfig.json --noEmit",
-    "schema:apply": "node --import @swc-node/register/esm-register src/agent.schema.ts",
     "start": "node --import @swc-node/register/esm-register src/agent.main.ts",
     "test": "vitest run"
   },

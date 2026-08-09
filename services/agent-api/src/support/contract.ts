@@ -48,13 +48,13 @@ export function readContractFields(schemaName: string): ContractFields {
 }
 
 /** 계약이 선언한 스키마 파일을 이름 순서대로 낸다. */
-export function listContractSchemaFiles(): readonly string[] {
+function listContractSchemaFiles(): readonly string[] {
     const directory = path.join(CONTRACT_ROOT, "db", "migrations");
     return readdirSync(directory).filter((entry) => entry.endsWith(".sql")).sort();
 }
 
 /** 계약이 선언한 스키마 파일 하나의 SQL을 읽는다. */
-export function readContractSchemaFile(name: string): string {
+function readContractSchemaFile(name: string): string {
     return readFileSync(path.join(CONTRACT_ROOT, "db", "migrations", name), "utf8");
 }
 
