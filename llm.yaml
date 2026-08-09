@@ -63,8 +63,6 @@ features:
       maxTurns: 15
       maxOutputTokens: 16000
       deadlineMs: 720000
-      # 조율자와 전문가 모두 결정적인 위상을 도구로 따라가므로 낮은 추론 노력으로도 충분하다.
-      effort: low
   title-suggestion:
     default: claude-haiku-4-5
     fallback: claude-haiku-4-5

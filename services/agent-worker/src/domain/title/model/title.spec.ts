@@ -35,6 +35,5 @@ export const TITLE_SUGGESTION_SPEC = {
         deadlineMs: LIMITS.deadlineMs,
         maxOutputTokens: LIMITS.maxOutputTokens,
         maxBudgetUsd: LIMITS.budgetUsd,
-        effort: "low",
     },
 } as const;

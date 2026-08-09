@@ -14,10 +14,6 @@ describe("모델 카탈로그", () => {
         expect(featureLimits("chat").maxTurns).toBe(14);
     });
 
-    it("레시피 스캔 기능이 계약의 effort 어휘로 낮은 노력을 싣는다", () => {
-        expect(featureLimits("recipe-scan").effort).toBe("low");
-    });
-
     it("모델별 출력 한도가 없으면 기능의 출력 한도로 떨어진다", () => {
         expect(modelMaxOutputTokens("recipe-scan", "claude-opus-5")).toBe(
             featureLimits("recipe-scan").maxOutputTokens,

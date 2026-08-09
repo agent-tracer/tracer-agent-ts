@@ -39,6 +39,7 @@ import type {
 } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { TitleEventReaderPort } from "~agent-worker/domain/title/port/title.event.reader.port.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
+import { modelEnvelopeOf } from "~agent-worker/support/model.envelope.js";
 import { buildTitleToolHandlers } from "./title.tools.js";
 
 const MCP_SERVER = `monitor-${TITLE_SUGGESTION_SPEC.name}`;
@@ -151,6 +152,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
     ): Promise<StructuredRun> {
         const { limits } = TITLE_SUGGESTION_SPEC;
         const model = input.model?.trim() || limits.defaultModel;
+        const envelope = modelEnvelopeOf(model);
 
         return runStructuredQuery(
             this.runner,
@@ -163,7 +165,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
                 observation: { executionId: input.jobId, attemptId: String(input.attempt) },
                 model,
                 maxTurns: lease.maxTurns,
-                maxOutputTokens: limits.maxOutputTokens,
+                maxOutputTokens: envelope.maxOutputTokens ?? limits.maxOutputTokens,
                 deadlineMs: limits.deadlineMs,
                 // 하위 프로세스의 활동도 수집되므로 사용자 태스크와 구분되도록 출처를 표시한다.
                 env: {
@@ -172,7 +174,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
                     ...(input.apiKey !== undefined ? { ANTHROPIC_API_KEY: input.apiKey } : {}),
                 },
                 outputSchema: zodToClaudeOutputSchema(TITLE_SUGGESTION_SPEC.outputSchema),
-                effort: limits.effort,
+                ...(envelope.effort !== undefined ? { effort: envelope.effort } : {}),
                 ...(lease.maxBudgetUsd !== undefined ? { maxBudgetUsd: lease.maxBudgetUsd } : {}),
                 providerOptions: {
                     ...(model !== limits.fallbackModel ? { fallbackModel: limits.fallbackModel } : {}),

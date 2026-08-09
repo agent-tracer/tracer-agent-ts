@@ -22,6 +22,7 @@ import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
 import { CLEANUP_FEATURE } from "~agent-worker/domain/cleanup/model/cleanup.const.js";
 import { TASK_CLEANUP_FAILURES } from "~agent-worker/domain/cleanup/model/cleanup.tool.schema.js";
 import type { GenerateCleanupSuggestionsInput } from "~agent-worker/domain/cleanup/port/cleanup.agent.port.js";
+import { modelEnvelopeOf } from "~agent-worker/support/model.envelope.js";
 
 const CLEANUP_MODELS = featureModels(CLEANUP_FEATURE)!;
 const CLEANUP_LIMITS = featureLimits(CLEANUP_FEATURE);
@@ -36,7 +37,6 @@ export const TASK_CLEANUP_SPEC = {
         deadlineMs: CLEANUP_LIMITS.deadlineMs,
         maxOutputTokens: CLEANUP_LIMITS.maxOutputTokens,
         maxBudgetUsd: CLEANUP_LIMITS.budgetUsd,
-        effort: "medium",
     },
 } as const;
 
@@ -72,6 +72,7 @@ export function runCleanupQuery<T, Name extends TaskCleanupToolName>(
 ): Promise<StructuredQueryResult<T>> {
     const { limits } = TASK_CLEANUP_SPEC;
     const model = cleanupModelName(ctx.input);
+    const envelope = modelEnvelopeOf(model);
     const allowedTools = mcpToolNames(CLEANUP_MCP_SERVER, spec.toolNames);
     const opened = new Set<string>(spec.toolNames);
     const toolSpecs = TASK_CLEANUP_TOOLS.filter((one) => opened.has(one.name));
@@ -87,7 +88,7 @@ export function runCleanupQuery<T, Name extends TaskCleanupToolName>(
             observation: { executionId: ctx.input.jobId, attemptId: String(ctx.input.attempt) },
             model,
             maxTurns: spec.lease.maxTurns,
-            maxOutputTokens: limits.maxOutputTokens,
+            maxOutputTokens: envelope.maxOutputTokens ?? limits.maxOutputTokens,
             deadlineMs: limits.deadlineMs,
             // Agent SDK 하위 프로세스의 활동도 수집되므로 사용자 태스크와 구분되도록 출처를 표시한다.
             env: {
@@ -96,7 +97,7 @@ export function runCleanupQuery<T, Name extends TaskCleanupToolName>(
                 ...(ctx.input.apiKey !== undefined ? { ANTHROPIC_API_KEY: ctx.input.apiKey } : {}),
             },
             outputSchema: zodToClaudeOutputSchema(spec.outputSchema),
-            effort: limits.effort,
+            ...(envelope.effort !== undefined ? { effort: envelope.effort } : {}),
             ...(spec.lease.maxBudgetUsd !== undefined ? { maxBudgetUsd: spec.lease.maxBudgetUsd } : {}),
             providerOptions: {
                 ...(model !== limits.fallbackModel ? { fallbackModel: limits.fallbackModel } : {}),

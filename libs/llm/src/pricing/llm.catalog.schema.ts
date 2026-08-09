@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { z } from "zod";
-import { assertModelEnvelopeVocabulary, MODEL_ENVELOPE_EFFORT_VALUES } from "~llm/model/model.envelope.schema.js";
+import { assertModelEnvelopeVocabulary } from "~llm/model/model.envelope.schema.js";
 
 const rateSchema = z.object({
     label: z.string().min(1),
@@ -13,7 +13,7 @@ const rateSchema = z.object({
     cacheRead: z.number().positive(),
 });
 
-/** 실행 봉투에 실려 실행기로 건너가는 한 기능의 실행 한도다. */
+/** 실행 봉투에 실려 실행기로 건너가는 한 기능의 실행 한도이며 추론 노력은 기능이 아니라 모델에 붙으므로 여기 없다. */
 const limitsSchema = z.object({
     budgetUsd: z.number().positive(),
     maxTurns: z.number().int().positive(),
@@ -22,8 +22,6 @@ const limitsSchema = z.object({
     stallMs: z.number().int().positive().optional(),
     /** 모델별 출력 한도이며 없는 모델은 이 기능의 maxOutputTokens를 그대로 쓴다. */
     maxOutputTokensByModel: z.record(z.number().int().positive()).optional(),
-    /** 모델에 실어 보내는 추론 노력 수준이며 없으면 공급자의 기본값을 쓴다. */
-    effort: z.enum(MODEL_ENVELOPE_EFFORT_VALUES).optional(),
 });
 
 const featureSchema = z.object({

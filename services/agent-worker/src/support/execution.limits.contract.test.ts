@@ -11,7 +11,6 @@ interface DeclaredLimits {
     readonly maxOutputTokens: number;
     readonly deadlineMs: number;
     readonly stallMs?: number;
-    readonly effort?: string;
     readonly allowedModels: readonly string[];
 }
 
@@ -52,13 +51,8 @@ describe("계약이 소유한 실행 한도", () => {
         expect(featureModels(kind)?.allowed).toEqual(declared.allowedModels);
     });
 
-    // 카탈로그만 보므로 실행기가 리터럴로 싣는 값은 이 검사에 걸리지 않는다.
-    it.each(KINDS)("$kind 의 카탈로그가 계약에 없는 침묵 상한과 추론 노력을 더 갖지 않는다", ({ kind, declared }) => {
-        const limits = featureLimits(kind);
-
-        expect({ stallMs: limits.stallMs, effort: limits.effort }).toEqual({
-            stallMs: declared.stallMs,
-            effort: declared.effort,
-        });
+    // 추론 노력은 이제 종류가 아니라 모델에 붙으므로 이 자리는 침묵 상한만 본다.
+    it.each(KINDS)("$kind 가 계약에 없는 침묵 상한을 더 갖지 않는다", ({ kind, declared }) => {
+        expect(featureLimits(kind).stallMs).toBe(declared.stallMs);
     });
 });

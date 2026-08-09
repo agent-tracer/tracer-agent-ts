@@ -23,6 +23,7 @@ import {
 } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import type { GenerateRecipeCandidatesInput } from "~agent-worker/domain/recipe/port/recipe.agent.port.js";
 import type { AgentPrompt } from "~agent-worker/support/agent.prompt.js";
+import { modelEnvelopeOf } from "~agent-worker/support/model.envelope.js";
 
 const RECIPE_MODELS = featureModels(RECIPE_FEATURE)!;
 const RECIPE_LIMITS = featureLimits(RECIPE_FEATURE);
@@ -37,7 +38,6 @@ export const RECIPE_SCAN_SPEC = {
         deadlineMs: RECIPE_LIMITS.deadlineMs,
         maxOutputTokens: RECIPE_LIMITS.maxOutputTokens,
         maxBudgetUsd: RECIPE_LIMITS.budgetUsd,
-        effort: RECIPE_LIMITS.effort,
     },
 } as const;
 
@@ -75,6 +75,7 @@ export function runRecipeQuery<T, Name extends RecipeScanToolName>(
 ): Promise<StructuredQueryResult<T>> {
   const { limits } = RECIPE_SCAN_SPEC;
   const model = recipeModelName(ctx.input);
+  const envelope = modelEnvelopeOf(model);
   const allowedTools = mcpToolNames(RECIPE_MCP_SERVER, spec.toolNames);
   const opened = new Set<string>(spec.toolNames);
   const toolSpecs = RECIPE_SCAN_TOOLS.filter((one) => opened.has(one.name));
@@ -97,7 +98,7 @@ export function runRecipeQuery<T, Name extends RecipeScanToolName>(
       },
       model,
       maxTurns: spec.lease.maxTurns,
-      maxOutputTokens: modelMaxOutputTokens(RECIPE_FEATURE, model),
+      maxOutputTokens: envelope.maxOutputTokens ?? modelMaxOutputTokens(RECIPE_FEATURE, model),
       deadlineMs: spec.deadlineMs ?? limits.deadlineMs,
       // Agent SDK 하위 프로세스의 활동을 사용자 태스크와 구분하도록 출처를 표시한다.
       env: {
@@ -108,7 +109,7 @@ export function runRecipeQuery<T, Name extends RecipeScanToolName>(
           : {}),
       },
       outputSchema: zodToClaudeOutputSchema(spec.outputSchema),
-      ...(limits.effort !== undefined ? { effort: limits.effort } : {}),
+      ...(envelope.effort !== undefined ? { effort: envelope.effort } : {}),
       ...(spec.lease.maxBudgetUsd !== undefined
         ? { maxBudgetUsd: spec.lease.maxBudgetUsd }
         : {}),
