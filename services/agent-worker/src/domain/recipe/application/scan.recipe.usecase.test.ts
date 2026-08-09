@@ -10,8 +10,16 @@ import {
     recipeIds,
     seedRepository,
 } from "../port/__fakes__/recipe.test-support.js";
+import type { InMemoryRecipeRepository } from "../port/__fakes__/recipe.test-support.js";
 import type { RecipeScanPrep } from "./prepare.recipe.scan.usecase.js";
 import { ScanRecipeUsecase } from "./scan.recipe.usecase.js";
+
+/** 대역 하나가 잡 원장과 설정 표와 태스크 조회를 모두 구현하므로 같은 객체를 세 자리에 넘긴다. */
+function tripled(
+    repository: InMemoryRecipeRepository,
+): [InMemoryRecipeRepository, InMemoryRecipeRepository, InMemoryRecipeRepository] {
+    return [repository, repository, repository];
+}
 
 const PROMPT: ResolvedAgentPrompt = {
     promptVersion: "v0.0.1",
@@ -69,7 +77,7 @@ describe("ScanRecipeUsecase", () => {
                 recipeRevs: {},
             },
         }));
-        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(repository, repository, repository, agent, fixedClock, recipeIds());
 
         const output = await target.execute(prep(), attemptRun());
 
@@ -101,7 +109,7 @@ describe("ScanRecipeUsecase", () => {
                 recipeRevs: {},
             },
         }));
-        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(repository, repository, repository, agent, fixedClock, recipeIds());
 
         const assembled = (await target.execute(prep(), attemptRun())).recipes[0]!;
 
@@ -121,7 +129,7 @@ describe("ScanRecipeUsecase", () => {
     it("사용자 소유가 아닌 태스크만 인용한 후보는 제외한다", async () => {
         const repository = seedRepository();
         const agent = new FakeRecipeAgent(emptyOutput({ recipes: [candidate()] }));
-        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(repository, repository, repository, agent, fixedClock, recipeIds());
 
         const output = await target.execute(prep(), attemptRun());
 
@@ -157,7 +165,7 @@ describe("ScanRecipeUsecase", () => {
                 recipeRevs: {},
             },
         }));
-        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(repository, repository, repository, agent, fixedClock, recipeIds());
 
         const output = await target.execute(prep(), attemptRun());
 
@@ -173,7 +181,7 @@ describe("ScanRecipeUsecase", () => {
             ],
         }));
         const target = new ScanRecipeUsecase(
-            seedRepository(),
+            ...tripled(seedRepository()),
             agent,
             fixedClock,
             recipeIds(),
@@ -199,7 +207,7 @@ describe("ScanRecipeUsecase", () => {
             actualModel: "claude-haiku-4-5",
             durationMs: 500,
         });
-        const target = new ScanRecipeUsecase(repository, agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(repository, repository, repository, agent, fixedClock, recipeIds());
 
         await expect(target.execute(prep(), attemptRun(2))).rejects.toThrow("rate limited");
         expect(repository.failedAttempts[0]?.record).toMatchObject({
@@ -211,7 +219,7 @@ describe("ScanRecipeUsecase", () => {
 
     it("자격 증명이 필요 없는 실행에는 키를 넘기지 않는다", async () => {
         const agent = new FakeRecipeAgent(emptyOutput(), false);
-        const target = new ScanRecipeUsecase(seedRepository(), agent, fixedClock, recipeIds());
+        const target = new ScanRecipeUsecase(...tripled(seedRepository()), agent, fixedClock, recipeIds());
 
         await target.execute(prep(), attemptRun());
 

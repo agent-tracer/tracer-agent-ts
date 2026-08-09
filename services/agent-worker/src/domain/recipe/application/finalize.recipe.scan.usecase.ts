@@ -12,7 +12,7 @@ import {
 } from "../model/recipe.candidate.model.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { RecipeOutputPort } from "../port/recipe.output.port.js";
-import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
+import type { RecipeJobLedgerPort } from "../port/recipe.job.ledger.port.js";
 import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 import type { OutputLanguage } from "~agent-worker/support/output.language.js";
 
@@ -34,7 +34,7 @@ export interface RecipeScanFinalizeInput {
 /** 후보를 산출물 창구에 맡긴 뒤 잡 원장을 종결하고 결과를 알린다. */
 export class FinalizeRecipeScanUsecase {
     constructor(
-        private readonly repository: RecipeRepositoryPort,
+        private readonly jobs: RecipeJobLedgerPort,
         private readonly output: RecipeOutputPort,
         private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
@@ -49,7 +49,7 @@ export class FinalizeRecipeScanUsecase {
             sourceJobId: input.jobId,
             recipes: input.output.recipes,
         });
-        const settled = await this.repository.commitScan({
+        const settled = await this.jobs.commitScan({
             jobId: input.jobId,
             userId: input.userId,
             recipes: input.output.recipes,

@@ -5,7 +5,7 @@ import { buildJobUsage, type AgentUsageSummary } from "~agent-worker/support/llm
 import { taskCleanupSummary } from "../model/cleanup.suggestion.model.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type { CleanupOutputPort } from "../port/cleanup.output.port.js";
-import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
+import type { CleanupJobLedgerPort } from "../port/cleanup.job.ledger.port.js";
 import type { GeneratedCleanupSuggestion } from "../model/cleanup.suggestion.model.js";
 
 export interface TaskCleanupFinalizeOutput extends AgentUsageSummary {
@@ -25,7 +25,7 @@ export interface TaskCleanupFinalizeInput {
 /** 제안을 산출물 창구에 맡긴 뒤 잡 원장을 종결하고 결과를 알린다. */
 export class FinalizeTaskCleanupUsecase {
     constructor(
-        private readonly repository: CleanupRepositoryPort,
+        private readonly jobs: CleanupJobLedgerPort,
         private readonly output: CleanupOutputPort,
         private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
@@ -41,7 +41,7 @@ export class FinalizeTaskCleanupUsecase {
             jobId: input.jobId,
             suggestions,
         });
-        const settled = await this.repository.commitCleanup({
+        const settled = await this.jobs.commitCleanup({
             jobId: input.jobId,
             userId: input.userId,
             tasksScanned: input.tasksScanned,

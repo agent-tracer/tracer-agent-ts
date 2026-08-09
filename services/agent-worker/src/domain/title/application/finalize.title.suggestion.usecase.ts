@@ -4,19 +4,19 @@ import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import type { TitleSuggestionFinalizeInput } from "~agent-worker/domain/title/model/title.job.model.js";
 import { titleSuggestionSummary } from "~agent-worker/domain/title/model/title.suggestion.model.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
-import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
+import type { TitleJobLedgerPort } from "~agent-worker/domain/title/port/title.job.ledger.port.js";
 
 /** 제안 기록과 잡 종결을 한 커밋으로 묶고 결과를 알린다. */
 export class FinalizeTitleSuggestionUsecase {
     constructor(
-        private readonly repository: TitleRepositoryPort,
+        private readonly jobs: TitleJobLedgerPort,
         private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
     ) {}
 
     async execute(input: TitleSuggestionFinalizeInput): Promise<void> {
         const now = this.clock.now();
-        const settled = await this.repository.commitSuggestions({
+        const settled = await this.jobs.commitSuggestions({
             jobId: input.jobId,
             userId: input.userId,
             suggestions: input.output.suggestions,

@@ -11,12 +11,6 @@ export interface RecipeJobSnapshot {
     readonly usage: Record<string, unknown>;
 }
 
-/** 스캔 앵커 자격 판정에 필요한 태스크 상태다. */
-export interface RecipeAnchorSnapshot {
-    readonly scanEligible: boolean;
-    readonly sessionScanEligible: boolean;
-}
-
 export interface RecipeFailedAttempt {
     readonly jobId: string;
     readonly userId: string;
@@ -29,7 +23,6 @@ export interface RecipeFailedAttempt {
 export interface RecipeScanCommit {
     readonly jobId: string;
     readonly userId: string;
-    /** 산출물 창구가 이미 만든 후보의 수이며 잡의 결과에 그대로 실린다. */
     /** 에이전트가 낸 후보와 그 후보가 인용할 수 있었던 장부이며 잡의 결과에 그대로 실린다. */
     readonly recipes: readonly GeneratedRecipeCandidate[];
     readonly provenance: ProvenanceSnapshot;
@@ -40,14 +33,12 @@ export interface RecipeScanCommit {
     readonly now: Date;
 }
 
-/** 레시피 슬라이스가 원장과 읽기 모델에 요구하는 계약이다. */
-export interface RecipeRepositoryPort {
+/** 레시피 슬라이스가 잡 원장에 요구하는 계약이며 이 포트의 모든 호출은 agent-db 연결 하나로 끝난다. */
+export interface RecipeJobLedgerPort {
     findJob(jobId: string): Promise<RecipeJobSnapshot | null>;
     startJob(jobId: string, now: Date): Promise<boolean>;
-    findAnchor(userId: string, taskId: string): Promise<RecipeAnchorSnapshot | null>;
-    readSetting(scope: string, key: string): Promise<string | null>;
-    findOwnedTaskIds(userId: string, taskIds: readonly string[]): Promise<readonly string[]>;
     recordFailedAttempt(input: RecipeFailedAttempt): Promise<void>;
+    /** 원장을 읽어 누적 시도와 비용을 계산할 뿐 아무것도 적지 않는다. */
     readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,

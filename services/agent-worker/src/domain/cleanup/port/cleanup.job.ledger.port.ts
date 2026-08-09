@@ -1,5 +1,4 @@
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
-import type { CleanupTaskSnapshot } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
 import type { GeneratedCleanupSuggestion } from "~agent-worker/domain/cleanup/model/cleanup.suggestion.model.js";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
@@ -8,17 +7,6 @@ export interface CleanupJobSnapshot {
     readonly id: string;
     readonly userId: string;
     readonly usage: Record<string, unknown>;
-}
-
-/** 후보 판정에 들어가는 이번 스캔의 태스크 배치다. */
-export interface CleanupScanBatch {
-    readonly tasks: readonly CleanupTaskSnapshot[];
-    /** 상한 없이 조회한 활성 자식의 부모 태스크 ID다. */
-    readonly activeChildParentIds: readonly string[];
-    /** 조회 상한에 걸려 배치가 태스크 전체를 담지 못했는지 여부다. */
-    readonly truncated: boolean;
-    /** 후보로 좁히기 전 이번 스캔이 조회한 태스크 수다. */
-    readonly tasksScanned: number;
 }
 
 export interface CleanupFailedAttempt {
@@ -43,14 +31,12 @@ export interface CleanupCommit {
     readonly now: Date;
 }
 
-/** cleanup 슬라이스가 원장과 읽기 모델에 요구하는 계약이다. */
-export interface CleanupRepositoryPort {
+/** cleanup 슬라이스가 잡 원장에 요구하는 계약이며 이 포트의 모든 호출은 agent-db 연결 하나로 끝난다. */
+export interface CleanupJobLedgerPort {
     findJob(jobId: string): Promise<CleanupJobSnapshot | null>;
     startJob(jobId: string, now: Date): Promise<boolean>;
-    readSetting(scope: string, key: string): Promise<string | null>;
-    /** 사용자에게 보이는 태스크만 골라 후보 판정 입력을 만든다. */
-    loadScanBatch(userId: string): Promise<CleanupScanBatch>;
     recordFailedAttempt(input: CleanupFailedAttempt): Promise<void>;
+    /** 원장을 읽어 누적 시도와 비용을 계산할 뿐 아무것도 적지 않는다. */
     readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,

@@ -14,12 +14,14 @@ import { TITLE_SUGGESTION_SPEC } from "~agent-worker/domain/title/model/title.sp
 import { normalizeTitleSuggestions } from "~agent-worker/domain/title/model/title.validation.model.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
-import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
+import type { TitleJobLedgerPort } from "~agent-worker/domain/title/port/title.job.ledger.port.js";
+import type { TitleSettingReaderPort } from "~agent-worker/domain/title/port/setting.reader.port.js";
 
 /** 에이전트를 한 번 실행해 제목 후보를 만들고 시도 이력을 남긴다. */
 export class SuggestTitleUsecase {
     constructor(
-        private readonly repository: TitleRepositoryPort,
+        private readonly jobs: TitleJobLedgerPort,
+        private readonly settings: TitleSettingReaderPort,
         private readonly agent: TitleAgentPort,
         private readonly clock: IClock,
         private readonly ids: IdGeneratorPort,
@@ -31,7 +33,7 @@ export class SuggestTitleUsecase {
     ): Promise<TitleSuggestionGenerateOutput> {
         const agent = this.agent;
         const apiKey = agent.requiresLocalApiKey()
-            ? await this.repository.readSetting(prep.userId, TITLE_SETTING_KEY.anthropicApiKey)
+            ? await this.settings.findValue(prep.userId, TITLE_SETTING_KEY.anthropicApiKey)
             : null;
 
         let output;
@@ -59,7 +61,7 @@ export class SuggestTitleUsecase {
         const suggestions = normalized.errors.length === 0 ? normalized.kept : [];
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
-        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
+        const { attempts, costUsd } = await this.jobs.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );
@@ -93,7 +95,7 @@ export class SuggestTitleUsecase {
         err: AgentExecutionFailure,
     ): Promise<void> {
         const now = this.clock.now();
-        await this.repository.recordFailedAttempt({
+        await this.jobs.recordFailedAttempt({
             jobId: prep.jobId,
             userId: prep.userId,
             steps: assignStepIds(err.steps, () => this.ids.next()),

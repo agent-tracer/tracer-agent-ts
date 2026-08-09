@@ -22,7 +22,9 @@ import { assembleRecipeCandidates, type GeneratedRecipeCandidate } from "../mode
 import { RECIPE_FEATURE, RECIPE_SETTING_KEY } from "../model/recipe.const.js";
 import type { RecipeAgentPort } from "../port/recipe.agent.port.js";
 import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
-import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
+import type { RecipeJobLedgerPort } from "../port/recipe.job.ledger.port.js";
+import type { RecipeSettingReaderPort } from "../port/setting.reader.port.js";
+import type { RecipeTaskReaderPort } from "../port/recipe.task.reader.port.js";
 
 export interface RecipeScanPrep {
     readonly jobId: string;
@@ -45,7 +47,9 @@ export interface RecipeScanGenerateOutput extends AgentUsageSummary {
 /** 에이전트를 한 번 실행해 레시피 후보를 만들고 시도 이력을 남긴다. */
 export class ScanRecipeUsecase {
     constructor(
-        private readonly repository: RecipeRepositoryPort,
+        private readonly jobs: RecipeJobLedgerPort,
+        private readonly settings: RecipeSettingReaderPort,
+        private readonly tasks: RecipeTaskReaderPort,
         private readonly agent: RecipeAgentPort,
         private readonly clock: IClock,
         private readonly ids: IdGeneratorPort,
@@ -53,7 +57,7 @@ export class ScanRecipeUsecase {
 
     async execute(prep: RecipeScanPrep, run: AgentAttemptRun): Promise<RecipeScanGenerateOutput> {
         const apiKey = this.agent.requiresLocalApiKey()
-            ? await this.repository.readSetting(prep.userId, RECIPE_SETTING_KEY.anthropicApiKey)
+            ? await this.settings.findValue(prep.userId, RECIPE_SETTING_KEY.anthropicApiKey)
             : null;
 
         let output;
@@ -83,11 +87,11 @@ export class ScanRecipeUsecase {
                 recipe.contributing_slices.map((slice) => slice.taskId))),
         ];
         const ownedTaskIds = new Set(
-            await this.repository.findOwnedTaskIds(prep.userId, citedTaskIds),
+            await this.tasks.findOwnedTaskIds(prep.userId, citedTaskIds),
         );
         const recipes = assembleRecipeCandidates(output.recipes, ownedTaskIds, output.provenance);
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
-        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
+        const { attempts, costUsd } = await this.jobs.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );
@@ -112,7 +116,7 @@ export class ScanRecipeUsecase {
         attempt: number,
         error: AgentExecutionFailure,
     ): Promise<void> {
-        await this.repository.recordFailedAttempt({
+        await this.jobs.recordFailedAttempt({
             jobId: prep.jobId,
             userId: prep.userId,
             steps: assignStepIds(error.steps, () => this.ids.next()),

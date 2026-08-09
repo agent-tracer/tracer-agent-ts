@@ -10,8 +10,16 @@ import {
     fixedClock,
     seedRepository,
 } from "../port/__fakes__/cleanup.test-support.js";
+import type { InMemoryCleanupRepository } from "../port/__fakes__/cleanup.test-support.js";
 import type { TaskCleanupPrep } from "./prepare.task.cleanup.usecase.js";
 import { SuggestCleanupUsecase } from "./suggest.cleanup.usecase.js";
+
+/** 대역 하나가 잡 원장과 설정 표를 모두 구현하므로 같은 객체를 두 자리에 넘긴다. */
+function doubled(
+    repository: InMemoryCleanupRepository,
+): [InMemoryCleanupRepository, InMemoryCleanupRepository] {
+    return [repository, repository];
+}
 
 const PROMPT: ResolvedAgentPrompt = {
     promptVersion: "v0.0.1",
@@ -41,7 +49,7 @@ describe("SuggestCleanupUsecase", () => {
                 { kind: "archive", taskId: "ghost", rationale: "근거", evidenceEventIds: [] },
             ],
         }));
-        const target = new SuggestCleanupUsecase(repository, agent, fixedClock, cleanupIds());
+        const target = new SuggestCleanupUsecase(repository, repository, agent, fixedClock, cleanupIds());
 
         const output = await target.execute(prep(), attemptRun());
 
@@ -58,7 +66,7 @@ describe("SuggestCleanupUsecase", () => {
             actualModel: "claude-haiku-4-5",
             durationMs: 500,
         });
-        const target = new SuggestCleanupUsecase(repository, agent, fixedClock, cleanupIds());
+        const target = new SuggestCleanupUsecase(repository, repository, agent, fixedClock, cleanupIds());
 
         await expect(target.execute(prep(), attemptRun(2))).rejects.toThrow("rate limited");
         expect(repository.failedAttempts[0]?.record).toMatchObject({
@@ -70,7 +78,7 @@ describe("SuggestCleanupUsecase", () => {
 
     it("자격 증명이 필요 없는 실행에는 키를 넘기지 않는다", async () => {
         const agent = new FakeCleanupAgent(emptyOutput(), false);
-        const target = new SuggestCleanupUsecase(seedRepository(), agent, fixedClock, cleanupIds());
+        const target = new SuggestCleanupUsecase(...doubled(seedRepository()), agent, fixedClock, cleanupIds());
 
         await target.execute(prep(), attemptRun());
 
@@ -84,7 +92,7 @@ describe("SuggestCleanupUsecase", () => {
                 { seq: 1, role: "assistant", content: "  ", truncated: false, toolCalls: [] },
             ],
         }));
-        const target = new SuggestCleanupUsecase(seedRepository(), agent, fixedClock, cleanupIds());
+        const target = new SuggestCleanupUsecase(...doubled(seedRepository()), agent, fixedClock, cleanupIds());
 
         const output = await target.execute(prep(), attemptRun());
 

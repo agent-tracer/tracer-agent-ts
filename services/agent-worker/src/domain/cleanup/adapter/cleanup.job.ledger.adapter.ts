@@ -1,8 +1,5 @@
 import type { GeneratedJobStep } from "@tracer-agent/llm";
-import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import type { DataSource, EntityManager } from "typeorm";
-import { RECIPE_ANCHOR } from "~agent-worker/domain/recipe/model/recipe.const.js";
-import { readAppSetting } from "~agent-worker/config/app.setting.reader.js";
 import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run.observation.entity.js";
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
 import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
@@ -13,32 +10,23 @@ import {
 } from "~agent-worker/config/ledger/job.repository.js";
 import { TypeOrmAgentRunObservationRepository } from "~agent-worker/config/ledger/observation.repository.js";
 import type {
-    RecipeAnchorSnapshot,
-    RecipeFailedAttempt,
-    RecipeJobSnapshot,
-    RecipeRepositoryPort,
-    RecipeScanCommit,
-} from "~agent-worker/domain/recipe/port/recipe.repository.port.js";
+    CleanupCommit,
+    CleanupFailedAttempt,
+    CleanupJobLedgerPort,
+    CleanupJobSnapshot,
+} from "~agent-worker/domain/cleanup/port/cleanup.job.ledger.port.js";
 import { JobTransitionLostError, isJobTransitionLost } from "~agent-worker/support/job.const.js";
 import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
-import { wireObject, wireText } from "~agent-worker/support/wire.value.js";
 
-/** 서버 자신의 에이전트가 만든 태스크를 나타내는 출처 값이며 앵커 자격에서 뺀다. */
-
-/** 스캔이 근거로 삼을 수 있는 태스크의 종결 상태다. */
-
-/** 레시피 슬라이스의 저장 포트를 잡 원장과 추적 조회 창구로 구현한다. */
-export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
-    constructor(
-        private readonly dataSource: DataSource,
-        private readonly tracer: TracerApiWindow,
-    ) {}
+/** cleanup 슬라이스의 잡 원장 포트를 agent-db 하나로 구현하며 트랜잭션 안에서는 manager만 쓴다. */
+export class CleanupJobLedgerAdapter implements CleanupJobLedgerPort {
+    constructor(private readonly dataSource: DataSource) {}
 
     private jobs(manager: EntityManager = this.dataSource.manager): TypeOrmAiJobRepository {
         return new TypeOrmAiJobRepository(manager.getRepository(AiJobEntity));
     }
 
-    async findJob(jobId: string): Promise<RecipeJobSnapshot | null> {
+    async findJob(jobId: string): Promise<CleanupJobSnapshot | null> {
         const job = await this.jobs().findById(jobId);
         return job === null ? null : toSnapshot(job);
     }
@@ -51,30 +39,7 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
         return jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES);
     }
 
-    async findAnchor(userId: string, taskId: string): Promise<RecipeAnchorSnapshot | null> {
-        const task = await this.findTask(userId, taskId);
-        if (task === null) return null;
-        const origin = wireText(task["origin"]);
-        const rootUserTask =
-            (origin === null || !RECIPE_ANCHOR.origin.excludes.includes(origin))
-            && (wireText(task["parentTaskId"]) === null) === RECIPE_ANCHOR.root.value;
-        const status = wireText(task["status"]);
-        return {
-            scanEligible: rootUserTask && status !== null && RECIPE_ANCHOR.status.oneOf.includes(status),
-            sessionScanEligible: rootUserTask,
-        };
-    }
-
-    readSetting(scope: string, key: string): Promise<string | null> {
-        return readAppSetting(this.dataSource, scope, key);
-    }
-
-    async findOwnedTaskIds(userId: string, taskIds: readonly string[]): Promise<readonly string[]> {
-        const found = await Promise.all(taskIds.map((taskId) => this.findTask(userId, taskId)));
-        return taskIds.filter((_taskId, position) => found[position] !== null);
-    }
-
-    async recordFailedAttempt(input: RecipeFailedAttempt): Promise<void> {
+    async recordFailedAttempt(input: CleanupFailedAttempt): Promise<void> {
         try {
             await this.dataSource.transaction(async (manager) => {
                 const jobs = this.jobs(manager);
@@ -101,7 +66,7 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
         return { attempts, costUsd: totalCostUsd ?? record.costUsd };
     }
 
-    async commitScan(input: RecipeScanCommit): Promise<{ readonly candidatesCreated: number } | null> {
+    async commitCleanup(input: CleanupCommit): Promise<{ readonly suggestionsCreated: number } | null> {
         try {
             return await this.dataSource.transaction(async (manager) => {
                 const jobs = this.jobs(manager);
@@ -109,15 +74,17 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
                 if (job === null || job.isTerminal()) throw new JobTransitionLostError(input.jobId);
                 await insertSteps(manager, job.id, input.userId, input.steps, input.attempt, input.now);
                 job.complete(
-                    { recipes: input.recipes, provenance: input.provenance },
+                    { suggestions: input.suggestions, tasksScanned: input.tasksScanned },
                     input.usage,
                     input.now,
                 );
                 if (!(await jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES))) {
                     throw new JobTransitionLostError(job.id);
                 }
-                await observations(manager).record(input.userId, input.observation, input.now);
-                return { candidatesCreated: input.recipes.length };
+                if (input.observation !== null) {
+                    await observations(manager).record(input.userId, input.observation, input.now);
+                }
+                return { suggestionsCreated: input.suggestions.length };
             });
         } catch (error) {
             if (isJobTransitionLost(error)) return null;
@@ -125,12 +92,13 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
         }
     }
 
-    async failJob(jobId: string, message: string, now: Date): Promise<RecipeJobSnapshot | null> {
+    async failJob(jobId: string, message: string, now: Date): Promise<CleanupJobSnapshot | null> {
         try {
             return await this.dataSource.transaction(async (manager) => {
                 const jobs = this.jobs(manager);
                 const job = await jobs.findById(jobId);
                 if (job === null || job.isTerminal()) throw new JobTransitionLostError(jobId);
+                // 에이전트 실행 전 실패가 있을 수 있으므로 observation 유무를 검사하지 않는다.
                 job.fail(message, now);
                 if (!(await jobs.commitTransition(job, NON_TERMINAL_JOB_STATUSES))) {
                     throw new JobTransitionLostError(job.id);
@@ -141,15 +109,6 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
             if (isJobTransitionLost(error)) return null;
             throw error;
         }
-    }
-
-    private async findTask(userId: string, taskId: string): Promise<Record<string, unknown> | null> {
-        const found = await this.tracer.requestOrNull({
-            method: "GET",
-            path: `/api/v1/tasks/${encodeURIComponent(taskId)}`,
-            userId,
-        });
-        return found === null ? null : wireObject(wireObject(found)["task"]);
     }
 }
 
@@ -170,6 +129,6 @@ async function insertSteps(
     );
 }
 
-function toSnapshot(job: AiJobEntity): RecipeJobSnapshot {
-    return { id: job.id, userId: job.userId, taskId: job.taskId, usage: job.usage };
+function toSnapshot(job: AiJobEntity): CleanupJobSnapshot {
+    return { id: job.id, userId: job.userId, usage: job.usage };
 }

@@ -31,10 +31,14 @@ import type {
 import type {
     CleanupCommit,
     CleanupFailedAttempt,
+    CleanupJobLedgerPort,
     CleanupJobSnapshot,
-    CleanupRepositoryPort,
+} from "~agent-worker/domain/cleanup/port/cleanup.job.ledger.port.js";
+import type { CleanupSettingReaderPort } from "~agent-worker/domain/cleanup/port/setting.reader.port.js";
+import type {
     CleanupScanBatch,
-} from "~agent-worker/domain/cleanup/port/cleanup.repository.port.js";
+    CleanupTaskReaderPort,
+} from "~agent-worker/domain/cleanup/port/cleanup.task.reader.port.js";
 import { CLEANUP_SETTING_KEY } from "~agent-worker/domain/cleanup/model/cleanup.const.js";
 import { foldAttempt, type JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
 
@@ -102,8 +106,9 @@ export class FakeCleanupAgent implements CleanupAgentPort {
     }
 }
 
-/** cleanup 저장 포트를 메모리로 구현한 테스트 대역이다. */
-export class InMemoryCleanupRepository implements CleanupRepositoryPort {
+/** cleanup 슬라이스가 나눠 든 세 포트를 한 객체로 구현한 대역이며, 실물이 잡 원장과 설정 표와 추적 API를 각각 다른 어댑터로 들어 서로 다른 자원을 쓴다는 사실을 단순화한다. */
+export class InMemoryCleanupRepository
+implements CleanupJobLedgerPort, CleanupSettingReaderPort, CleanupTaskReaderPort {
     readonly settings = new Map<string, string>();
     readonly failedAttempts: CleanupFailedAttempt[] = [];
     readonly commits: CleanupCommit[] = [];
@@ -128,7 +133,7 @@ export class InMemoryCleanupRepository implements CleanupRepositoryPort {
         return true;
     }
 
-    async readSetting(_scope: string, key: string): Promise<string | null> {
+    async findValue(_scope: string, key: string): Promise<string | null> {
         return this.settings.get(key) ?? null;
     }
 

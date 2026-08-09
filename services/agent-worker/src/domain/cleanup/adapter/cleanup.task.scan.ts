@@ -1,7 +1,7 @@
 import type { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { wireItems, wireNumber, wireObject, wireText } from "~agent-worker/support/wire.value.js";
 import type { CleanupTaskSnapshot } from "~agent-worker/domain/cleanup/model/cleanup.candidate.model.js";
-import type { CleanupScanBatch } from "~agent-worker/domain/cleanup/port/cleanup.repository.port.js";
+import type { CleanupScanBatch } from "~agent-worker/domain/cleanup/port/cleanup.task.reader.port.js";
 
 /** 서버 자신의 에이전트가 만든 태스크를 나타내는 출처 값이며 정리 대상에서 뺀다. */
 const SERVER_SDK_TASK_ORIGIN = "server-sdk";

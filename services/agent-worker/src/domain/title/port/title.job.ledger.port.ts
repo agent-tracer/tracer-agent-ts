@@ -1,6 +1,5 @@
 import type { AgentRunObservation, GeneratedJobStep } from "@tracer-agent/llm";
 import type { JobAttemptRecord } from "~agent-worker/support/llm/job.attempt.js";
-import type { TitleContext } from "~agent-worker/domain/title/model/title.context.model.js";
 import type { TitleSuggestionPayload } from "~agent-worker/domain/title/model/title.suggestion.schema.js";
 
 /** 잡의 실행 중 상태를 보는 최소 표현이다. */
@@ -9,12 +8,6 @@ export interface TitleJobSnapshot {
     readonly userId: string;
     readonly taskId: string | null;
     readonly usage: Record<string, unknown>;
-}
-
-/** 제목 제안이 보는 태스크의 대화 컨텍스트다. */
-export interface TitleTaskContext {
-    readonly totalEventCount: number;
-    readonly context: TitleContext | null;
 }
 
 export interface TitleFailedAttempt {
@@ -37,13 +30,12 @@ export interface TitleSuggestionCommit {
     readonly now: Date;
 }
 
-/** 이 슬라이스가 원장과 읽기 모델에 요구하는 계약이다. */
-export interface TitleRepositoryPort {
+/** 제목 슬라이스가 잡 원장에 요구하는 계약이며 이 포트의 모든 호출은 agent-db 연결 하나로 끝난다. */
+export interface TitleJobLedgerPort {
     findJob(jobId: string): Promise<TitleJobSnapshot | null>;
     startJob(jobId: string, now: Date): Promise<boolean>;
-    findTaskContext(userId: string, taskId: string): Promise<TitleTaskContext | null>;
-    readSetting(scope: string, key: string): Promise<string | null>;
     recordFailedAttempt(input: TitleFailedAttempt): Promise<void>;
+    /** 원장을 읽어 누적 시도와 비용을 계산할 뿐 아무것도 적지 않는다. */
     readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,

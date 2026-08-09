@@ -18,6 +18,8 @@ function usecase(repository: InMemoryCleanupRepository) {
     const notification = new CapturingCleanupNotification();
     const target = new PrepareTaskCleanupUsecase(
         repository,
+        repository,
+        repository,
         new FakeCleanupAgent(emptyOutput()),
         notification,
         fixedClock,

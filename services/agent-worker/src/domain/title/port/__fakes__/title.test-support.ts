@@ -6,11 +6,15 @@ import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
 import type {
     TitleFailedAttempt,
+    TitleJobLedgerPort,
     TitleJobSnapshot,
-    TitleRepositoryPort,
     TitleSuggestionCommit,
+} from "~agent-worker/domain/title/port/title.job.ledger.port.js";
+import type { TitleSettingReaderPort } from "~agent-worker/domain/title/port/setting.reader.port.js";
+import type {
     TitleTaskContext,
-} from "~agent-worker/domain/title/port/title.repository.port.js";
+    TitleTaskReaderPort,
+} from "~agent-worker/domain/title/port/title.task.reader.port.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
 import { buildAgentPrompt, type AgentPrompt } from "~agent-worker/support/agent.prompt.js";
@@ -120,8 +124,9 @@ export function titleAgentOutput(
     };
 }
 
-/** 잡 원장과 태스크 컨텍스트를 메모리로 대신하는 대역이다. */
-export class InMemoryTitleRepository implements TitleRepositoryPort {
+/** 제목 슬라이스가 나눠 든 세 포트를 한 객체로 구현한 대역이며, 실물이 잡 원장과 설정 표와 추적 API를 각각 다른 어댑터로 들어 서로 다른 자원을 쓴다는 사실을 단순화한다. */
+export class InMemoryTitleRepository
+implements TitleJobLedgerPort, TitleSettingReaderPort, TitleTaskReaderPort {
     job: TitleJobSnapshot | null = { id: "job-1", userId: "user-1", taskId: "task-1", usage: {} };
 
     taskContext: TitleTaskContext | null = {
@@ -158,7 +163,7 @@ export class InMemoryTitleRepository implements TitleRepositoryPort {
         return this.taskContext;
     }
 
-    async readSetting(scope: string, key: string): Promise<string | null> {
+    async findValue(scope: string, key: string): Promise<string | null> {
         return this.settings.get(`${scope}/${key}`) ?? null;
     }
 

@@ -52,6 +52,7 @@ function setup(agent: TitleAgentPort) {
         repository,
         usecase: new SuggestTitleUsecase(
             repository,
+            repository,
             agent,
             new FixedClock(),
             new SequentialTitleIdGenerator(),

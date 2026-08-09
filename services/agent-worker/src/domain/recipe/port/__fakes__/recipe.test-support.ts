@@ -13,12 +13,16 @@ import type {
     RecipeOutputPort,
 } from "~agent-worker/domain/recipe/port/recipe.output.port.js";
 import type {
-    RecipeAnchorSnapshot,
     RecipeFailedAttempt,
+    RecipeJobLedgerPort,
     RecipeJobSnapshot,
-    RecipeRepositoryPort,
     RecipeScanCommit,
-} from "~agent-worker/domain/recipe/port/recipe.repository.port.js";
+} from "~agent-worker/domain/recipe/port/recipe.job.ledger.port.js";
+import type { RecipeSettingReaderPort } from "~agent-worker/domain/recipe/port/setting.reader.port.js";
+import type {
+    RecipeAnchorSnapshot,
+    RecipeTaskReaderPort,
+} from "~agent-worker/domain/recipe/port/recipe.task.reader.port.js";
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { RecipeToolContract } from "~agent-worker/domain/recipe/model/recipe.tool.schema.js";
 import { AGENT } from "~agent-worker/support/agent.const.js";
@@ -98,8 +102,9 @@ export class FakeRecipeAgent implements RecipeAgentPort {
     }
 }
 
-/** 레시피 저장 포트를 메모리로 구현한 테스트 대역이다. */
-export class InMemoryRecipeRepository implements RecipeRepositoryPort {
+/** 레시피 슬라이스가 나눠 든 세 포트를 한 객체로 구현한 대역이며, 실물이 잡 원장과 설정 표와 추적 API를 각각 다른 어댑터로 들어 서로 다른 자원을 쓴다는 사실을 단순화한다. */
+export class InMemoryRecipeRepository
+implements RecipeJobLedgerPort, RecipeSettingReaderPort, RecipeTaskReaderPort {
     readonly settings = new Map<string, string>();
     readonly settingReads: { readonly scope: string; readonly key: string }[] = [];
     readonly anchors = new Map<string, RecipeAnchorSnapshot>();
@@ -130,7 +135,7 @@ export class InMemoryRecipeRepository implements RecipeRepositoryPort {
         return this.anchors.get(taskId) ?? null;
     }
 
-    async readSetting(scope: string, key: string): Promise<string | null> {
+    async findValue(scope: string, key: string): Promise<string | null> {
         this.settingReads.push({ scope, key });
         return this.settings.get(key) ?? null;
     }

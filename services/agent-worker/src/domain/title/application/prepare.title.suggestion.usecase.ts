@@ -18,12 +18,16 @@ import { resolveTitlePromptPin } from "~agent-worker/domain/title/model/title.pr
 import type { PromptSourcePort } from "~agent-worker/support/prompt.source.port.js";
 import type { TitleAgentPort } from "~agent-worker/domain/title/port/title.agent.port.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
-import type { TitleRepositoryPort } from "~agent-worker/domain/title/port/title.repository.port.js";
+import type { TitleJobLedgerPort } from "~agent-worker/domain/title/port/title.job.ledger.port.js";
+import type { TitleSettingReaderPort } from "~agent-worker/domain/title/port/setting.reader.port.js";
+import type { TitleTaskReaderPort } from "~agent-worker/domain/title/port/title.task.reader.port.js";
 
 /** 대화 컨텍스트를 모으고 잡을 실행 상태로 올린 뒤 실행 인자를 확정한다. */
 export class PrepareTitleSuggestionUsecase {
     constructor(
-        private readonly repository: TitleRepositoryPort,
+        private readonly jobs: TitleJobLedgerPort,
+        private readonly settings: TitleSettingReaderPort,
+        private readonly tasks: TitleTaskReaderPort,
         private readonly agent: TitleAgentPort,
         private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
@@ -31,30 +35,30 @@ export class PrepareTitleSuggestionUsecase {
     ) {}
 
     async execute(input: TitleSuggestionInput): Promise<TitleSuggestionPrep> {
-        const job = await this.repository.findJob(input.jobId);
+        const job = await this.jobs.findJob(input.jobId);
         if (job === null) throw new JobNotFoundError(input.jobId);
 
-        const found = await this.repository.findTaskContext(job.userId, input.taskId);
+        const found = await this.tasks.findTaskContext(job.userId, input.taskId);
         if (found === null || found.context === null) {
             throw new TaskNotFoundError(input.taskId);
         }
         if (found.totalEventCount === 0) throw new TaskHasNoEventsError(input.taskId);
 
         const language = normalizeOutputLanguage(
-            await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.outputLanguage),
+            await this.settings.findValue(job.userId, TITLE_SETTING_KEY.outputLanguage),
         );
         // 예산과 턴과 마감은 잡이 하는 일의 크기에서 나오므로 모델을 바꿔도 이 기능이 그대로 갖는다.
-        const model = chosenJobModel(await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicModel), AGENT.titleSuggestion.id);
+        const model = chosenJobModel(await this.settings.findValue(job.userId, TITLE_SETTING_KEY.anthropicModel), AGENT.titleSuggestion.id);
         const prompt = resolveTitlePromptPin(await this.prompts.resolve(AGENT.titleSuggestion.id));
 
         // 전이 뒤에 자격을 보면 화면이 실행 중을 한 번 보고 실패로 뒤집히므로 앞에서 본다.
         if (this.agent.requiresLocalApiKey()) {
-            const apiKey = await this.repository.readSetting(job.userId, TITLE_SETTING_KEY.anthropicApiKey);
+            const apiKey = await this.settings.findValue(job.userId, TITLE_SETTING_KEY.anthropicApiKey);
             if (apiKey === null) throw new MissingApiKeyError(TITLE_SETTING_KEY.anthropicApiKey);
         }
 
         const now = this.clock.now();
-        if (!(await this.repository.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
+        if (!(await this.jobs.startJob(job.id, now))) throw new JobAlreadySettledError(job.id);
         await this.notification.jobUpdated(job.userId, {
             jobId: job.id,
             kind: JOB_KIND.titleSuggestion,

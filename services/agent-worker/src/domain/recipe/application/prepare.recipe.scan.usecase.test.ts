@@ -18,6 +18,8 @@ function usecase(repository: InMemoryRecipeRepository) {
     const notification = new CapturingRecipeNotification();
     const target = new PrepareRecipeScanUsecase(
         repository,
+        repository,
+        repository,
         new FakeRecipeAgent(emptyOutput()),
         notification,
         fixedClock,

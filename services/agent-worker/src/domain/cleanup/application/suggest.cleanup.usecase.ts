@@ -22,7 +22,8 @@ import { CLEANUP_FEATURE, CLEANUP_SETTING_KEY } from "../model/cleanup.const.js"
 import type { CleanupCandidate } from "../model/cleanup.candidate.model.js";
 import type { CleanupAgentPort } from "../port/cleanup.agent.port.js";
 import type { IdGeneratorPort } from "~agent-worker/support/id.generator.port.js";
-import type { CleanupRepositoryPort } from "../port/cleanup.repository.port.js";
+import type { CleanupJobLedgerPort } from "../port/cleanup.job.ledger.port.js";
+import type { CleanupSettingReaderPort } from "../port/setting.reader.port.js";
 
 export interface TaskCleanupPrep {
     readonly jobId: string;
@@ -46,7 +47,8 @@ export interface TaskCleanupGenerateOutput extends AgentUsageSummary {
 /** 에이전트를 한 번 실행해 보관 제안을 만들고 시도 이력을 남긴다. */
 export class SuggestCleanupUsecase {
     constructor(
-        private readonly repository: CleanupRepositoryPort,
+        private readonly jobs: CleanupJobLedgerPort,
+        private readonly settings: CleanupSettingReaderPort,
         private readonly agent: CleanupAgentPort,
         private readonly clock: IClock,
         private readonly ids: IdGeneratorPort,
@@ -54,7 +56,7 @@ export class SuggestCleanupUsecase {
 
     async execute(prep: TaskCleanupPrep, run: AgentAttemptRun): Promise<TaskCleanupGenerateOutput> {
         const apiKey = this.agent.requiresLocalApiKey()
-            ? await this.repository.readSetting(prep.userId, CLEANUP_SETTING_KEY.anthropicApiKey)
+            ? await this.settings.findValue(prep.userId, CLEANUP_SETTING_KEY.anthropicApiKey)
             : null;
 
         let output;
@@ -82,7 +84,7 @@ export class SuggestCleanupUsecase {
         const suggestions = assembleCleanupSuggestions(output.suggestions, prep.candidates, prep.maxSuggestions);
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
-        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
+        const { attempts, costUsd } = await this.jobs.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );
@@ -102,7 +104,7 @@ export class SuggestCleanupUsecase {
     }
 
     private async recordFailure(prep: TaskCleanupPrep, attempt: number, error: AgentExecutionFailure): Promise<void> {
-        await this.repository.recordFailedAttempt({
+        await this.jobs.recordFailedAttempt({
             jobId: prep.jobId,
             userId: prep.userId,
             steps: assignStepIds(error.steps, () => this.ids.next()),

@@ -32,6 +32,8 @@ function setup(needsKey = false) {
         notification,
         usecase: new PrepareTitleSuggestionUsecase(
             repository,
+            repository,
+            repository,
             agent(needsKey),
             notification,
             new FixedClock(),

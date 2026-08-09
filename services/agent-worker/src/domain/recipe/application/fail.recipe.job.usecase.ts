@@ -1,7 +1,7 @@
 import type { IClock } from "@tracer-agent/platform";
 import { JOB_KIND, JOB_STATUS } from "~agent-worker/support/job.const.js";
 import type { JobNotificationPort } from "~agent-worker/support/job.notification.port.js";
-import type { RecipeRepositoryPort } from "../port/recipe.repository.port.js";
+import type { RecipeJobLedgerPort } from "../port/recipe.job.ledger.port.js";
 import type { RecipeStageOutputPort } from "~agent-worker/domain/recipe/port/recipe.stage.output.port.js";
 
 const ERROR_LIMIT = 1000;
@@ -15,14 +15,14 @@ export interface FailRecipeJobInput {
 /** 워크플로가 재시도를 모두 소진한 뒤에만 불러 잡을 실패로 종결한다. */
 export class FailRecipeJobUsecase {
     constructor(
-        private readonly repository: RecipeRepositoryPort,
+        private readonly jobs: RecipeJobLedgerPort,
         private readonly notification: JobNotificationPort,
         private readonly clock: IClock,
         private readonly stageOutputs: RecipeStageOutputPort | null = null,
     ) {}
 
     async execute(input: FailRecipeJobInput): Promise<void> {
-        const failed = await this.repository.failJob(
+        const failed = await this.jobs.failJob(
             input.jobId,
             truncate(input.message, ERROR_LIMIT),
             this.clock.now(),
