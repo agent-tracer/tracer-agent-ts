@@ -60,8 +60,6 @@ export class ChatExecutionEntity {
     @Column({ type: "integer", default: 0 })
     attempt!: number;
 
-    @Column({ name: "draft_token_hash", type: "text", nullable: true })
-    draftTokenHash!: string | null;
 
     @Column({ name: "assistant_message_id", type: "text", nullable: true })
     assistantMessageId!: string | null;
@@ -113,7 +111,6 @@ export function toChatExecution(row: ChatExecutionEntity): ChatExecution {
     execution.draftText = row.draftText;
     execution.draftSeq = row.draftSeq;
     execution.attempt = row.attempt;
-    execution.draftTokenHash = row.draftTokenHash;
     execution.assistantMessageId = row.assistantMessageId;
     execution.modelUsed = row.modelUsed;
     execution.costUsd = row.costUsd;
@@ -144,7 +141,6 @@ export function toChatExecutionRow(execution: ChatExecution): ChatExecutionEntit
     row.draftText = execution.draftText;
     row.draftSeq = execution.draftSeq;
     row.attempt = execution.attempt;
-    row.draftTokenHash = execution.draftTokenHash;
     row.assistantMessageId = execution.assistantMessageId;
     row.modelUsed = execution.modelUsed;
     row.costUsd = execution.costUsd;

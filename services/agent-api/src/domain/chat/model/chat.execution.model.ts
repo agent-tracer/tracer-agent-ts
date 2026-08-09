@@ -71,7 +71,6 @@ export class ChatExecution {
 
     attempt!: number;
 
-    draftTokenHash!: string | null;
 
     assistantMessageId!: string | null;
 
@@ -110,7 +109,6 @@ export class ChatExecution {
         execution.draftText = "";
         execution.draftSeq = 0;
         execution.attempt = 0;
-        execution.draftTokenHash = null;
         execution.assistantMessageId = null;
         execution.modelUsed = null;
         execution.costUsd = null;
@@ -169,9 +167,6 @@ export class ChatExecution {
         this.updatedAt = now;
     }
 
-    acceptsDraftToken(tokenHash: string): boolean {
-        return this.draftTokenHash !== null && this.draftTokenHash === tokenHash;
-    }
 
     cancel(now: Date): void {
         if (this.isTerminal()) throw new InvariantViolationError("chat-execution.already-terminal");

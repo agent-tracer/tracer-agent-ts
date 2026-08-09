@@ -75,7 +75,6 @@ export function chatExecution(overrides: Partial<ChatExecution> = {}): ChatExecu
     execution.draftText = "";
     execution.draftSeq = 0;
     execution.attempt = 0;
-    execution.draftTokenHash = null;
     execution.assistantMessageId = null;
     execution.modelUsed = null;
     execution.costUsd = null;

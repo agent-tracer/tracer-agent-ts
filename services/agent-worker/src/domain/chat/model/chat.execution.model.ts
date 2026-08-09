@@ -42,7 +42,6 @@ export class ChatExecution {
 
     attempt!: number;
 
-    draftTokenHash!: string | null;
 
     assistantMessageId!: string | null;
 
