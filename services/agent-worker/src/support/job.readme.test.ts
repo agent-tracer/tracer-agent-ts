@@ -17,14 +17,16 @@ function readmeOf(domain: string): string {
     return readFileSync(path.join(DOMAIN_ROOT, domain, "README.md"), "utf8");
 }
 
-/** 문서는 사람이 읽는 단위로 적으므로 코드가 쓰는 표기를 그 단위로 옮겨 비교한다. */
+/** 문서는 사람이 읽는 단위로 적으므로 코드가 쓰는 표기를 초로 모은 뒤 나누어떨어지는 가장 큰 단위로 옮겨 비교한다. */
 function asKorean(duration: string): string {
     const found = /^(\d+) (minutes?|seconds?|hours?)$/u.exec(duration);
     if (found === null) throw new Error(`읽을 수 없는 상한이다 — ${duration}`);
     const unit = found[2] ?? "";
-    if (unit.startsWith("minute")) return `${found[1]}분`;
-    if (unit.startsWith("second")) return `${found[1]}초`;
-    return `${found[1]}시간`;
+    const scale = unit.startsWith("hour") ? 3600 : unit.startsWith("minute") ? 60 : 1;
+    const total = Number(found[1]) * scale;
+    if (total % 3600 === 0) return `${total / 3600}시간`;
+    if (total % 60 === 0) return `${total / 60}분`;
+    return `${total}초`;
 }
 
 const CASES = Object.entries(DOCUMENTS).map(([kind, domain]) => ({
