@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-/** 이 워커가 제안을 적는 정리 제안 원장의 표이며 대기 행은 태스크와 종류마다 하나뿐이다. */
+/** 이 워커가 제안을 적는 정리 제안 원장의 표이며 대기 행은 사용자와 태스크와 종류마다 하나뿐이다. */
 @Entity({ name: "task_cleanup_suggestions" })
 @Index("cleanup_user_status", ["userId", "status", "createdAt"])
 @Index("cleanup_pending_task_kind_unique", ["userId", "taskId", "kind"], {

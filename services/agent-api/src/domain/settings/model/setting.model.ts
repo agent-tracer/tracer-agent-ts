@@ -22,7 +22,7 @@ export interface StoredSetting {
     readonly updatedAt: Date;
 }
 
-/** 창구 밖으로 나가는 설정 하나이며 값은 늘 가려진 형태로만 실린다. */
+/** 창구 밖으로 나가는 설정 하나이며 값 자체가 자격인 키만 가려서 싣는다. */
 export interface SettingView {
     readonly key: SettingKey;
     readonly maskedValue: string;

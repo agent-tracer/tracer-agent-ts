@@ -15,7 +15,7 @@ export interface ApiErrorEnvelope {
 export type ApiResponseEnvelope<T = unknown> = ApiSuccessEnvelope<T> | ApiErrorEnvelope;
 
 export function createApiSuccessEnvelope(payload: unknown): ApiSuccessEnvelope {
-    // 이미 봉투 형태면 중복 포장하지 않는다.
+    // data 를 든 봉투는 그대로 두고 ok 만 든 응답은 나머지를 data 로 옮긴다.
     if (isRecord(payload) && payload["ok"] === true) {
         if ("data" in payload) {
             return payload as unknown as ApiSuccessEnvelope;

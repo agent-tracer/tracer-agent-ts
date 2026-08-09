@@ -140,7 +140,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
             return this.settleOutput(ctx, segments, checked.valid, decision.modelUsed, PASSED, demoted);
         }
 
-        // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
+        // 예약한 턴이 없으면 수리를 시도하지 않고 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) {
             recordValidationFailure(AGENT.taskCleanup.id, false);
             return this.settleOutput(ctx, segments, [], decision.modelUsed, FAILED, demoted);

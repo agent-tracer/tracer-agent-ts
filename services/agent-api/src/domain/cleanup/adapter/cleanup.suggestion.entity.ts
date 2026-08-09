@@ -5,7 +5,7 @@ import type {
 } from "~agent-api/domain/cleanup/model/cleanup.const.js";
 import { CleanupSuggestion } from "~agent-api/domain/cleanup/model/cleanup.suggestion.model.js";
 
-/** 정리 제안 원장의 PostgreSQL 저장 스키마이며 같은 태스크와 종류의 대기 행은 하나뿐이다. */
+/** 정리 제안 원장의 PostgreSQL 저장 스키마이며 대기 행은 사용자와 태스크와 종류마다 하나뿐이다. */
 @Entity({ name: "task_cleanup_suggestions" })
 @Index("cleanup_user_status", ["userId", "status", "createdAt"])
 @Index("cleanup_pending_task_kind_unique", ["userId", "taskId", "kind"], {

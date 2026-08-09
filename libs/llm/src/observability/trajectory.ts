@@ -6,7 +6,7 @@ import {
     type JobStepToolCall,
 } from "~llm/model/job.step.js";
 
-// 궤적 한 행의 content 상한이며 실행 백엔드와 같은 값이라 백엔드가 달라도 절단 지점이 같다.
+// 궤적 한 행의 content 상한이며 값의 정본은 계약의 chat.query 케이스가 갖는다.
 export const MAX_STEP_CONTENT_BYTES = 32_000;
 
 const encoder = new TextEncoder();

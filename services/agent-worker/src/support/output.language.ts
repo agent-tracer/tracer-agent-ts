@@ -30,7 +30,7 @@ export function normalizeOutputLanguage(raw: string | null | undefined): OutputL
     return isOutputLanguage(normalized) ? normalized : OUTPUT_LANGUAGE.auto;
 }
 
-// 예산은 허용 목록을 전제로 잡히므로 목록 밖 모델을 실으면 상한에 닿아 끝난다.
+// 예산은 허용 목록을 전제로 잡히므로 목록 밖 모델은 고르지 않는다.
 export function chosenJobModel(raw: string | null, feature: string): string | undefined {
     const trimmed = raw?.trim() ?? "";
     if (trimmed.length === 0 || !isPricedModel(trimmed)) return undefined;

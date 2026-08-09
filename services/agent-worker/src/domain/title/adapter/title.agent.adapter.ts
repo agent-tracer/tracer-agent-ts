@@ -110,7 +110,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
         const firstPass = normalizeTitleSuggestions(first.data.suggestions, input.context.title);
         if (firstPass.errors.length === 0) return toOutput(input, runs, firstPass.kept, true);
 
-        // 예약된 몫마저 소진돼 수리를 시도할 수 없으면 오류가 아닌 빈 결과로 종료한다.
+        // 예약한 턴이 없으면 수리를 시도하지 않고 오류가 아닌 빈 결과로 종료한다.
         if (repairLease.maxTurns <= 0) {
             recordValidationFailure(TITLE_SUGGESTION_SPEC.name, false);
             return toOutput(input, runs, [], false);

@@ -15,7 +15,7 @@ export interface ChatUserFact {
     readonly content: string;
 }
 
-/** 저장 모델을 재생용 평문으로 벗겨 내는 유일한 변환이며, 재생을 쓰는 모든 유스케이스가 공유한다. */
+/** 저장 모델을 재생용 평문으로 벗겨 내며 이 축의 재생 계산이 이 변환만 쓴다. */
 export function toChatTurnMessage(message: ChatMessage): ChatTurnMessage {
     return {
         role: message.role,

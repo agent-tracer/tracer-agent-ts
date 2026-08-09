@@ -54,7 +54,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
             }
         }
 
-        // 이미 실행한 비용에 지금까지 가장 비쌌던 호출을 한 번 더 더해도 예산 안에 드는지로 다음 호출 가능 여부를 예측한다.
+        // 이미 실행한 비용에 계약이 정한 마무리 몫을 더해도 예산 안에 드는지로 다음 호출 가능 여부를 예측한다.
         const pacer = new LandingPacer(request.maxTurns, request.maxBudgetUsd);
         const paceToolUse = toolPacingHook({
             landing: () => pacer.isLanding,

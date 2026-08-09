@@ -21,7 +21,7 @@ export class OpenSearchClient {
     }
 }
 
-/** 색인 자리는 배포가 정하며 지정이 없으면 개발 기본값을 쓴다. */
+/** 색인을 담은 OpenSearch 의 주소는 배포가 정하며 지정이 없으면 개발 기본값을 쓴다. */
 export function resolveOpenSearchUrl(): string {
     return process.env["OPENSEARCH_URL"] ?? "http://127.0.0.1:9200";
 }

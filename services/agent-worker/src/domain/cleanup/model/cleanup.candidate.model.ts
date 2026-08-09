@@ -5,7 +5,7 @@ const WAITING_TASK_STATUS = "waiting";
 
 /** 이 시간 안에 활동한 태스크는 정리 후보에서 뺀다. */
 export const CLEANUP_RECENT_ACTIVITY_MS = 30 * 60 * 1000;
-/** 이 시간 이상 이벤트가 없는 running·waiting 태스크에 stale 신호를 붙인다. */
+/** 이 시간 이상 활동이 없는 running·waiting 태스크에 stale 신호를 붙인다. */
 export const CLEANUP_STALE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export const CLEANUP_CANDIDATE_REASON = {

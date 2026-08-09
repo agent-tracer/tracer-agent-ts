@@ -52,7 +52,7 @@ export function buildClaudeQueryOptions(input: ClaudeQueryOptionsInput): Options
         strictMcpConfig: true,
         includePartialMessages: request.stream !== undefined,
         persistSession: false,
-        // 운영에서는 컨테이너의 CLI 설정과 스킬이 실행 표면을 바꾸지 못하게 둘 다 비운다.
+        // 로컬 CLI 인증을 쓰지 않으면 디스크의 CLI 설정과 스킬이 실행 표면을 바꾸지 못하게 둘 다 비운다.
         settingSources: useLocalCliAuth ? ["user"] : [],
         skills: useLocalCliAuth ? "all" : [],
         ...(request.effort !== undefined ? { effort: request.effort } : {}),

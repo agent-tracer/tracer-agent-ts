@@ -12,7 +12,7 @@ export function progressNotice(used: number, total: number): string {
     return template.replace("{used}", String(used)).replace("{total}", String(total));
 }
 
-/** 도구를 닫은 뒤에도 마무리 호출 하나가 남으므로 그 몫을 미리 뗀다. */
+/** 도구를 닫은 뒤 마무리 호출이 설 자리를 남기려고 계약이 정한 몫을 미리 뗀다. */
 export function landingReserveCalls(): number {
     return loadExecutionBudgetContract().pacing.landingReserve.calls;
 }

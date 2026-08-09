@@ -15,14 +15,14 @@ export interface ToolPacing {
     readonly hasOutputSchema: boolean;
 }
 
-/** 산출을 내는 도구는 답 자체이므로 예산이 다해도 막지 않는다. */
+/** 예산이 다해도 막지 않는 산출 도구의 이름이다. */
 const OUTPUT_TOOL = OUTPUT_TOOL_NAME;
 
 function toolNameOf(input: HookInput): string | undefined {
     return "tool_name" in input ? input.tool_name : undefined;
 }
 
-/** 도구를 여는 자리마다 남은 몫을 알리고 예산이 다하면 조사 도구만 막아 마무리 지시를 준다. */
+/** 도구를 여는 자리마다 남은 몫을 알리고 예산이 다하면 산출 도구를 뺀 모든 도구를 막아 마무리 지시를 준다. */
 export function toolPacingHook(pacing: ToolPacing): (input: HookInput) => Promise<ToolPacingDecision> {
     const directive = landingDirective(pacing.hasOutputSchema);
     return (input) =>

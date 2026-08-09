@@ -86,7 +86,7 @@ export function validationFailedStep(nodeName: string, content: string): JobStep
     return orchestrationStep(nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.validationFailed, content);
 }
 
-/** 조각을 모으는 자리가 아니라 실행 안에서 빈 결과의 사유를 남길 때 쓰는 한 줄이다. */
+/** 실행 안에서 빈 결과의 사유를 남기며 어휘에 빈 결과 종류가 없어 경로 선택으로 적는다. */
 export function emptyResultStep(nodeName: string, content: string): JobStepPayload {
     return orchestrationStep(nodeName, JOB_STEP_ORCHESTRATION_EVENT_KIND.routeSelected, content);
 }
