@@ -56,7 +56,7 @@ export function mergeApplicationConfig(
             username: env["AGENT_DB_USER"] ?? user,
             password: env["AGENT_DB_PASSWORD"] ?? password,
             database: env["AGENT_DB_NAME"] ?? (agentDb["database"] as string | undefined) ?? "agent",
-            // 드라이버가 말없이 정하던 수를 설정으로 올려 배포가 부하에 맞게 정할 수 있게 한다.
+            // 원장 연결 상한의 기본값을 드라이버가 아니라 애플리케이션 설정이 소유하게 한다.
             poolSize: envInt(env, "AGENT_DB_POOL_SIZE", (agentDb["poolSize"] as number | undefined) ?? 10),
             connectionTimeoutMs: envInt(
                 env,

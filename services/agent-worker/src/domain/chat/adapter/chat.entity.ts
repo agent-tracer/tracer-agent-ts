@@ -120,7 +120,7 @@ export class ChatThreadEntity {
     updatedAt!: Date;
 }
 
-/** 대화 메시지의 저장 스키마이며 재생이 스레드 안 순서를 복원한다. */
+/** 스레드별 대화 메시지를 담는 행 모델이며 재생 순서는 조회 어댑터가 소유한다. */
 @Entity({ name: "chat_messages" })
 @Index("chat_messages_thread_created", ["threadId", "createdAt"])
 export class ChatMessageEntity {

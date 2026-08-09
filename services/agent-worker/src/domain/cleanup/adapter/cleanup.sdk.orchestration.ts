@@ -44,7 +44,7 @@ export interface CleanupTriagePhase {
     readonly demoted: boolean;
 }
 
-/** 선별이 후보 목록 도구만 가지고 무엇을 조사할지 정하며, 호출이 실패하면 아무도 조회하지 않는 빈 계획으로 대체한다. */
+/** 선별 단계로 조사 계획을 세우며 호출이 실패하면 아무도 조회하지 않는 빈 계획으로 낮춘다. */
 export async function runCleanupTriagePhase(
     ctx: CleanupQueryContext,
     deps: CleanupToolDeps,

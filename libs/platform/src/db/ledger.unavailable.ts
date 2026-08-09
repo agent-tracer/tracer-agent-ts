@@ -1,4 +1,4 @@
-// pg 가 연결을 내주지 못했을 때 내는 문구이며 이 글자를 아는 자리는 이 파일 하나뿐이다.
+// 원장 연결을 얻지 못한 실패를 가려낼 때 비교하는 드라이버 문구다.
 const ACQUISITION_TIMEOUT = "timeout exceeded when trying to connect";
 const POOL_CLOSED = "cannot use a pool after calling end on the pool";
 

@@ -190,7 +190,7 @@ function spendPatch(
     } as unknown as QueryDeepPartialEntity<ChatExecutionEntity>;
 }
 
-// Postgres unique_violation.
+// 겉 오류와 드라이버 오류 어느 쪽에 실려도 유일 제약 위반으로 본다.
 function isUniqueViolation(error: unknown): boolean {
     if (errorCode(error) === "23505") return true;
     return errorCode((error as { readonly driverError?: unknown } | null)?.driverError) === "23505";

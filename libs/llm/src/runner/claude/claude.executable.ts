@@ -17,7 +17,7 @@ export function claudePlatformPackage(
     return `@anthropic-ai/claude-agent-sdk-${platform}-${arch}${suffix}`;
 }
 
-/** SDK의 자동탐색이 libc를 보지 않아 엉뚱한 바이너리를 고르므로 플랫폼과 libc에 맞는 CLI 경로를 직접 해석한다. */
+/** SDK 자동 탐색이 구분하지 않는 libc까지 반영해 플랫폼별 CLI 경로를 해석한다. */
 export function resolveClaudeExecutablePath(): string | undefined {
     const pkg = claudePlatformPackage(process.platform, process.arch, isMuslLinux());
     if (pkg === undefined) return undefined;

@@ -101,7 +101,7 @@ export function runCleanupQuery<T, Name extends TaskCleanupToolName>(
             ...(spec.lease.maxBudgetUsd !== undefined ? { maxBudgetUsd: spec.lease.maxBudgetUsd } : {}),
             providerOptions: {
                 ...(model !== limits.fallbackModel ? { fallbackModel: limits.fallbackModel } : {}),
-                // 도구 없이 실행하는 호출(조율자)에는 MCP 서버 자체를 세우지 않아 열지 않기로 한 도구가 새어 나갈 자리를 없앤다.
+                // 도구가 없는 호출에는 MCP 서버를 세우지 않아 닫기로 한 도구 표면을 그대로 닫아 둔다.
                 ...(toolSpecs.length > 0
                     ? {
                         mcpServers: {
