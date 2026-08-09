@@ -52,8 +52,8 @@ describe("계약이 소유한 실행 한도", () => {
         expect(featureModels(kind)?.allowed).toEqual(declared.allowedModels);
     });
 
-    // 계약이 적지 않은 칸을 이 축이 들고 있으면 상대 축이 모르는 상한으로 실행한다.
-    it.each(KINDS)("$kind 가 계약에 없는 침묵 상한과 추론 노력을 더 갖지 않는다", ({ kind, declared }) => {
+    // 카탈로그만 보므로 실행기가 리터럴로 싣는 값은 이 검사에 걸리지 않는다.
+    it.each(KINDS)("$kind 의 카탈로그가 계약에 없는 침묵 상한과 추론 노력을 더 갖지 않는다", ({ kind, declared }) => {
         const limits = featureLimits(kind);
 
         expect({ stallMs: limits.stallMs, effort: limits.effort }).toEqual({
