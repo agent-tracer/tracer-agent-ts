@@ -12,9 +12,12 @@ import type {
 /** 검색 결과에 접혀 오는 메모 히트를 가리는 표식이며 값은 추적 API가 소유한다. */
 const MEMO_HIT_TYPE = "memo";
 
-/** 레시피 도구의 검색을 추적 API의 검색 창구로 구현한다. */
+/** 사건과 태스크는 추적이 소유하고 레시피는 이 축이 소유하므로 창구를 나눠 부른다. */
 export class RecipeSearchAdapter implements RecipeSearchPort {
-    constructor(private readonly tracer: TracerApiWindow) {}
+    constructor(
+        private readonly tracer: TracerApiWindow,
+        private readonly agent: TracerApiWindow,
+    ) {}
 
     async searchEvents(userId: string, query: RecipeEventSearchQuery): Promise<RecipeEventSearchPage> {
         const found = await this.tracer.request({
@@ -49,9 +52,9 @@ export class RecipeSearchAdapter implements RecipeSearchPort {
     }
 
     async searchRecipes(userId: string, q: string, limit: number): Promise<readonly RecipeSlimRecipe[]> {
-        const found = await this.tracer.request({
+        const found = await this.agent.request({
             method: "GET",
-            path: "/api/v1/recipes/search",
+            path: "/api/agent/recipes/search",
             userId,
             query: { q, limit },
         });

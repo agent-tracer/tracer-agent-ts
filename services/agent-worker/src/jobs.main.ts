@@ -13,9 +13,12 @@ import { AgentRunObservationEntity } from "~agent-worker/config/ledger/agent.run
 import { AiJobEntity } from "~agent-worker/config/ledger/ai.job.entity.js";
 import { AiJobStageOutputEntity } from "~agent-worker/config/ledger/ai.job.stage.output.entity.js";
 import { AiJobStepEntity } from "~agent-worker/config/ledger/ai.job.step.entity.js";
+import { CleanupSuggestionRowEntity } from "~agent-worker/config/ledger/cleanup.suggestion.entity.js";
+import { RecipeRowEntity } from "~agent-worker/config/ledger/recipe.entity.js";
+import { SearchOutboxRowEntity } from "~agent-worker/config/ledger/search.outbox.entity.js";
 import { createKafka } from "~agent-worker/config/kafka.factory.js";
 import { createNotificationPublisher } from "~agent-worker/config/notification.js";
-import { resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
+import { resolveAgentApiUrl, resolveTracerApiUrl } from "~agent-worker/config/service.url.js";
 import { JOB_TASK_QUEUE } from "~agent-worker/config/queue.const.js";
 import { createTemporalWorker } from "~agent-worker/config/temporal.worker.js";
 import { runUntilShutdown } from "~agent-worker/config/worker.lifecycle.js";
@@ -37,6 +40,7 @@ import { FinalizeRecipeScanUsecase } from "~agent-worker/domain/recipe/applicati
 import { PrepareRecipeScanUsecase } from "~agent-worker/domain/recipe/application/prepare.recipe.scan.usecase.js";
 import { ScanRecipeUsecase } from "~agent-worker/domain/recipe/application/scan.recipe.usecase.js";
 import { RecipeActivity } from "~agent-worker/domain/recipe/inbound/recipe.activity.js";
+import { CleanupObservedActivityAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.observed.activity.adapter.js";
 import { CleanupOutputAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.output.adapter.js";
 import { CleanupReaderAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.reader.adapter.js";
 import { CleanupJobLedgerAdapter } from "~agent-worker/domain/cleanup/adapter/cleanup.job.ledger.adapter.js";
@@ -67,6 +71,9 @@ const JOB_ENTITIES = [
     AiJobStageOutputEntity,
     AiJobStepEntity,
     AgentRunObservationEntity,
+    RecipeRowEntity,
+    SearchOutboxRowEntity,
+    CleanupSuggestionRowEntity,
 ] as const;
 
 async function bootstrap(): Promise<void> {
@@ -82,14 +89,16 @@ async function bootstrap(): Promise<void> {
     const isLocal = config.profile === "local";
     const claudeRunner = new ClaudeQueryRunner(isLocal, isLocal);
     const tracer = new TracerApiWindow(resolveTracerApiUrl());
+    // 레시피 검색은 이 축이 소유한 원장을 보므로 자기 API 를 부른다.
+    const agentApi = new TracerApiWindow(resolveAgentApiUrl(config.agentApi.port));
 
     const recipeIds = new UlidGenerator();
     const recipeReader = new RecipeReaderAdapter(tracer);
-    const recipeSearch = new RecipeSearchAdapter(tracer);
+    const recipeSearch = new RecipeSearchAdapter(tracer, agentApi);
     const recipeJobs = new RecipeJobLedgerAdapter(dataSource);
     const recipeSettings = new RecipeSettingReaderAdapter(dataSource);
     const recipeTasks = new RecipeTaskReaderAdapter(tracer);
-    const recipeOutput = new RecipeOutputAdapter(tracer);
+    const recipeOutput = new RecipeOutputAdapter(dataSource, recipeIds, clock);
     const recipeNotification = new JobNotification(publish);
     const recipePrompts = new ContractPromptSource(AGENT.recipeScan.id);
     const recipeStageOutputs = new RecipeStageOutputAdapter(dataSource);
@@ -133,7 +142,12 @@ async function bootstrap(): Promise<void> {
     const cleanupJobs = new CleanupJobLedgerAdapter(dataSource);
     const cleanupSettings = new CleanupSettingReaderAdapter(dataSource);
     const cleanupTasks = new CleanupTaskReaderAdapter(tracer);
-    const cleanupOutput = new CleanupOutputAdapter(tracer);
+    const cleanupOutput = new CleanupOutputAdapter(
+        dataSource,
+        cleanupIds,
+        clock,
+        new CleanupObservedActivityAdapter(tracer),
+    );
     const cleanupNotification = new JobNotification(publish);
     const cleanupPrompts = new ContractPromptSource(AGENT.taskCleanup.id);
     const cleanupAgent = new CleanupSdkAgentAdapter(claudeRunner, {

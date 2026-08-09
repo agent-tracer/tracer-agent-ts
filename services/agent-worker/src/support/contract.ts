@@ -94,36 +94,6 @@ export function readChatDraftRules(): ChatDraftRules {
     return { intervalMs: declared.intervalMs, edge: declared.edge };
 }
 
-/** 산출물 창구 하나의 요청 본문에 실릴 수 있는 칸이다. */
-export interface TracerOutputWindow {
-    readonly method: string;
-    readonly path: string;
-    readonly status: number;
-    readonly body: { readonly required: readonly string[]; readonly optional: readonly string[] };
-    readonly data: Readonly<Record<string, string>>;
-}
-
-/** 산출물 한 건을 만드는 요청 항목의 칸이다. */
-export interface TracerOutputDraft {
-    readonly required: readonly string[];
-    readonly optional: readonly string[];
-}
-
-/** 에이전트가 만드는 산출물의 창구와 칸과 멱등 규칙을 계약이 적은 그대로 담는다. */
-export interface TracerOutputsCase {
-    readonly shapes: Readonly<Record<string, { readonly fields: readonly string[] }>>;
-    readonly drafts: { readonly recipe: TracerOutputDraft; readonly cleanupSuggestion: TracerOutputDraft };
-    readonly windows: readonly TracerOutputWindow[];
-    readonly idempotency: {
-        readonly recipes: { readonly key: string };
-        readonly cleanupSuggestions: { readonly key: string };
-    };
-}
-
-export function readTracerOutputsCase(): TracerOutputsCase {
-    return readContractJson<TracerOutputsCase>("conformance/cases/tracer.outputs.json");
-}
-
 /** 계약이 usage의 model 칸 하나에 고정한 값의 규칙이다. */
 export interface JobUsageModelRule {
     readonly value: string;
