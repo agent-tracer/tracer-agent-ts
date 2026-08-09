@@ -50,29 +50,36 @@ export function generateLimitsOf(
     };
 }
 
-/** 잡 종류마다 다른 생성 활동의 상한이며 계약이 그 종류를 적은 자리는 계약이 정본이다. */
+/** 잡 종류마다 생성 활동의 이름이 다르므로 계약에서 그 종류의 상한을 찾는 열쇠다. */
+export const JOB_GENERATE_ACTIVITY = {
+    recipeScan: "generateRecipeCandidates",
+    taskCleanup: "generateTaskCleanupSuggestions",
+    titleSuggestion: "generateTitleSuggestion",
+} as const;
+
+/** 계약이 그 종류를 적지 않았을 때만 쓰는 값이며 계약이 셋을 모두 적는 동안 이 자리는 실행되지 않는다. */
+const JOB_GENERATE_FALLBACK = {
+    startToClose: "15 minutes",
+    scheduleToClose: "1 hour",
+    heartbeat: "30 seconds",
+    maximumAttempts: 3,
+    initialInterval: "10 seconds",
+} as const satisfies JobGenerateLimits;
+
+/** 잡 종류마다 다른 생성 활동의 상한이며 계약이 정본이다. */
 export const JOB_GENERATE_LIMITS = {
-    recipeScan: {
-        startToClose: "15 minutes",
-        scheduleToClose: "1 hour",
-        heartbeat: "30 seconds",
-        maximumAttempts: 3,
-        initialInterval: "10 seconds",
-    },
-    taskCleanup: {
-        startToClose: "10 minutes",
-        scheduleToClose: "30 minutes",
-        heartbeat: "30 seconds",
-        maximumAttempts: 3,
-        initialInterval: "10 seconds",
-    },
-    titleSuggestion: generateLimitsOf(declaredActivity("titleSuggestion", "generateTitleSuggestion"), {
-        startToClose: "5 minutes",
-        scheduleToClose: "20 minutes",
-        heartbeat: "30 seconds",
-        maximumAttempts: 3,
-        initialInterval: "10 seconds",
-    }),
+    recipeScan: generateLimitsOf(
+        declaredActivity("recipeScan", JOB_GENERATE_ACTIVITY.recipeScan),
+        JOB_GENERATE_FALLBACK,
+    ),
+    taskCleanup: generateLimitsOf(
+        declaredActivity("taskCleanup", JOB_GENERATE_ACTIVITY.taskCleanup),
+        JOB_GENERATE_FALLBACK,
+    ),
+    titleSuggestion: generateLimitsOf(
+        declaredActivity("titleSuggestion", JOB_GENERATE_ACTIVITY.titleSuggestion),
+        JOB_GENERATE_FALLBACK,
+    ),
 } satisfies Readonly<Record<string, JobGenerateLimits>>;
 
 /** 잡 종류마다의 짧은 활동 상한이며 워크플로 셋이 이 한 자리를 읽는다. */
