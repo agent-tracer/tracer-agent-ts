@@ -4,7 +4,7 @@
 
 ## 저장소 역할
 
-NestJS API가 대화와 잡의 실행을 접수하고 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 `agent-db`가 소유합니다. 추적 데이터와 산출물은 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`와 OpenSearch를 직접 읽지 않습니다.
+NestJS API가 대화와 잡의 실행을 접수하고 레시피와 정리 제안 원장의 창구를 열며 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장과 레시피·정리 제안 원장은 `agent-db`가 소유하고 잡의 산출물은 워커가 그 원장에 직접 적습니다. 추적 데이터는 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`를 직접 읽지 않습니다. OpenSearch는 계약이 이 축의 것으로 정한 `recipes` 색인만 직접 읽고 씁니다.
 
 Python 구현은 별도의 저장소입니다. 두 구현체의 현재 차이는 `contract/conformance/cases/divergence.json`이 갖습니다.
 
@@ -53,7 +53,8 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 
 - `agent-db` 스키마를 바꾸면 migration·리포지토리·워크플로 복구 동작을 함께 확인합니다.
 - chat·jobs·generate 워커를 한 프로세스로 합치지 않습니다.
-- `libs/tracer-client`를 우회해 추적 데이터베이스나 OpenSearch에 직접 접근하지 않습니다.
+- `libs/tracer-client`를 우회해 추적 데이터베이스나 추적이 소유한 색인에 직접 접근하지 않습니다.
+- OpenSearch에 직접 닿는 자리는 계약이 이 축의 것으로 정한 `recipes` 색인 하나로 한정합니다.
 - 응답 봉투와 `x-monitor-user` 헤더는 계약의 정본과 일치시킵니다.
 - 대화 실행의 축은 접수가 자기 축 상수를 원장에 적어 정해집니다. 상류가 실어 보낸 값을 옮겨 적지 않으며, 실행을 가져가는 조회는 자기 축의 행만 봅니다. 스레드가 이미 바쁜지 보는 조회는 두 축의 실행을 함께 세어야 하므로 축으로 거르지 않습니다.
 - 스레드의 대기 줄은 원장 하나가 소유합니다. 워크플로 시그널은 줄이 움직였다는 포인터이고 실행의 사실은 원장에서 다시 조회합니다.

@@ -1,6 +1,6 @@
 # tracer-agent-ts
 
-에이전트 서비스의 TypeScript 구현이며 계약의 정본입니다. NestJS API가 대화와 잡의 접수와 조회와 취소와 스트림을 제공하고, Temporal 워커가 chat·jobs·generate 큐를 각각 소비해 Claude Agent SDK를 실행합니다. 실행 원장은 이 서비스가 소유하며, 실행에 필요한 기록은 추적 API를 HTTP로 읽고 산출물도 같은 경로로 되돌려 보냅니다.
+에이전트 서비스의 TypeScript 구현이며 계약의 정본입니다. NestJS API가 대화와 잡의 접수와 조회와 취소와 스트림, 그리고 레시피와 정리 제안 원장의 창구를 제공하고, Temporal 워커가 chat·jobs·generate 큐를 각각 소비해 Claude Agent SDK를 실행합니다. 실행 원장과 레시피·정리 제안 원장은 이 서비스가 소유하며, 잡의 산출물은 워커가 그 원장에 직접 적습니다. 실행에 필요한 추적 쪽 기록은 추적 API를 HTTP로 읽습니다.
 
 같은 계약을 만족하는 Python 구현이 따로 있고 배포에서 어느 이미지를 올리느냐로 둘 중 하나가 선택됩니다. 두 구현체 사이에 지금 남아 있는 차이는 계약 저장소의 `conformance/cases/divergence.json`이 갖습니다.
 
@@ -10,7 +10,8 @@
 - Temporal 기반 대화·잡 워크플로와 큐 분리
 - chat, recipe scan, task cleanup, title suggestion 에이전트
 - 실행 단계·토큰 사용량·비용·모델 호출의 관측 정보 기록
-- 추적 API를 사용하는 도구와 산출물 연동
+- 추적 API를 읽는 도구와 자기 원장에 적는 레시피·정리 제안 산출물
+- 레시피 검색을 위한 아웃박스 적재와 OpenSearch `recipes` 색인 배출
 - 자격 증명이 답과 초안과 도구 결과로 새지 않도록 가리는 절차
 - OpenTelemetry와 선택적 LangSmith 연동
 
@@ -22,6 +23,7 @@ flowchart LR
     API --> AgentDB[(agent-db)]
     API --> Temporal[(Temporal)]
     API --> Kafka[(Redpanda)]
+    API --> OpenSearch[(OpenSearch recipes)]
 ```
 
 ### 워커와 모델 실행
@@ -50,14 +52,14 @@ flowchart LR
 
 | 구성 요소 | 책임과 경계 |
 | --- | --- |
-| `agent-api` | HTTP 접수·조회·취소·스트림과 `/internal/surface`를 제공합니다 |
+| `agent-api` | HTTP 접수·조회·취소·스트림과 `/internal/surface`, 레시피·정리 제안 창구, 사건 스트림 투영, 색인 아웃박스 배출을 제공합니다 |
 | chat 워커 | 대화 스레드와 실행을 처리합니다 |
 | jobs 워커 | 짧은 잡 액티비티와 상태 정산을 처리합니다 |
 | generate 워커 | 모델을 호출하는 긴 액티비티를 분리해 처리합니다 |
-| `agent-db` | 이 서비스가 소유하는 실행 원장입니다 |
+| `agent-db` | 이 서비스가 소유하는 실행 원장이며 레시피와 정리 제안 원장을 함께 담습니다 |
 | `libs/tracer-client` | 추적 API 호출과 Kafka 토픽 기반 실행 갱신 전달을 담당합니다 |
 
-추적 데이터베이스와 OpenSearch를 직접 읽지 않습니다. API와 워커는 계약의 `x-monitor-user` 사용자 식별 헤더와 응답 봉투 규칙을 따릅니다.
+추적 데이터베이스는 직접 읽지 않고 추적 데이터는 추적 API의 공개 HTTP 경로로만 읽습니다. OpenSearch는 계약이 이 축의 것으로 정한 `recipes` 색인만 직접 읽고 쓰며 추적이 소유한 `events`·`tasks`·`memos` 색인은 부르지 않습니다. API와 워커는 계약의 `x-monitor-user` 사용자 식별 헤더와 응답 봉투 규칙을 따릅니다.
 
 ## 요구 사항
 
@@ -65,6 +67,7 @@ flowchart LR
 - PostgreSQL 17 계열의 agent database
 - Kafka 호환 브로커 또는 Redpanda
 - Temporal Server
+- `recipes` 색인을 담을 OpenSearch
 - 실행 중인 `tracer-api` 또는 게이트웨이
 - `contract` submodule
 - `prd` 프로파일에서는 설정 API에 저장된 모델 자격 증명
@@ -119,6 +122,7 @@ MONITOR_PROFILE=local npm run start:generate --workspace=@tracer-agent/agent-wor
 | `TEMPORAL_ADDRESS` | `localhost:7233` | Temporal 주소 |
 | `TEMPORAL_NAMESPACE` | `default` | Temporal 네임스페이스 |
 | `TRACER_API_URL` | `http://127.0.0.1:3902` | 추적 API |
+| `OPENSEARCH_URL` | `http://127.0.0.1:9200` | `recipes` 색인을 담은 OpenSearch |
 | `AGENT_API_URL` | API 포트 기반 | 자기 API base URL |
 | `AGENT_TASK_QUEUE_PREFIX` | `agent` | 큐 접두사 |
 | `MONITOR_SETTINGS_ENCRYPTION_KEY` | 로컬 대체값 | 저장 설정 암호화 |
@@ -156,7 +160,7 @@ tracer-agent-ts/
 │   ├── llm/                     Claude 실행기·가격·관측·오류
 │   └── tracer-client/           추적 API 클라이언트와 API 창
 ├── services/
-│   ├── agent-api/               HTTP 표면과 대화·잡·설정·헬스 슬라이스
+│   ├── agent-api/               HTTP 표면과 대화·잡·레시피·정리·설정·헬스 슬라이스
 │   └── agent-worker/            Temporal 진입점과 대화·레시피·정리·제목 슬라이스
 ├── scripts/                     경로·린트·의존·커밋 검사
 ├── architecture.manifest.mjs    계층·단위·봉인·예산 규칙의 정본
