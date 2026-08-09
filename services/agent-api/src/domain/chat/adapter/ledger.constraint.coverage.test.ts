@@ -10,7 +10,7 @@ const COVERED_BY: Readonly<Record<string, string>> = {
     chat_executions_idempotency: "chat.execution.contract.test.ts",
     chat_threads_summary_pairing: "chat.thread.summary.contract.test.ts",
     chat_executions_running_thread: "chat.thread.lock.contract.test.ts",
-    ai_jobs_idempotency_key: "아직 없음",
+    ai_jobs_idempotency_key: "../../job/adapter/job.idempotency.contract.test.ts",
     ai_job_steps_job_attempt_seq: "아직 없음",
     chat_execution_steps_execution_attempt_seq: "아직 없음",
     chat_user_memories_unique: "아직 없음",
