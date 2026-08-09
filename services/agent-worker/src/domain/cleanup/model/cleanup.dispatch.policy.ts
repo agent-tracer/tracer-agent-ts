@@ -1,5 +1,5 @@
 import { loadExecutionBudgetContract, renderFailureText } from "@tracer-agent/llm";
-import { clampCodeUnits } from "~agent-worker/support/clamp.js";
+import { clampText } from "~agent-worker/support/clamp.js";
 import { MAX_INSPECT_REASON_CHARS, type InspectReport } from "./cleanup.dispatch.schema.js";
 import {
     CLEANUP_TOOL_CONTRACT,
@@ -39,7 +39,7 @@ export function buildInspectFailureReport(taskId: string, error: unknown): Inspe
     return {
         taskId,
         archivable: false,
-        reason: clampCodeUnits(
+        reason: clampText(
             renderFailureText(TASK_CLEANUP_FAILURES.workerFailed, { reason: summary }),
             MAX_INSPECT_REASON_CHARS,
         ),

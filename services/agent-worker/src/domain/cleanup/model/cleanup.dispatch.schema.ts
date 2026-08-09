@@ -1,6 +1,6 @@
 import { DISPATCH_DEPTHS } from "@tracer-agent/llm";
 import { z } from "zod";
-import { clampCodeUnits } from "~agent-worker/support/clamp.js";
+import { clampText } from "~agent-worker/support/clamp.js";
 import { cleanupSuggestionsListSchema } from "./cleanup.suggestion.schema.js";
 import {
     CLEANUP_MAX_SUGGESTIONS,
@@ -59,7 +59,7 @@ export function salvageInspectReport(taskId: string, raw: unknown): InspectRepor
 }
 
 function clamped(value: unknown, max: number): unknown {
-    return typeof value === "string" ? clampCodeUnits(value.trim(), max) : value;
+    return typeof value === "string" ? clampText(value.trim(), max) : value;
 }
 
 export type InspectAssignment = z.infer<typeof inspectAssignmentSchema>;
