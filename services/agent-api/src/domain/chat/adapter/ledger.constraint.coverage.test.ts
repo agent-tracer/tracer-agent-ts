@@ -17,6 +17,9 @@ const COVERED_BY: Readonly<Record<string, string>> = {
     chat_executions_requested_backend_check: "아직 없음",
 };
 
+const HERE = path.dirname(new URL(import.meta.url).pathname);
+const COVERED = Object.entries(COVERED_BY).filter(([, where]) => where !== "아직 없음");
+
 function migrationText(): string {
     return readdirSync(MIGRATIONS)
         .filter((name) => name.endsWith(".sql"))
@@ -37,11 +40,15 @@ describe("실물 원장의 제약과 그것에 부딪히는 자리", () => {
         expect(declaredConstraints()).toEqual(Object.keys(COVERED_BY).sort());
     });
 
-    // 실제 원장을 띄우는 자리는 파일 이름으로 가리키므로 그 파일이 사라지면 여기서 걸린다.
-    it.each(Object.entries(COVERED_BY).filter(([, where]) => where !== "아직 없음"))(
-        "%s 에 부딪히는 파일이 실재한다",
-        (_name, where) => {
-            expect(readdirSync(path.dirname(new URL(import.meta.url).pathname))).toContain(where);
+    // 파일이 있다는 것만으로는 그 제약에 부딪혔는지 알 수 없으므로 그 자리가 갖는 성질을 본다.
+    it.each(COVERED.map(([name, where]) => ({ name, where })))(
+        "$name 에 부딪히는 $where 가 실물 원장에 실제로 부딪힌다",
+        ({ where }) => {
+            const text = readFileSync(path.join(HERE, where), "utf8");
+
+            // 거절을 단언하는 모양은 toThrow 만이 아니므로 그 앞의 rejects 까지만 본다.
+            expect({ 실물: text.includes("startLedger"), 거절: text.includes(".rejects.") })
+                .toEqual({ 실물: true, 거절: true });
         },
     );
 });
