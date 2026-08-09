@@ -21,6 +21,7 @@ ENV NODE_ENV=production
 # tsconfig 별칭과 데코레이터 해석이 실행 디렉터리를 기준으로 삼으므로 각 진입점의 작업 디렉터리에서 띄운다.
 # 이미지 안에서 실행할 명령은 다음 중 하나를 그대로 골라 CMD로 덮어쓴다:
 #   cd services/agent-api && node --import @swc-node/register/esm-register src/agent.main.ts
+#   cd services/agent-api && node --import @swc-node/register/esm-register src/projector.main.ts
 #   cd services/agent-worker && node --import @swc-node/register/esm-register src/chat.main.ts
 #   cd services/agent-worker && node --import @swc-node/register/esm-register src/jobs.main.ts
 #   cd services/agent-worker && node --import @swc-node/register/esm-register src/generate.main.ts

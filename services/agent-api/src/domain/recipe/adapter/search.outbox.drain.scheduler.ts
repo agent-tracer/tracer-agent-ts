@@ -12,10 +12,10 @@ export class SearchOutboxDrainScheduler {
 
     constructor(private readonly drain: SearchOutboxDrainRunnerPort) {}
 
+    /** 배출이 이 프로세스가 하는 일이므로 주기 타이머가 이벤트 루프를 잡아 둔다. */
     start(): void {
         if (this.timer !== null) return;
         this.timer = setInterval(() => void this.tick(), DRAIN_INTERVAL_MS);
-        this.timer.unref();
     }
 
     stop(): void {

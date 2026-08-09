@@ -7,6 +7,7 @@ import {
     RECIPES_INDEX_ALIAS,
     SEARCH_OUTBOX_BATCH_SIZE,
 } from "~agent-api/domain/recipe/model/recipe.document.js";
+import { RECIPES_INDEX_DEFINITION } from "~agent-api/domain/recipe/model/recipe.index.js";
 import {
     MATCH_FIELDS,
     MINIMUM_SHOULD_MATCH,
@@ -40,12 +41,22 @@ interface LedgerCase {
     readonly rejections: readonly { readonly code: string; readonly message: string; readonly status: number }[];
 }
 
+/** 계약이 선언한 색인 칸 하나이며 meaning 과 from 은 사람이 읽는 근거라 매핑에 싣지 않는다. */
+interface DeclaredField {
+    readonly type: string;
+    readonly analyzer?: string;
+}
+
 interface SearchIndexDeclaration {
     readonly pipeline: { readonly stages: readonly { readonly name: string; readonly batchSize?: number }[] };
     readonly indices: {
         readonly recipes: {
             readonly alias: string;
-            readonly document: { readonly fields: Readonly<Record<string, unknown>> };
+            readonly index: string;
+            readonly settings: Readonly<Record<string, unknown>> & {
+                readonly analysis: Readonly<Record<string, unknown>>;
+            };
+            readonly document: { readonly fields: Readonly<Record<string, DeclaredField>> };
             readonly query: {
                 readonly matchFields: readonly string[];
                 readonly minimumShouldMatch: string;
@@ -162,7 +173,39 @@ describe("창구와 어휘가 계약이 적은 것과 같다", () => {
     });
 });
 
+/** 계약의 settings 는 근거 문장을 함께 담으므로 색인에 보낼 칸만 남긴다. */
+function declaredSettings(): Record<string, unknown> {
+    const { analysis, ...rest } = searchIndex.indices.recipes.settings;
+    const { meaning: _meaning, ...analysisWithoutProse } = analysis;
+    return { ...rest, analysis: analysisWithoutProse };
+}
+
+/** 계약의 칸 선언에서 매핑이 되는 것은 종류와 분석기 둘뿐이다. */
+function declaredMappingProperties(): Record<string, DeclaredField> {
+    return Object.fromEntries(
+        Object.entries(searchIndex.indices.recipes.document.fields).map(([name, field]) => [
+            name,
+            field.analyzer === undefined ? { type: field.type } : { type: field.type, analyzer: field.analyzer },
+        ]),
+    );
+}
+
 describe("색인 선언과 코드가 같은 값을 쓴다", () => {
+    it("세우는 물리 색인의 이름이 계약이 선언한 이름과 같다", () => {
+        expect({ alias: RECIPES_INDEX_DEFINITION.alias, index: RECIPES_INDEX_DEFINITION.index }).toEqual({
+            alias: searchIndex.indices.recipes.alias,
+            index: searchIndex.indices.recipes.index,
+        });
+    });
+
+    it("세우는 색인의 settings 와 분석기가 계약이 선언한 것과 같다", () => {
+        expect(RECIPES_INDEX_DEFINITION.settings).toEqual(declaredSettings());
+    });
+
+    it("세우는 색인의 매핑이 계약이 선언한 칸의 종류와 분석기와 같다", () => {
+        expect(RECIPES_INDEX_DEFINITION.mappings).toEqual({ properties: declaredMappingProperties() });
+    });
+
     it("색인 문서의 칸이 계약이 선언한 칸과 같다", () => {
         expect(Object.keys(buildRecipeDocument(recipeRow())).sort()).toEqual(
             Object.keys(searchIndex.indices.recipes.document.fields).sort(),

@@ -11,7 +11,7 @@
 - chat, recipe scan, task cleanup, title suggestion 에이전트
 - 실행 단계·토큰 사용량·비용·모델 호출의 관측 정보 기록
 - 추적 API를 읽는 도구와 자기 원장에 적는 레시피·정리 제안 산출물
-- 레시피 검색을 위한 아웃박스 적재와 OpenSearch `recipes` 색인 배출
+- 레시피 검색을 위한 아웃박스 적재와 OpenSearch `recipes` 색인 생성과 배출
 - 자격 증명이 답과 초안과 도구 결과로 새지 않도록 가리는 절차
 - OpenTelemetry와 선택적 LangSmith 연동
 
@@ -24,6 +24,9 @@ flowchart LR
     API --> Temporal[(Temporal)]
     API --> Kafka[(Redpanda)]
     API --> OpenSearch[(OpenSearch recipes)]
+    Projector[agent-projector] --> AgentDB
+    Projector --> Kafka
+    Projector --> OpenSearch
 ```
 
 ### 워커와 모델 실행
@@ -52,7 +55,8 @@ flowchart LR
 
 | 구성 요소 | 책임과 경계 |
 | --- | --- |
-| `agent-api` | HTTP 접수·조회·취소·스트림과 `/internal/surface`, 레시피·정리 제안 창구, 사건 스트림 투영, 색인 아웃박스 배출을 제공합니다 |
+| `agent-api` | HTTP 접수·조회·취소·스트림과 `/internal/surface`, 레시피·정리 제안 창구를 제공합니다 |
+| `agent-projector` | `recipes` 색인 생성, 색인 아웃박스 배출, 추적 사건 스트림 투영을 담당하며 HTTP 창구를 열지 않습니다 |
 | chat 워커 | 대화 스레드와 실행을 처리합니다 |
 | jobs 워커 | 짧은 잡 액티비티와 상태 정산을 처리합니다 |
 | generate 워커 | 모델을 호출하는 긴 액티비티를 분리해 처리합니다 |
@@ -85,14 +89,15 @@ git submodule update --init --recursive
 # agent-db 스키마 적용 — 계약의 DDL 을 Flyway 가 적용하며 도커를 요구한다
 npm run schema:apply
 
-# API 와 세 워커를 각각 실행
+# API 와 배경 작업기와 세 워커를 각각 실행
 npm run start --workspace=@tracer-agent/agent-api
+npm run start:projector --workspace=@tracer-agent/agent-api
 npm run start:chat --workspace=@tracer-agent/agent-worker
 npm run start:jobs --workspace=@tracer-agent/agent-worker
 npm run start:generate --workspace=@tracer-agent/agent-worker
 ```
 
-API와 각 워커는 별도의 프로세스로 실행합니다. 설정은 `application.yaml` → `application.local.yaml` → 환경변수 순서로 병합됩니다. Compose 배포에서는 `agent-tracer-stack`이 이 프로세스들과 의존 인프라를 함께 실행합니다.
+API와 배경 작업기와 각 워커는 별도의 프로세스로 실행합니다. `agent-projector`는 부팅에서 계약이 선언한 `recipes` 색인을 세우므로 OpenSearch에 닿지 못하면 그 프로세스만 종료하고 창구는 그대로 답합니다. 설정은 `application.yaml` → `application.local.yaml` → 환경변수 순서로 병합됩니다. Compose 배포에서는 `agent-tracer-stack`이 이 프로세스들과 의존 인프라를 함께 실행합니다.
 
 ### 모델 자격 증명
 
@@ -160,7 +165,7 @@ tracer-agent-ts/
 │   ├── llm/                     Claude 실행기·가격·관측·오류
 │   └── tracer-client/           추적 API 클라이언트와 API 창
 ├── services/
-│   ├── agent-api/               HTTP 표면과 대화·잡·레시피·정리·설정·헬스 슬라이스
+│   ├── agent-api/               HTTP 표면과 배경 작업 진입점, 대화·잡·레시피·정리·설정·헬스 슬라이스
 │   └── agent-worker/            Temporal 진입점과 대화·레시피·정리·제목 슬라이스
 ├── scripts/                     경로·린트·의존·커밋 검사
 ├── architecture.manifest.mjs    계층·단위·봉인·예산 규칙의 정본
@@ -170,7 +175,7 @@ tracer-agent-ts/
 
 ## 개발 컨벤션
 
-배포 단위는 `libs/platform`, `libs/llm`, `libs/tracer-client`, `services/agent-api`, `services/agent-worker`입니다. 서비스 도메인의 의존 방향은 `inbound → application → port → adapter → model`이며, inbound는 application과 model만, application은 port와 model만, adapter는 port와 model만 부릅니다. 시간·난수·환경·스케줄러는 application 계층에서 직접 쓰지 않고 port 뒤에 둡니다.
+코드 단위는 `libs/platform`, `libs/llm`, `libs/tracer-client`, `services/agent-api`, `services/agent-worker`입니다. 프로세스는 코드 단위보다 많아서 `services/agent-api`가 `agent-api`와 `agent-projector` 두 프로세스를, `services/agent-worker`가 세 워커 프로세스를 진입점만 달리해 띄웁니다. 서비스 도메인의 의존 방향은 `inbound → application → port → adapter → model`이며, inbound는 application과 model만, application은 port와 model만, adapter는 port와 model만 부릅니다. 시간·난수·환경·스케줄러는 application 계층에서 직접 쓰지 않고 port 뒤에 둡니다.
 
 파일의 역할은 `.controller.ts`, `.usecase.ts`, `.port.ts`, `.adapter.ts`, `.workflow.ts`, `.activity.ts` 접미사로 드러냅니다. TypeORM·NestJS·Temporal SDK·zod는 manifest가 정한 경계에서만 씁니다. workspace import는 `@tracer-agent/*`와 생성된 `~unit/*` alias를 사용하고 깊은 상대 경로를 피합니다. 파일당 300줄, 테스트 없는 유스케이스, 직접 ID 생성은 자동 검사가 막습니다.
 

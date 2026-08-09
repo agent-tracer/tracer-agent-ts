@@ -4,7 +4,7 @@
 
 ## 저장소 역할
 
-NestJS API가 대화와 잡의 실행을 접수하고 레시피와 정리 제안 원장의 창구를 열며 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장과 레시피·정리 제안 원장은 `agent-db`가 소유하고 잡의 산출물은 워커가 그 원장에 직접 적습니다. 추적 데이터는 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`를 직접 읽지 않습니다. OpenSearch는 계약이 이 축의 것으로 정한 `recipes` 색인만 직접 읽고 씁니다.
+NestJS API가 대화와 잡의 실행을 접수하고 레시피와 정리 제안 원장의 창구를 열며 `agent-projector`가 색인 생성과 아웃박스 배출과 사건 투영을 맡고 Temporal 워커가 chat·jobs·generate 큐를 소비해 Claude Agent SDK를 실행합니다. 실행 원장과 레시피·정리 제안 원장은 `agent-db`가 소유하고 잡의 산출물은 워커가 그 원장에 직접 적습니다. 추적 데이터는 추적 API의 공개 HTTP 경로만 사용하며 `tracer-db`를 직접 읽지 않습니다. OpenSearch는 계약이 이 축의 것으로 정한 `recipes` 색인만 직접 읽고 씁니다.
 
 Python 구현은 별도의 저장소입니다. 두 구현체의 현재 차이는 `contract/conformance/cases/divergence.json`이 갖습니다.
 
@@ -23,12 +23,13 @@ git submodule update --init --recursive
 npm run schema:apply
 
 npm run start --workspace=@tracer-agent/agent-api
+npm run start:projector --workspace=@tracer-agent/agent-api
 npm run start:chat --workspace=@tracer-agent/agent-worker
 npm run start:jobs --workspace=@tracer-agent/agent-worker
 npm run start:generate --workspace=@tracer-agent/agent-worker
 ```
 
-기본 API 포트는 `3904`입니다. API와 각 워커는 별도의 프로세스로 실행합니다. 설정은 `application.yaml` → `application.local.yaml` → 환경변수 순서로 병합됩니다.
+기본 API 포트는 `3904`입니다. API와 배경 작업기와 각 워커는 별도의 프로세스로 실행합니다. 설정은 `application.yaml` → `application.local.yaml` → 환경변수 순서로 병합됩니다.
 
 `schema:apply`는 계약의 `db/migrations`를 Flyway 이미지로 적용하며 도커를 요구합니다. 이 구현체는 DDL 을 실행하지 않고 배포도 같은 도구를 씁니다. 원장의 주소가 기본값과 다르면 `FLYWAY_URL`을 지정합니다.
 
@@ -38,7 +39,8 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 
 ## 구조와 경계
 
-- `services/agent-api`는 HTTP 표면과 application 슬라이스를 소유합니다.
+- `services/agent-api`는 HTTP 표면과 application 슬라이스를 소유하며 `agent-api`와 `agent-projector` 두 프로세스의 진입점을 함께 담습니다.
+- `agent-projector` 프로세스는 `recipes` 색인 생성과 색인 아웃박스 배출과 사건 스트림 투영만 실행하고 창구를 열지 않습니다.
 - `services/agent-worker`는 Temporal 워크플로·액티비티와 에이전트 실행 슬라이스를 소유합니다.
 - `libs/platform`은 설정·DB·Kafka·로깅·원시 타입을 제공합니다.
 - `libs/llm`은 Claude 실행기·가격·관측·오류를 제공합니다.
@@ -52,9 +54,10 @@ npm run start:generate --workspace=@tracer-agent/agent-worker
 ## 변경 규칙
 
 - `agent-db` 스키마를 바꾸면 migration·리포지토리·워크플로 복구 동작을 함께 확인합니다.
-- chat·jobs·generate 워커를 한 프로세스로 합치지 않습니다.
+- chat·jobs·generate 워커를 한 프로세스로 합치지 않고 배경 작업을 창구 프로세스로 되돌리지 않습니다.
 - `libs/tracer-client`를 우회해 추적 데이터베이스나 추적이 소유한 색인에 직접 접근하지 않습니다.
 - OpenSearch에 직접 닿는 자리는 계약이 이 축의 것으로 정한 `recipes` 색인 하나로 한정합니다.
+- `recipes` 색인의 별칭과 물리 이름과 `settings`와 매핑은 계약의 `wire/search.index.json`이 갖고 이 축은 그 값을 옮겨 적은 자리를 계약과 대조합니다.
 - 응답 봉투와 `x-monitor-user` 헤더는 계약의 정본과 일치시킵니다.
 - 대화 실행의 축은 접수가 자기 축 상수를 원장에 적어 정해집니다. 상류가 실어 보낸 값을 옮겨 적지 않으며, 실행을 가져가는 조회는 자기 축의 행만 봅니다. 스레드가 이미 바쁜지 보는 조회는 두 축의 실행을 함께 세어야 하므로 축으로 거르지 않습니다.
 - 스레드의 대기 줄은 원장 하나가 소유합니다. 워크플로 시그널은 줄이 움직였다는 포인터이고 실행의 사실은 원장에서 다시 조회합니다.

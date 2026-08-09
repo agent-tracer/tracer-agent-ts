@@ -5,6 +5,7 @@ import { AGENT_DATA_SOURCE } from "~agent-api/config/agent.datasource.token.js";
 import { OpenSearchClient, resolveOpenSearchUrl } from "~agent-api/config/opensearch.client.js";
 import { TRACER_API_WINDOW } from "~agent-api/config/tracer.api.token.js";
 import { LedgerEventConsumer } from "~agent-api/domain/recipe/adapter/ledger.event.consumer.js";
+import { OpenSearchIndexAdminAdapter } from "~agent-api/domain/recipe/adapter/opensearch.index.admin.adapter.js";
 import { OpenSearchIndexWriterAdapter } from "~agent-api/domain/recipe/adapter/opensearch.index.writer.adapter.js";
 import { OpenSearchRecipeSearchAdapter } from "~agent-api/domain/recipe/adapter/opensearch.recipe.search.adapter.js";
 import { RecipeApplicationEntity } from "~agent-api/domain/recipe/adapter/recipe.application.entity.js";
@@ -22,6 +23,7 @@ import { DismissRecipeUseCase } from "~agent-api/domain/recipe/application/comma
 import { EditRecipeUseCase } from "~agent-api/domain/recipe/application/command/edit.recipe.usecase.js";
 import { ReportRecipeOutcomeUseCase } from "~agent-api/domain/recipe/application/command/report.recipe.outcome.usecase.js";
 import { RetireRecipeUseCase } from "~agent-api/domain/recipe/application/command/retire.recipe.usecase.js";
+import { EnsureRecipeIndexUseCase } from "~agent-api/domain/recipe/application/ensure.recipe.index.usecase.js";
 import { GetRecipeUseCase } from "~agent-api/domain/recipe/application/query/get.recipe.usecase.js";
 import { ListRecipesUseCase } from "~agent-api/domain/recipe/application/query/list.recipes.usecase.js";
 import { SearchRecipesUseCase } from "~agent-api/domain/recipe/application/query/search.recipes.usecase.js";
@@ -37,6 +39,7 @@ import {
 import { RECIPE_SEARCH } from "~agent-api/domain/recipe/port/recipe.search.port.js";
 import { RECIPE_TASK_READER } from "~agent-api/domain/recipe/port/recipe.task.reader.port.js";
 import { RECIPE_TRANSACTION } from "~agent-api/domain/recipe/port/recipe.transaction.port.js";
+import { SEARCH_INDEX_ADMIN } from "~agent-api/domain/recipe/port/search.index.admin.port.js";
 import {
     SEARCH_INDEX_WRITER,
     SEARCH_OUTBOX_DRAIN,
@@ -48,7 +51,15 @@ function openSearchClient(): OpenSearchClient {
     return new OpenSearchClient(resolveOpenSearchUrl());
 }
 
-/** recipe 슬라이스가 조립 근원에 공급하는 컨트롤러와 프로바이더 목록이다. */
+/** 적용 이력 원장은 창구와 배경 작업이 함께 읽고 쓰므로 두 배선이 같은 팩토리를 쓴다. */
+const recipeApplicationRepository = {
+    provide: RECIPE_APPLICATION_REPOSITORY,
+    inject: [AGENT_DATA_SOURCE],
+    useFactory: (source: DataSource) =>
+        new TypeOrmRecipeApplicationRepository(source.getRepository(RecipeApplicationEntity)),
+};
+
+/** recipe 슬라이스가 HTTP 창구에 공급하는 컨트롤러와 프로바이더 목록이다. */
 export const recipeFeature = {
     controllers: [RecipeController],
     providers: [
@@ -61,12 +72,8 @@ export const recipeFeature = {
         GetRecipeUseCase,
         ListRecipesUseCase,
         SearchRecipesUseCase,
-        SearchOutboxDrainUseCase,
-        RecipeProjection,
         RecipeTransactionAdapter,
         { provide: RECIPE_TRANSACTION, useExisting: RecipeTransactionAdapter },
-        SearchOutboxDrainAdapter,
-        { provide: SEARCH_OUTBOX_DRAIN, useExisting: SearchOutboxDrainAdapter },
         { provide: RECIPE_CLOCK, useClass: SystemClock },
         RecipeUlidGenerator,
         { provide: RECIPE_ID_GENERATOR, useExisting: RecipeUlidGenerator },
@@ -75,19 +82,27 @@ export const recipeFeature = {
             inject: [AGENT_DATA_SOURCE],
             useFactory: (source: DataSource) => new TypeOrmRecipeRepository(source.getRepository(RecipeEntity)),
         },
-        {
-            provide: RECIPE_APPLICATION_REPOSITORY,
-            inject: [AGENT_DATA_SOURCE],
-            useFactory: (source: DataSource) =>
-                new TypeOrmRecipeApplicationRepository(source.getRepository(RecipeApplicationEntity)),
-        },
+        recipeApplicationRepository,
         {
             provide: RECIPE_TASK_READER,
             inject: [TRACER_API_WINDOW],
             useFactory: (tracer: TracerApiWindow) => new TracerTaskReaderAdapter(tracer),
         },
         { provide: RECIPE_SEARCH, useFactory: () => new OpenSearchRecipeSearchAdapter(openSearchClient()) },
+    ],
+};
+
+/** recipe 슬라이스가 배경 작업 단위에 공급하는 프로바이더 목록이며 창구를 열지 않는다. */
+export const recipeProjectorFeature = {
+    providers: [
+        EnsureRecipeIndexUseCase,
+        SearchOutboxDrainUseCase,
+        RecipeProjection,
+        SearchOutboxDrainAdapter,
+        { provide: SEARCH_OUTBOX_DRAIN, useExisting: SearchOutboxDrainAdapter },
+        recipeApplicationRepository,
         { provide: SEARCH_INDEX_WRITER, useFactory: () => new OpenSearchIndexWriterAdapter(openSearchClient()) },
+        { provide: SEARCH_INDEX_ADMIN, useFactory: () => new OpenSearchIndexAdminAdapter(openSearchClient()) },
     ],
 };
 

@@ -25,7 +25,7 @@ export const ROLES = Object.freeze({
   adapter: [".adapter.ts"],
 });
 
-/** 배포 단위이며 shape가 그 단위에 적용할 규칙 집합을 고르고 importable이 남이 부를 수 있는지를 정한다. */
+/** 배포 단위이며 shape가 그 단위에 적용할 규칙 집합을 고르고 importable이 남이 부를 수 있는지를 정하되 한 단위가 진입점을 여럿 두어 프로세스를 나눌 수 있다. */
 export const UNITS = Object.freeze([
   { name: "platform", dir: "libs/platform", alias: "~platform", shape: "lib", importable: true },
   { name: "llm", dir: "libs/llm", alias: "~llm", shape: "lib", importable: true },
@@ -60,7 +60,7 @@ export const AMBIENT = Object.freeze({
 });
 
 /** 운영 로그 이름이 도메인 자리에 쓰지 못하는 서비스 이름. */
-export const SERVICE_LOG_DOMAINS = Object.freeze(["agent_api", "agent_worker"]);
+export const SERVICE_LOG_DOMAINS = Object.freeze(["agent_api", "agent_projector", "agent_worker"]);
 
 /** 소유 포트를 거치지 않고 식별자를 직접 만드는지 보는 단위. */
 export const ID_GENERATION_GUARDED = Object.freeze(["agent-api"]);
