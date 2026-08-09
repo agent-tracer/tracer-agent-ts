@@ -7,12 +7,17 @@ const reservationEntrySchema = z.object({
     reason: z.string().min(1),
 });
 
+/** 검증에 걸린 산출을 다시 받는 횟수는 이 단계에만 있으므로 그 몫의 모양을 따로 갖는다. */
+const repairReservationSchema = reservationEntrySchema.extend({
+    attempts: z.number().int().min(0),
+});
+
 const RESERVATION_STEPS = ["repair", "survey", "synthesisFloor"] as const;
 
 const reservationSchema = z.object({
     meaning: z.string().min(1),
     order: z.array(z.enum(RESERVATION_STEPS)).length(RESERVATION_STEPS.length),
-    repair: reservationEntrySchema,
+    repair: repairReservationSchema,
     survey: reservationEntrySchema,
     synthesisFloor: reservationEntrySchema,
 });
