@@ -12,6 +12,7 @@ vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
 const { ClaudeQueryRunner } = await import("./claude.query.runner.js");
 const { AGENT_ERROR_SUBTYPE, PROVIDER_ERROR_SUBTYPE } = await import("~llm/model/agent.error.js");
 
+import { landingReserveCalls } from "~llm/runner/landing.directive.js";
 import type { AgentQueryRequest } from "~llm/runner/llm.runner.js";
 import type { ClaudeQueryOptions } from "./claude.query.options.js";
 
@@ -274,6 +275,28 @@ function passedSystemPrompt(): unknown {
     const { options } = call![0] as { options: { systemPrompt: unknown } };
     return options.systemPrompt;
 }
+
+describe("실행기에 넘기는 턴 상한", () => {
+    // 마무리 몫을 더하는 공식은 따로 검사가 있으나 그 결과가 실행기에 닿는지는 이 자리만 본다.
+    it("모델에게 알리는 수가 아니라 마무리 몫을 더한 수를 넘긴다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request({ maxTurns: 9 }));
+
+        expect(passedOptions()["maxTurns"]).toBe(9 + landingReserveCalls());
+    });
+
+    // 상한을 두지 않은 실행에 몫을 더하면 없던 상한이 생긴다.
+    it("상한이 없는 실행에는 몫을 더하지 않는다", async () => {
+        queryMock.mockClear();
+        queryMock.mockReturnValue(stream([done()]));
+
+        await new ClaudeQueryRunner(true).run(request({ maxTurns: 0 }));
+
+        expect(passedOptions()["maxTurns"]).toBe(0);
+    });
+});
 
 describe("프롬프트 캐시 경계", () => {
     it("턴별 맥락이 있으면 정적 접두부와 그 사이에 경계를 세운다", async () => {
