@@ -5,7 +5,8 @@ import { RECIPE_SEARCH_LIMIT } from "~agent-api/domain/recipe/application/query/
 export const listQuerySchema = z.object({ status: z.enum(RECIPE_STATUSES).optional() });
 
 export const searchQuerySchema = z.object({
-    q: z.string().trim().min(1),
+    // 다듬어서 비는 질의는 거절이 아니라 빈 목록이므로 길이는 다듬기 전에 본다.
+    q: z.string().min(1).trim(),
     limit: z.coerce.number().int().min(RECIPE_SEARCH_LIMIT.min).max(RECIPE_SEARCH_LIMIT.max).optional(),
 });
 
