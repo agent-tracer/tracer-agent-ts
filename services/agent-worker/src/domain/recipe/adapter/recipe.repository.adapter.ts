@@ -94,7 +94,7 @@ export class RecipeRepositoryAdapter implements RecipeRepositoryPort {
         }
     }
 
-    async foldSuccessAttempt(jobId: string, record: JobAttemptRecord) {
+    async readSuccessAttemptUsage(jobId: string, record: JobAttemptRecord) {
         const job = await this.jobs().findById(jobId);
         const { attempts, totalCostUsd } = foldAttempt(job?.usage ?? {}, record);
         if (attempts.length <= 1) return { attempts: undefined, costUsd: record.costUsd };

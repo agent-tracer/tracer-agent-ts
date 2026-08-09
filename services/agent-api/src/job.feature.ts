@@ -26,7 +26,7 @@ import { JOB_ID_GENERATOR } from "~agent-api/domain/job/port/job.id.generator.po
 import { JOB_REPOSITORY } from "~agent-api/domain/job/port/job.repository.port.js";
 import { JOB_STATUS_NOTIFIER } from "~agent-api/domain/job/port/job.status.notifier.port.js";
 import { JOB_STEP_REPOSITORY } from "~agent-api/domain/job/port/job.step.repository.port.js";
-import { LOCAL_CLI_AUTH } from "~agent-api/domain/job/port/local.cli.auth.port.js";
+import { LOCAL_CLI_AUTH_ENABLED } from "~agent-api/domain/job/model/local.cli.auth.enabled.js";
 import { TracerApiWindow } from "@tracer-agent/tracer-client";
 import { TRACER_API_WINDOW } from "~agent-api/config/tracer.api.token.js";
 import { SCAN_ANCHOR_READER } from "~agent-api/domain/job/port/scan.anchor.reader.port.js";
@@ -64,7 +64,7 @@ export const jobFeature = {
         JobUlidGenerator,
         { provide: JOB_ID_GENERATOR, useExisting: JobUlidGenerator },
         // 로컬 자격으로 실행되는 프로파일에서는 접수가 API 키를 묻지 않는다.
-        { provide: LOCAL_CLI_AUTH, useFactory: () => loadApplicationConfig().profile === "local" },
+        { provide: LOCAL_CLI_AUTH_ENABLED, useFactory: () => loadApplicationConfig().profile === "local" },
         {
             provide: JOB_REPOSITORY,
             inject: [AGENT_DATA_SOURCE, JobUlidGenerator],

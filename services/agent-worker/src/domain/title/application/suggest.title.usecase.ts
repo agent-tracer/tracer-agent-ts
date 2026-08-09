@@ -59,7 +59,7 @@ export class SuggestTitleUsecase {
         const suggestions = normalized.errors.length === 0 ? normalized.kept : [];
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
-        const { attempts, costUsd } = await this.repository.foldSuccessAttempt(
+        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );

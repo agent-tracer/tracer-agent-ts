@@ -140,7 +140,7 @@ export class InMemoryCleanupRepository implements CleanupRepositoryPort {
         this.failedAttempts.push(input);
     }
 
-    async foldSuccessAttempt(
+    async readSuccessAttemptUsage(
         _jobId: string,
         record: JobAttemptRecord,
     ): Promise<{ readonly attempts: readonly JobAttemptRecord[] | undefined; readonly costUsd: number | null }> {

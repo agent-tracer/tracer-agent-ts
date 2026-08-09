@@ -82,7 +82,7 @@ export class SuggestCleanupUsecase {
         const suggestions = assembleCleanupSuggestions(output.suggestions, prep.candidates, prep.maxSuggestions);
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
 
-        const { attempts, costUsd } = await this.repository.foldSuccessAttempt(
+        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );

@@ -211,7 +211,7 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
     const exhausted = reports.some((report) => report.exhausted);
     if (errors.length > 0) pushValidationFailed(segments, VALIDATE_NODE, errors.join("; "));
     if (errors.length === 0)
-      return this.landed(
+      return this.buildValidatedOutput(
         ctx,
         segments,
         synthesis.data.recipes,
@@ -272,13 +272,13 @@ export class RecipeAgentAdapter implements RecipeAgentPort {
       return buildEmptyRecipeOutput(ctx, segments, repaired.modelUsed, coordinatorLedger, {
         repairExhausted: true,
       });
-    return this.landed(ctx, segments, repaired.data.recipes, repaired.modelUsed, coordinatorLedger, {
+    return this.buildValidatedOutput(ctx, segments, repaired.data.recipes, repaired.modelUsed, coordinatorLedger, {
       probeExhausted: exhausted,
     });
   }
 
-  /** 검증을 통과한 산출이며 후보가 하나도 서지 않았으면 왜 비었는지를 함께 남긴다. */
-  private landed(
+  /** 검증을 통과한 산출을 만들며 후보가 하나도 서지 않았으면 왜 비었는지를 함께 남긴다. */
+  private buildValidatedOutput(
     ctx: RecipeQueryContext,
     segments: RunSegment[],
     recipes: readonly RecipeCandidatePayload[],

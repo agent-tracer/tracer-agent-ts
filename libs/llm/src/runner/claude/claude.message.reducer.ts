@@ -57,8 +57,8 @@ export class ClaudeMessageReducer {
 
     constructor(private readonly deps: ClaudeMessageReducerDeps) {}
 
-    /** 접을 것이 남았으면 true 를 내고 결과 메시지를 받아 끝났으면 false 를 낸다. */
-    accept(msg: SDKMessage): boolean {
+    /** 메시지를 접어 넣고 더 접을 것이 남았으면 true 를, 결과 메시지를 받아 끝났으면 false 를 낸다. */
+    acceptAndContinue(msg: SDKMessage): boolean {
         if (msg.type === "stream_event") {
             this.acceptStreamEvent(msg);
             return true;

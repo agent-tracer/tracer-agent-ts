@@ -87,7 +87,7 @@ export class ScanRecipeUsecase {
         );
         const recipes = assembleRecipeCandidates(output.recipes, ownedTaskIds, output.provenance);
         const jobSteps = assignStepIds(output.steps, () => this.ids.next());
-        const { attempts, costUsd } = await this.repository.foldSuccessAttempt(
+        const { attempts, costUsd } = await this.repository.readSuccessAttemptUsage(
             prep.jobId,
             attemptRecordFromSuccess(run.attempt, output),
         );

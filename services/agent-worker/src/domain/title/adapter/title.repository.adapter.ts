@@ -111,7 +111,7 @@ export class TitleRepositoryAdapter implements TitleRepositoryPort {
         }
     }
 
-    async foldSuccessAttempt(
+    async readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,
     ): Promise<{

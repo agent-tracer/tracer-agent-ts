@@ -102,7 +102,7 @@ export class TitleAgentAdapter implements TitleAgentPort {
         // 수리 몫을 먼저 떼어 두어 첫 실행이 예산을 다 쓰더라도 수리가 도구를 가지고 출력을 낼 수 있다.
         const repairLease = budget.reserve(REPAIR_RESERVED_TURNS, REPAIR_RESERVED_BUDGET_SHARE);
 
-        const firstLease = budget.lease(1);
+        const firstLease = budget.quoteShare(1);
         const first = await this.runOnce(input, handlers, basePrompt, firstLease, systemPrompt);
         budget.settle(firstLease, { costUsd: first.costUsd, numTurns: first.numTurns });
         const runs: RunSegment[] = [{ run: first, nodeName: AGENT_NODE.investigate }];

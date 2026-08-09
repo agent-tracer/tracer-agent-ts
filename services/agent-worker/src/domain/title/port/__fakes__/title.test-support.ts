@@ -166,7 +166,7 @@ export class InMemoryTitleRepository implements TitleRepositoryPort {
         this.failedAttempts.push(input);
     }
 
-    async foldSuccessAttempt(
+    async readSuccessAttemptUsage(
         _jobId: string,
         record: JobAttemptRecord,
     ): Promise<{

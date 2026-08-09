@@ -13,7 +13,7 @@ import { JOB_CLOCK, type ClockPort } from "~agent-api/domain/job/port/clock.port
 import { JOB_EVENT_LOG, type JobEventLog } from "~agent-api/domain/job/port/job.event.log.port.js";
 import { JOB_ID_GENERATOR, type JobIdGeneratorPort } from "~agent-api/domain/job/port/job.id.generator.port.js";
 import { JOB_REPOSITORY, type JobRepositoryPort } from "~agent-api/domain/job/port/job.repository.port.js";
-import { LOCAL_CLI_AUTH, type LocalCliAuthPort } from "~agent-api/domain/job/port/local.cli.auth.port.js";
+import { LOCAL_CLI_AUTH_ENABLED, type LocalCliAuthEnabled } from "~agent-api/domain/job/model/local.cli.auth.enabled.js";
 import {
     SCAN_ANCHOR_READER,
     type ScanAnchorReaderPort,
@@ -39,7 +39,7 @@ export class EnqueueJobUseCase {
         @Inject(JOB_SETTING_READER) private readonly settings: JobSettingReaderPort,
         @Inject(WORKFLOW_DISPATCHER) private readonly dispatcher: WorkflowDispatcherPort,
         @Inject(JOB_CLOCK) private readonly clock: ClockPort,
-        @Inject(LOCAL_CLI_AUTH) private readonly localCliAuth: LocalCliAuthPort,
+        @Inject(LOCAL_CLI_AUTH_ENABLED) private readonly localCliAuthEnabled: LocalCliAuthEnabled,
         @Inject(JOB_EVENT_LOG) private readonly jobLog: JobEventLog,
         @Inject(JOB_ID_GENERATOR) private readonly idGenerator: JobIdGeneratorPort,
     ) {}
@@ -52,7 +52,7 @@ export class EnqueueJobUseCase {
     ): Promise<{ readonly job: JobDto }> {
         if (kind === JOB_KIND.recipeScan) await this.validateScanAnchor(userId, input);
         // 로컬 자격으로 실행되는 이미지는 API 키가 필요 없어 접수 검사를 건너뛴다.
-        if (!this.localCliAuth) {
+        if (!this.localCliAuthEnabled) {
             const apiKey = await this.settings.findByScopeAndKey(userId, JOB_API_KEY_SETTING);
             if (apiKey === null || apiKey.length === 0) {
                 this.jobLog.llmKeyMissing({ userId, kind });

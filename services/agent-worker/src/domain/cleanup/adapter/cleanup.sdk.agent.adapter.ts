@@ -22,7 +22,7 @@ import {
     TRIAGE_TURNS,
 } from "~agent-worker/domain/cleanup/model/cleanup.dispatch.policy.js";
 import { CleanupProvenanceLedger } from "~agent-worker/domain/cleanup/model/cleanup.provenance.model.js";
-import { validateCleanupSuggestions } from "~agent-worker/domain/cleanup/model/cleanup.validation.model.js";
+import { filterValidCleanupSuggestions } from "~agent-worker/domain/cleanup/model/cleanup.validation.model.js";
 import type {
     CleanupAgentPort,
     GenerateCleanupSuggestionsInput,
@@ -135,7 +135,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
             );
         }
 
-        const checked = validateCleanupSuggestions(decision.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
+        const checked = filterValidCleanupSuggestions(decision.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
         if (checked.errors.length === 0) {
             return this.settleOutput(ctx, segments, checked.valid, decision.modelUsed, PASSED, demoted);
         }
@@ -162,7 +162,7 @@ export class CleanupSdkAgentAdapter implements CleanupAgentPort {
         budget.settle(repairLease, { costUsd: repaired.costUsd, numTurns: repaired.numTurns });
         segments.push(toRunSegment(repaired, AGENT_NODE.repair));
 
-        const rechecked = validateCleanupSuggestions(repaired.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
+        const rechecked = filterValidCleanupSuggestions(repaired.data.suggestions, coordinatorLedger.snapshot(), input.maxSuggestions);
         const passed = rechecked.errors.length === 0;
         recordValidationFailure(AGENT.taskCleanup.id, passed);
         return this.settleOutput(

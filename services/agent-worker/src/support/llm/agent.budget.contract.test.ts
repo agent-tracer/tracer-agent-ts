@@ -41,13 +41,13 @@ const { executionBudget } = readAgentCases<RecipeScanCases>("recipe-scan");
 
 describe("실행 예산 배분", () => {
     it.each(executionBudget.weightAllocation.cases)(
-        "leaseMany가 계약이 적은 턴과 달러 배열을 낸다 — $name",
+        "quoteShares가 계약이 적은 턴과 달러 배열을 낸다 — $name",
         (testCase) => {
             const budget = new ExecutionBudget({
                 maxBudgetUsd: testCase.availableUsd,
                 maxTurns: testCase.availableTurns,
             });
-            const leases = budget.leaseMany(testCase.requestedTurns, 1);
+            const leases = budget.quoteShares(testCase.requestedTurns, 1);
             expect(leases.map((lease) => lease.maxTurns)).toEqual([...testCase.expect.grantedTurns]);
             leases.forEach((lease, index) => {
                 expect(lease.maxBudgetUsd).toBeCloseTo(testCase.expect.grantedUsd[index]!, 10);
@@ -73,7 +73,7 @@ describe("실행 예산 배분", () => {
         expect(synthesisFloorLease.maxTurns).toBe(reservation.expect.synthesisFloor.grantedTurns);
         expect(synthesisFloorLease.maxBudgetUsd).toBeCloseTo(reservation.expect.synthesisFloor.grantedUsd, 10);
 
-        const remaining = budget.lease(1);
+        const remaining = budget.quoteShare(1);
         expect(remaining.maxTurns).toBe(reservation.expect.remainingAfterAll.turns);
         expect(remaining.maxBudgetUsd).toBeCloseTo(reservation.expect.remainingAfterAll.budgetUsd, 10);
     });

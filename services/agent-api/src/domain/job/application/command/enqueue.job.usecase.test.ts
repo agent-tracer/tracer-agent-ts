@@ -22,7 +22,7 @@ interface Harness {
     readonly settings: FakeJobSettingReader;
 }
 
-function makeHarness(options: { readonly apiKey?: string | null; readonly localCliAuth?: boolean } = {}): Harness {
+function makeHarness(options: { readonly apiKey?: string | null; readonly localCliAuthEnabled?: boolean } = {}): Harness {
     const jobs = new InMemoryJobRepository();
     const dispatcher = new RecordingWorkflowDispatcher();
     const jobLog = new RecordingJobEventLog();
@@ -40,7 +40,7 @@ function makeHarness(options: { readonly apiKey?: string | null; readonly localC
             settings,
             dispatcher,
             new FixedClock(NOW),
-            options.localCliAuth ?? false,
+            options.localCliAuthEnabled ?? false,
             jobLog,
             new SequentialJobIdGenerator(),
         ),
@@ -89,7 +89,7 @@ describe("EnqueueJobUseCase", () => {
     });
 
     it("로컬 자격으로 도는 이미지는 모델 자격을 묻지 않는다", async () => {
-        const { useCase, settings } = makeHarness({ apiKey: null, localCliAuth: true });
+        const { useCase, settings } = makeHarness({ apiKey: null, localCliAuthEnabled: true });
 
         await expect(useCase.execute("local", JOB_KIND.recipeScan, { taskId: "task-1" })).resolves.toBeDefined();
         expect(settings.requested).toEqual([]);

@@ -21,7 +21,7 @@ import { runCleanupDecision, type CleanupDecisionRun } from "./cleanup.sdk.inves
 const EMPTY_PLAN: TriagePlan = { inspect: [] };
 
 /** 한 태스크는 한 번만 조사하므로 모델이 같은 태스크를 겹쳐 내면 먼저 적은 것만 남긴다. */
-export function oneInspectPerTask(
+export function keepOneInspectPerTask(
     assignments: readonly InspectAssignment[],
 ): readonly InspectAssignment[] {
     const seen = new Set<string>();
@@ -83,10 +83,10 @@ export async function dispatchCleanupInspections(
     segments: RunSegment[],
 ): Promise<InspectReport[]> {
     const candidateIds = new Set(batch.candidates.map((candidate) => candidate.id));
-    const assignments = oneInspectPerTask(
+    const assignments = keepOneInspectPerTask(
         plan.inspect.filter((assignment) => candidateIds.has(assignment.taskId)),
     );
-    const leases = budget.leaseMany(assignments.map((assignment) => inspectDepthShare(assignment.depth)), 1);
+    const leases = budget.quoteShares(assignments.map((assignment) => inspectDepthShare(assignment.depth)), 1);
     const runs = await Promise.all(
         assignments.map((assignment, index) => runCleanupInspect(ctx, deps, batch, assignment, leases[index]!)),
     );
@@ -113,7 +113,7 @@ export async function decideCleanup(
     input: GenerateCleanupSuggestionsInput,
     segments: RunSegment[],
 ): Promise<CleanupDecisionRun> {
-    const lease = budget.combine([floorLease, budget.lease(1)]);
+    const lease = budget.combineAndRecordReservation([floorLease, budget.quoteShare(1)]);
     const prompt = buildCleanupUserPrompt(ctx.prompt, input.maxSuggestions, input.scannedAt, input.language, reports);
     const run = await runCleanupDecision(ctx, deps, batch, coordinatorLedger, prompt, lease, AGENT_NODE.investigate);
     budget.settle(lease, { costUsd: run.costUsd, numTurns: run.numTurns });

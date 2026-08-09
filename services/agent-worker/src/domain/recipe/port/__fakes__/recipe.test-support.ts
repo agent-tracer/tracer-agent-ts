@@ -143,7 +143,7 @@ export class InMemoryRecipeRepository implements RecipeRepositoryPort {
         this.failedAttempts.push(input);
     }
 
-    async foldSuccessAttempt(
+    async readSuccessAttemptUsage(
         _jobId: string,
         record: JobAttemptRecord,
     ): Promise<{

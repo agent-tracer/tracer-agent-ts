@@ -86,7 +86,7 @@ export class ClaudeQueryRunner implements IQueryRunner<ClaudeQueryOptions> {
         try {
             for await (const msg of stream) {
                 startupMs ??= this.nowMs() - queryOpenedAt;
-                if (!reducer.accept(msg)) break;
+                if (!reducer.acceptAndContinue(msg)) break;
             }
         } catch (err) {
             failure = classifyQueryFailure(err, deadline.controller.signal);

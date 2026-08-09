@@ -4,7 +4,7 @@ import { readAgentCases } from "~agent-worker/support/contract.js";
 import type { CleanupCandidate } from "./cleanup.candidate.model.js";
 import type { CleanupProvenanceSnapshot } from "./cleanup.provenance.model.js";
 import type { CleanupSuggestionPayload } from "./cleanup.suggestion.schema.js";
-import { validateCleanupSuggestions } from "./cleanup.validation.model.js";
+import { filterValidCleanupSuggestions } from "./cleanup.validation.model.js";
 
 interface CleanupValidationCase {
     readonly name: string;
@@ -43,7 +43,7 @@ function suggestions(declared: CleanupValidationCase): readonly CleanupSuggestio
 describe("정리 제안 검증", () => {
     it("계약의 케이스마다 같은 판정과 같은 사유를 낸다", () => {
         for (const declared of CONTRACT.cases) {
-            const result = validateCleanupSuggestions(
+            const result = filterValidCleanupSuggestions(
                 suggestions(declared),
                 snapshot(declared),
                 declared.maxSuggestions ?? CONTRACT.maxSuggestions,

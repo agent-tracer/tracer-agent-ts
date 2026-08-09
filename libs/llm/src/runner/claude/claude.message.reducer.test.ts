@@ -83,15 +83,15 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("결과 메시지를 받으면 더 접을 것이 없다고 알린다", () => {
         const { reducer } = reducerOf();
 
-        expect(reducer.accept(assistant())).toBe(true);
-        expect(reducer.accept(result())).toBe(false);
+        expect(reducer.acceptAndContinue(assistant())).toBe(true);
+        expect(reducer.acceptAndContinue(result())).toBe(false);
     });
 
     it("결과가 준 산출을 어시스턴트가 흘린 글보다 앞세운다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(assistant());
-        reducer.accept(result({ result: "최종 답" }));
+        reducer.acceptAndContinue(assistant());
+        reducer.acceptAndContinue(result({ result: "최종 답" }));
 
         expect(reducer.snapshot().rawOutput).toBe("최종 답");
     });
@@ -99,7 +99,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("결과를 받지 못하면 흘린 글을 산출로 쓴다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(assistant());
+        reducer.acceptAndContinue(assistant());
 
         expect(reducer.snapshot().rawOutput).toBe("답");
     });
@@ -107,7 +107,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("성공 모양이어도 거절로 끝난 결과는 오류로 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ stop_reason: "refusal" }));
+        reducer.acceptAndContinue(result({ stop_reason: "refusal" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.refusal);
     });
@@ -115,7 +115,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("실패 서브타입을 이 실행기의 어휘로 옮겨 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_max_turns", errors: ["턴을 다 썼다"] }));
+        reducer.acceptAndContinue(result({ subtype: "error_max_turns", errors: ["턴을 다 썼다"] }));
 
         const snapshot = reducer.snapshot();
         expect(snapshot.errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTurnsExceeded);
@@ -125,7 +125,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("실패로 끝난 결과에는 첫 토큰까지의 시간을 적지 않는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_during_execution", ttft_ms: 12 }));
+        reducer.acceptAndContinue(result({ subtype: "error_during_execution", ttft_ms: 12 }));
 
         expect(reducer.snapshot().ttftMs).toBeNull();
     });
@@ -133,8 +133,8 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("모델을 여러 번 부르면 마지막 호출의 공급자 식별자를 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(assistant({ request_id: "req-1" }));
-        reducer.accept(assistant({ request_id: "req-2" }));
+        reducer.acceptAndContinue(assistant({ request_id: "req-1" }));
+        reducer.acceptAndContinue(assistant({ request_id: "req-2" }));
 
         expect(reducer.snapshot().providerRequestId).toBe("req-2");
     });
@@ -143,7 +143,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
         const { reducer } = reducerOf();
 
         expect(() =>
-            reducer.accept(
+            reducer.acceptAndContinue(
                 assistant({
                     message: { content: [], usage: USAGE, stop_reason: null, model: "이름-없는-모델" },
                 }),
@@ -155,7 +155,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
         const { reducer } = reducerOf({ maxBudgetUsd: 1 });
 
         expect(() =>
-            reducer.accept(
+            reducer.acceptAndContinue(
                 assistant({
                     message: { content: [], usage: USAGE, stop_reason: null, model: "이름-없는-모델" },
                 }),
@@ -166,7 +166,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("공급자가 한도로 막은 실행은 재시도 가능한 사유로 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "blocking_limit" }));
+        reducer.acceptAndContinue(result({ subtype: "error_during_execution", terminal_reason: "blocking_limit" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.rateLimit);
     });
@@ -174,7 +174,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("급속 충전 차단기도 같은 자리로 접는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "rapid_refill_breaker" }));
+        reducer.acceptAndContinue(result({ subtype: "error_during_execution", terminal_reason: "rapid_refill_breaker" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.rateLimit);
     });
@@ -182,7 +182,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("입력이 창을 넘긴 실행은 다시 불러도 같으므로 요청 과대로 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_during_execution", terminal_reason: "prompt_too_long" }));
+        reducer.acceptAndContinue(result({ subtype: "error_during_execution", terminal_reason: "prompt_too_long" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(PROVIDER_ERROR_SUBTYPE.requestTooLarge);
     });
@@ -190,7 +190,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("결과 서브타입이 이미 말하는 까닭은 그대로 둔다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_max_turns", terminal_reason: "max_turns" }));
+        reducer.acceptAndContinue(result({ subtype: "error_max_turns", terminal_reason: "max_turns" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTurnsExceeded);
     });
@@ -198,7 +198,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("끝낸 까닭이 없으면 서브타입 판정을 그대로 쓴다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ subtype: "error_during_execution" }));
+        reducer.acceptAndContinue(result({ subtype: "error_during_execution" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.executionError);
     });
@@ -206,7 +206,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("출력 한도에서 끊긴 답은 성공 모양이어도 절단으로 적는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ stop_reason: "max_tokens", result: "잘린 답" }));
+        reducer.acceptAndContinue(result({ stop_reason: "max_tokens", result: "잘린 답" }));
 
         expect(reducer.snapshot().errorSubtype).toBe(AGENT_ERROR_SUBTYPE.maxTokens);
     });
@@ -214,7 +214,7 @@ describe("SDK 메시지를 실행 결과로 접는 자리", () => {
     it("절단된 답이라도 그때까지 받은 글은 버리지 않는다", () => {
         const { reducer } = reducerOf();
 
-        reducer.accept(result({ stop_reason: "max_tokens", result: "잘린 답" }));
+        reducer.acceptAndContinue(result({ stop_reason: "max_tokens", result: "잘린 답" }));
 
         expect(reducer.snapshot().rawOutput).toBe("잘린 답");
     });

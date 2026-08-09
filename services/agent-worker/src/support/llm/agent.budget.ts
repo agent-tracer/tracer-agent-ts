@@ -4,7 +4,7 @@ export interface AgentBudgetTotals {
     readonly maxTurns: number;
 }
 
-/** 한 번의 호출에 떼어 준 몫이며 그대로 공급자 실행기에 넘긴다. */
+/** 한 번의 호출에 걸 상한이며 그대로 공급자 실행기에 넘긴다. */
 export interface AgentBudgetLease {
     readonly maxBudgetUsd: number | undefined;
     readonly maxTurns: number;
@@ -23,7 +23,7 @@ interface ReservedBudget {
 
 const EMPTY_RESERVED_BUDGET: ReservedBudget = { turns: 0, usd: 0 };
 
-/** 실행 하나의 잔여 예산을 가지고 호출마다 몫을 떼어 주며 실제 지출로 잔량을 줄인다. */
+/** 실행 하나의 잔여 예산을 가지고 호출마다 쓸 몫을 알리거나 미리 떼어 두며 실제 지출로 잔량을 줄인다. */
 export class ExecutionBudget {
     private remainingBudgetUsd: number | undefined;
     private remainingTurns: number;
@@ -43,8 +43,8 @@ export class ExecutionBudget {
         );
     }
 
-    /** 잔량의 share 몫을 떼어 주며 잔량이 0이면 0인 채로 드러낸다. */
-    lease(share: number): AgentBudgetLease {
+    /** 잔량의 share 몫이 얼마인지만 계산해 알리고 잔량은 그대로 두므로 이 값은 아직 아무에게도 매이지 않는다. */
+    quoteShare(share: number): AgentBudgetLease {
         if (!(share > 0) || share > 1) throw new RangeError(`share must be in (0, 1], got ${share}`);
         return {
             maxTurns: Math.floor(this.remainingTurns * share),
@@ -53,7 +53,7 @@ export class ExecutionBudget {
         };
     }
 
-    /** 몫을 lease보다 먼저 잔량에서 떼어내 별도로 가지므로 그 뒤의 lease가 이 몫을 침범하지 못한다. */
+    /** 몫을 잔량에서 실제로 떼어내 별도로 가지므로 그 뒤의 quoteShare가 이 몫을 침범하지 못한다. */
     reserve(turns: number, budgetShare = 0): AgentBudgetLease {
         if (turns < 0) throw new RangeError(`turns must be >= 0, got ${turns}`);
         if (budgetShare < 0 || budgetShare > 1) {
@@ -73,8 +73,8 @@ export class ExecutionBudget {
         return lease;
     }
 
-    /** 잔량의 share 몫을 요청 비율로 배분하며 내림한 나머지는 요청이 큰 항목부터 한 턴씩 돌려준다. */
-    leaseMany(requestedTurns: readonly number[], share: number): AgentBudgetLease[] {
+    /** 잔량의 share 몫을 요청 비율로 나눈 값만 계산하며 내림한 나머지는 요청이 큰 항목부터 한 턴씩 돌려준다. */
+    quoteShares(requestedTurns: readonly number[], share: number): AgentBudgetLease[] {
         if (!(share > 0) || share > 1) throw new RangeError(`share must be in (0, 1], got ${share}`);
         if (requestedTurns.length === 0) return [];
 
@@ -109,8 +109,8 @@ export class ExecutionBudget {
         this.remainingBudgetUsd = Math.max(0, this.remainingBudgetUsd + (reserved.usd ?? 0) - usdUsed);
     }
 
-    /** 예약한 바닥과 남은 잔량의 호출 몫을 하나로 묶어도 정산 때 예약분을 다시 차감하지 않는다. */
-    combine(leases: readonly AgentBudgetLease[]): AgentBudgetLease {
+    /** 예약한 바닥과 남은 잔량의 호출 몫을 하나로 묶고 그 예약분을 묶은 몫 앞으로 다시 적어 정산 때 두 번 차감하지 않게 한다. */
+    combineAndRecordReservation(leases: readonly AgentBudgetLease[]): AgentBudgetLease {
         const combined = combineLeases(leases);
         const reserved = leases.reduce<ReservedBudget>(
             (sum, lease) => {

@@ -141,8 +141,8 @@ export class TypeOrmChatExecutionRepository implements ChatExecutionRepositoryPo
                 updatedAt: now,
             })
             .where("id = :id", { id })
-            .andWhere(terminalCondition("failed"), {
-                settled: CHAT_EXECUTION_STATUS.queued,
+            .andWhere(failableCondition("failed"), {
+                notStarted: CHAT_EXECUTION_STATUS.queued,
                 running: CHAT_EXECUTION_STATUS.running,
             })
             .execute();
@@ -155,9 +155,9 @@ function observedTerminalCondition(observedStatus: string): string {
     return `(status = :settled OR (status = :running AND ${observedBy(observedStatus)}))`;
 }
 
-/** 종결로 옮기는 길은 따를 관측이 하나도 없을 때에도 줄인다. */
-function terminalCondition(observedStatus: string): string {
-    return `(status = :settled OR (status = :running AND (${observedBy(observedStatus)} OR NOT EXISTS (
+/** 실패로 옮길 수 있는 행이며 아직 시작하지 않았거나, 실행 중이면서 같은 관측이 있거나 따를 관측이 하나도 없는 행이다. */
+function failableCondition(observedStatus: string): string {
+    return `(status = :notStarted OR (status = :running AND (${observedBy(observedStatus)} OR NOT EXISTS (
         SELECT 1 FROM agent_run_observations observation
          WHERE observation.execution_id = chat_executions.id
     ))))`;

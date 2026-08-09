@@ -51,7 +51,7 @@ export interface CleanupRepositoryPort {
     /** 사용자에게 보이는 태스크만 골라 후보 판정 입력을 만든다. */
     loadScanBatch(userId: string): Promise<CleanupScanBatch>;
     recordFailedAttempt(input: CleanupFailedAttempt): Promise<void>;
-    foldSuccessAttempt(
+    readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,
     ): Promise<{ readonly attempts: readonly JobAttemptRecord[] | undefined; readonly costUsd: number | null }>;

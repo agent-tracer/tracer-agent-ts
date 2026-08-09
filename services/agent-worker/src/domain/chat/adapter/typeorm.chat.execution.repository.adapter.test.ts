@@ -1,24 +1,32 @@
 import { AGENT_BACKEND } from "@tracer-agent/llm";
 import type { FindManyOptions, FindOptionsWhere, Repository } from "typeorm";
 import { describe, expect, it } from "vitest";
+import { CHAT_EXECUTION_STATUS } from "~agent-worker/domain/chat/model/chat.const.js";
 import type { ChatExecutionEntity } from "./chat.entity.js";
 import { TypeOrmChatExecutionRepository } from "./typeorm.chat.execution.repository.adapter.js";
 
-/** 갱신 질의가 세우는 조건만 모으고 실행은 언제나 한 행을 바꾼 것으로 답한다. */
-function capturingRepository(): { conditions: string[]; repo: Repository<ChatExecutionEntity> } {
+/** 갱신 질의가 세우는 조건과 그 조건에 묶은 값을 모으고 실행은 언제나 한 행을 바꾼 것으로 답한다. */
+function capturingRepository(): {
+    conditions: string[];
+    parameters: Record<string, unknown>;
+    repo: Repository<ChatExecutionEntity>;
+} {
     const conditions: string[] = [];
+    const parameters: Record<string, unknown> = {};
     const builder = {
         update: () => builder,
         set: () => builder,
         where: () => builder,
-        andWhere: (condition: string) => {
+        andWhere: (condition: string, bound?: Record<string, unknown>) => {
             conditions.push(condition);
+            Object.assign(parameters, bound ?? {});
             return builder;
         },
         execute: () => Promise.resolve({ affected: 1 }),
     };
     return {
         conditions,
+        parameters,
         repo: { createQueryBuilder: () => builder } as unknown as Repository<ChatExecutionEntity>,
     };
 }
@@ -86,11 +94,25 @@ describe("실행을 종결로 접는 조건", () => {
     });
 
     it("아직 시작하지 않은 실행은 관측을 보지 않고 접는다", async () => {
-        const { conditions, repo } = capturingRepository();
+        const { conditions, parameters, repo } = capturingRepository();
 
         await new TypeOrmChatExecutionRepository(repo).failActive("execution", "이유", new Date());
 
-        expect(observedBranch(conditions)).toContain("status = :settled OR");
+        expect(observedBranch(conditions)).toContain("status = :notStarted OR");
+        expect(parameters["notStarted"]).toBe(CHAT_EXECUTION_STATUS.queued);
+    });
+
+    it("이미 접힌 행에 산출물을 붙이는 길은 종결된 상태를 그 이름으로 묶는다", async () => {
+        const { parameters, repo } = capturingRepository();
+
+        await new TypeOrmChatExecutionRepository(repo).recordCanceledOutcome(
+            "execution",
+            "message",
+            { modelUsed: "model", costUsd: 0, numTurns: 1, stopReason: "canceled", usage: {} },
+            new Date(),
+        );
+
+        expect(parameters["settled"]).toBe(CHAT_EXECUTION_STATUS.canceled);
     });
 
     it("이미 접힌 행에 산출물을 붙이는 길은 관측을 그대로 요구한다", async () => {

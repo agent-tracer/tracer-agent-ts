@@ -48,7 +48,7 @@ export interface RecipeRepositoryPort {
     readSetting(scope: string, key: string): Promise<string | null>;
     findOwnedTaskIds(userId: string, taskIds: readonly string[]): Promise<readonly string[]>;
     recordFailedAttempt(input: RecipeFailedAttempt): Promise<void>;
-    foldSuccessAttempt(
+    readSuccessAttemptUsage(
         jobId: string,
         record: JobAttemptRecord,
     ): Promise<{

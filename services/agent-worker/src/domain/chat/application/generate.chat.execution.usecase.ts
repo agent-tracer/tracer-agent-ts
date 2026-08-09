@@ -66,7 +66,7 @@ export class GenerateChatExecutionUsecase {
         const stopWatching = this.watchForStall(watch, stall, abortSignal);
         try {
             const apiKey = await this.resolveApiKey(prepared.userId, this.agent.requiresLocalApiKey());
-            const input = await this.input(prepared, apiKey, stall.signal, attempt, scopeToken);
+            const input = await this.fetchTurnInput(prepared, apiKey, stall.signal, attempt, scopeToken);
             const result = await this.agent.converse(input, watch.wrap(sink.sink));
             await sink.flush();
             // 취소로 끊긴 턴은 아무 말도 못 받고 끝날 수 있고 그것은 실패가 아니다.
@@ -101,8 +101,8 @@ export class GenerateChatExecutionUsecase {
         };
     }
 
-    /** 이력과 요약과 기억은 접수의 재생 규칙 하나가 계산하며 이 워커는 실행 범위 자격으로 되읽는다. */
-    private async input(
+    /** 이력과 요약과 기억은 접수의 재생 규칙 하나가 계산하므로 이 워커는 실행 범위 자격으로 재생 창구를 불러 받아 온다. */
+    private async fetchTurnInput(
         prepared: PreparedChatExecution,
         apiKey: string | null,
         abortSignal: AbortSignal,

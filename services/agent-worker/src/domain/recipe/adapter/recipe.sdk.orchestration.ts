@@ -53,7 +53,7 @@ function probeSlot(round: number, probe: string): string {
 }
 
 /** 한 라운드의 한 축에는 전문가가 한 명뿐이므로 모델이 같은 축을 겹쳐 내면 먼저 적은 것만 남긴다. */
-export function oneProbePerAxis(
+export function keepOneProbePerAxis(
     assignments: readonly ProbeAssignment[],
     round: number,
 ): readonly ProbeAssignment[] {
@@ -154,8 +154,8 @@ export async function dispatchRecipeProbes(
   stages: RecipeStageResumePort | null = null,
   round = 0,
 ): Promise<ProbeReport[]> {
-  const assignments = oneProbePerAxis(plan.probes, round);
-  const leases = budget.leaseMany(
+  const assignments = keepOneProbePerAxis(plan.probes, round);
+  const leases = budget.quoteShares(
     assignments.map(({ depth }) => probeDepthShare(depth)),
     1,
   );
@@ -214,7 +214,7 @@ export async function synthesizeRecipe(
   coordinatorLedger: ProvenanceLedger,
   segments: RunSegment[],
 ): Promise<RecipeSynthesisRun> {
-  const lease = budget.combine([floorLease, budget.lease(1)]);
+  const lease = budget.combineAndRecordReservation([floorLease, budget.quoteShare(1)]);
   const prompt = buildRecipeUserPrompt(
     ctx.prompt,
     ctx.input.taskId,

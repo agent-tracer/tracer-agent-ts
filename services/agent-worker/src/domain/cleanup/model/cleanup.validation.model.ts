@@ -13,7 +13,7 @@ export interface CleanupValidationResult {
 }
 
 /** 겹치거나 상한을 넘은 제안은 지우고 근거가 어긋난 제안만 모델이 고칠 사유로 남긴다. */
-export function validateCleanupSuggestions(
+export function filterValidCleanupSuggestions(
     suggestions: readonly CleanupSuggestionPayload[],
     snapshot: CleanupProvenanceSnapshot,
     maxSuggestions: number,
