@@ -83,7 +83,7 @@ flowchart TD
 
 ## 프롬프트 구성
 
-계약 prompt는 cleanup investigator와 repair, triage, inspect 역할을 분리한다. system prompt는 정리 기준과 검토 보장과 evidence discipline을 제공하고, user prompt는 후보와 이벤트와 제안 한도를 전달한다.
+계약 prompt는 cleanup investigator와 repair, triage, inspect 역할을 분리한다. system prompt는 정리 기준과 검토 보장과 evidence discipline을 제공하고, user prompt는 후보와 이벤트와 제안 한도와 출력 언어 지시를 전달한다. 언어가 사용자 prompt에 있으므로 system prompt는 호출마다 같은 글이고 그 접두사가 캐시에 남는다.
 
 ```mermaid
 flowchart LR
