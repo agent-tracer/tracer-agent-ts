@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import type { OpenSearchClient } from "~agent-api/config/opensearch.client.js";
 import { RECIPES_INDEX_ALIAS } from "~agent-api/domain/recipe/model/recipe.document.js";
 import { RECIPE_STATUS } from "~agent-api/domain/recipe/model/recipe.const.js";
@@ -40,7 +41,12 @@ export class OpenSearchRecipeSearchAdapter implements RecipeSearchPort {
                             },
                         },
                     ],
-                    filter: [{ term: { userId } }, { term: { status: RECIPE_STATUS.active } }],
+                    // 축을 거르지 않으면 두 축이 색인한 같은 레시피가 한 질의에 두 번 적중한다.
+                    filter: [
+                        { term: { userId } },
+                        { term: { backend: AGENT_BACKEND } },
+                        { term: { status: RECIPE_STATUS.active } },
+                    ],
                 },
             },
         })) as SearchResponseBody;
@@ -56,10 +62,11 @@ function applyRelativeCutoff(hits: readonly SearchHit[]): readonly SearchHit[] {
     return hits.filter((hit) => (hit._score ?? 0) >= threshold);
 }
 
+/** 문서 식별자에는 축이 붙어 있으므로 레시피의 식별자는 문서의 칸에서 읽는다. */
 function toHit(hit: SearchHit): RecipeSearchHit {
     const source = hit._source ?? {};
     return {
-        id: hit._id,
+        id: readString(source["recipeId"]),
         title: readString(source["title"]),
         intent: readString(source["intent"]),
         description: readString(source["description"]),

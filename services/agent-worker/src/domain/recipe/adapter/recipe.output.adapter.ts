@@ -1,4 +1,4 @@
-import { redactPayload } from "@tracer-agent/llm";
+import { AGENT_BACKEND, redactPayload } from "@tracer-agent/llm";
 import type { IClock } from "@tracer-agent/platform";
 import type { DataSource, EntityManager } from "typeorm";
 import { RecipeRowEntity } from "~agent-worker/config/ledger/recipe.entity.js";
@@ -72,6 +72,8 @@ export class RecipeOutputAdapter implements RecipeOutputPort {
 function outboxRow(id: string, userId: string, recipeId: string, now: Date): SearchOutboxRowEntity {
     const row = new SearchOutboxRowEntity();
     row.id = id;
+    // 적재한 축을 적지 않으면 상대 축의 배출기가 이 행을 가져간다.
+    row.backend = AGENT_BACKEND;
     row.userId = userId;
     row.target = SEARCH_OUTBOX_TARGET_RECIPE;
     row.targetId = recipeId;

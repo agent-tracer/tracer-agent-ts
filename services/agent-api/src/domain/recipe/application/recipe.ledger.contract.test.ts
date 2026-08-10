@@ -1,13 +1,17 @@
 import "reflect-metadata";
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { describe, expect, it } from "vitest";
 import { readContractJson } from "~agent-api/support/contract.js";
 import { RECIPE_STATUSES } from "~agent-api/domain/recipe/model/recipe.const.js";
 import {
     buildRecipeDocument,
+    recipeDocumentId,
     RECIPES_INDEX_ALIAS,
     SEARCH_OUTBOX_BATCH_SIZE,
 } from "~agent-api/domain/recipe/model/recipe.document.js";
 import { RECIPES_INDEX_DEFINITION } from "~agent-api/domain/recipe/model/recipe.index.js";
+import { DRAIN_LOCK_KEY } from "~agent-api/domain/recipe/adapter/search.outbox.drain.adapter.js";
+import { DRAIN_INTERVAL_MS } from "~agent-api/domain/recipe/adapter/search.outbox.drain.scheduler.js";
 import {
     MATCH_FIELDS,
     MINIMUM_SHOULD_MATCH,
@@ -41,21 +45,27 @@ interface LedgerCase {
     readonly rejections: readonly { readonly code: string; readonly message: string; readonly status: number }[];
 }
 
-/** 계약이 선언한 색인 칸 하나이며 meaning 과 from 은 사람이 읽는 근거라 매핑에 싣지 않는다. */
-interface DeclaredField {
-    readonly type: string;
-    readonly analyzer?: string;
-}
+/** 계약이 선언한 색인 칸 하나이며 어느 이름이 매핑이고 어느 이름이 산문인지는 bodyRule 이 정한다. */
+type DeclaredField = Readonly<Record<string, unknown>>;
 
 interface SearchIndexDeclaration {
-    readonly pipeline: { readonly stages: readonly { readonly name: string; readonly batchSize?: number }[] };
+    readonly bodyRule: {
+        readonly verbatim: readonly string[];
+        readonly mappingKeys: readonly string[];
+    };
+    readonly pipeline: {
+        readonly stages: readonly {
+            readonly name: string;
+            readonly batchSize?: number;
+            readonly intervalMs?: number;
+            readonly advisoryLock?: { readonly byAxis: Readonly<Record<string, number>> };
+        }[];
+    };
     readonly indices: {
         readonly recipes: {
             readonly alias: string;
             readonly index: string;
-            readonly settings: Readonly<Record<string, unknown>> & {
-                readonly analysis: Readonly<Record<string, unknown>>;
-            };
+            readonly settings: Readonly<Record<string, unknown>>;
             readonly document: { readonly fields: Readonly<Record<string, DeclaredField>> };
             readonly query: {
                 readonly matchFields: readonly string[];
@@ -173,24 +183,24 @@ describe("창구와 어휘가 계약이 적은 것과 같다", () => {
     });
 });
 
-/** 계약의 settings 는 근거 문장을 함께 담으므로 색인에 보낼 칸만 남긴다. */
-function declaredSettings(): Record<string, unknown> {
-    const { analysis, ...rest } = searchIndex.indices.recipes.settings;
-    const { meaning: _meaning, ...analysisWithoutProse } = analysis;
-    return { ...rest, analysis: analysisWithoutProse };
-}
-
-/** 계약의 칸 선언에서 매핑이 되는 것은 종류와 분석기 둘뿐이다. */
+/** 칸 선언에서 매핑에 실리는 이름을 계약의 bodyRule 이 정하므로 그 목록으로 거른다. */
 function declaredMappingProperties(): Record<string, DeclaredField> {
     return Object.fromEntries(
         Object.entries(searchIndex.indices.recipes.document.fields).map(([name, field]) => [
             name,
-            field.analyzer === undefined ? { type: field.type } : { type: field.type, analyzer: field.analyzer },
+            Object.fromEntries(
+                Object.entries(field).filter(([key]) => searchIndex.bodyRule.mappingKeys.includes(key)),
+            ),
         ]),
     );
 }
 
 describe("색인 선언과 코드가 같은 값을 쓴다", () => {
+    // 이 아래의 두 대조는 settings 가 본문이고 칸 선언이 파생이라는 계약의 표시에 기댄다.
+    it("계약이 settings 를 그대로 실리는 본문이라고 표시한다", () => {
+        expect(searchIndex.bodyRule.verbatim).toContain("settings");
+    });
+
     it("세우는 물리 색인의 이름이 계약이 선언한 이름과 같다", () => {
         expect({ alias: RECIPES_INDEX_DEFINITION.alias, index: RECIPES_INDEX_DEFINITION.index }).toEqual({
             alias: searchIndex.indices.recipes.alias,
@@ -199,7 +209,7 @@ describe("색인 선언과 코드가 같은 값을 쓴다", () => {
     });
 
     it("세우는 색인의 settings 와 분석기가 계약이 선언한 것과 같다", () => {
-        expect(RECIPES_INDEX_DEFINITION.settings).toEqual(declaredSettings());
+        expect(RECIPES_INDEX_DEFINITION.settings).toEqual(searchIndex.indices.recipes.settings);
     });
 
     it("세우는 색인의 매핑이 계약이 선언한 칸의 종류와 분석기와 같다", () => {
@@ -235,5 +245,31 @@ describe("색인 선언과 코드가 같은 값을 쓴다", () => {
             minimumShouldMatch: searchIndex.indices.recipes.query.minimumShouldMatch,
             cutoff: searchIndex.indices.recipes.query.relativeScoreCutoffRatio,
         });
+    });
+});
+
+/** 배출 단계 하나의 선언이며 주기와 열쇠를 계약이 축마다 적는다. */
+function drainStage() {
+    return searchIndex.pipeline.stages.find((stage) => stage.name === "drain");
+}
+
+describe("축마다 갈리는 값을 계약에서 파생시킨다", () => {
+    it("문서 식별자에 채우지 못한 자리표시자가 남지 않는다", () => {
+        expect(recipeDocumentId("recipe-1")).not.toMatch(/[{}]/u);
+    });
+
+    it("문서 식별자가 자기 축과 레시피 식별자를 함께 담는다", () => {
+        expect({
+            축: recipeDocumentId("recipe-1").includes(AGENT_BACKEND),
+            식별자: recipeDocumentId("recipe-1").includes("recipe-1"),
+        }).toEqual({ 축: true, 식별자: true });
+    });
+
+    it("배출기가 잡는 자문 잠금 열쇠가 계약이 이 축에 적은 값과 같다", () => {
+        expect(DRAIN_LOCK_KEY).toBe(drainStage()?.advisoryLock?.byAxis[AGENT_BACKEND]);
+    });
+
+    it("배출 주기가 계약이 선언한 값과 같다", () => {
+        expect(DRAIN_INTERVAL_MS).toBe(drainStage()?.intervalMs);
     });
 });

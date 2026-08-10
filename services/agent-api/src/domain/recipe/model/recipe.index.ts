@@ -35,6 +35,8 @@ export const RECIPES_INDEX_DEFINITION: SearchIndexDefinition = {
     },
     mappings: {
         properties: {
+            recipeId: KEYWORD,
+            backend: KEYWORD,
             userId: KEYWORD,
             title: TEXT,
             intent: TEXT,

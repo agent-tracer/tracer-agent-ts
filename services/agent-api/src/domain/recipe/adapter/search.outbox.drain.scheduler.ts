@@ -1,8 +1,9 @@
 import { errorMessage, logError } from "@tracer-agent/platform";
 import type { SearchOutboxDrainRunnerPort } from "~agent-api/domain/recipe/port/search.outbox.drain.port.js";
+import { readSearchDrain } from "~agent-api/support/contract.js";
 
-/** 배출 주기이며 실패한 행은 다음 주기가 다시 가져간다. */
-const DRAIN_INTERVAL_MS = 2_000;
+/** 배출 주기이며 두 구현체가 각자 적으면 같은 쓰기가 축마다 다른 시간 뒤에 검색에 보인다. */
+export const DRAIN_INTERVAL_MS = readSearchDrain().intervalMs;
 
 /** 배출을 주기로 부르며 한 주기의 실패가 다음 주기를 멈추지 않게 한다. */
 export class SearchOutboxDrainScheduler {

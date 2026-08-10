@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { RECIPE_INJECTED_VIA, type RecipeInjectedVia } from "~agent-api/domain/recipe/model/recipe.const.js";
 import { RecipeApplication } from "~agent-api/domain/recipe/model/recipe.application.model.js";
 import { RECIPE_INJECTED_EVENT_KIND, type LedgerRecord } from "~agent-api/domain/recipe/model/ledger.record.js";
@@ -25,6 +26,7 @@ export class RecipeProjection implements LedgerEventHandlerPort {
         // 행의 식별자와 대상이 없으면 만들 수 있는 행이 없다.
         if (applicationId === null || recipeId === null) return;
 
+        // 저장소가 자기 축의 행만 내므로 상대 축이 먼저 만든 행이 이 축의 투영을 막지 않는다.
         const recorded = await this.applications.findByTask(record.taskId);
         // 같은 레시피를 한 태스크에서 여러 번 끌어와도 성공률의 분모가 부풀지 않게 한다.
         if (recorded.some((application) => application.recipeId === recipeId)) return;
@@ -35,6 +37,8 @@ export class RecipeProjection implements LedgerEventHandlerPort {
 
 function toApplication(applicationId: string, recipeId: string, record: LedgerRecord): RecipeApplication {
     const application = new RecipeApplication();
+    // 사건이 축을 싣지 않으므로 투영하는 자리가 자기 축 상수를 적는다.
+    application.backend = AGENT_BACKEND;
     application.id = applicationId;
     application.userId = record.userId;
     application.recipeId = recipeId;

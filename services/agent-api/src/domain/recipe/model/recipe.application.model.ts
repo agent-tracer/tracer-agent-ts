@@ -1,3 +1,4 @@
+import type { AgentAxis } from "@tracer-agent/llm";
 import {
     RECIPE_OUTCOME,
     type RecipeInjectedVia,
@@ -6,6 +7,9 @@ import {
 
 /** 레시피 하나가 태스크 하나에 쓰인 이력이며 결과는 에이전트의 자기보고로 채워진다. */
 export class RecipeApplication {
+    /** 이 행을 만든 축이며 사건이 축을 싣지 않으므로 만드는 자리가 자기 값을 적는다. */
+    backend!: AgentAxis;
+
     id!: string;
 
     userId!: string;

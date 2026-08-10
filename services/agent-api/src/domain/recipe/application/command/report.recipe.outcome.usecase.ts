@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { RECIPE_INJECTED_VIA, type RecipeOutcome } from "~agent-api/domain/recipe/model/recipe.const.js";
 import { RecipeApplication } from "~agent-api/domain/recipe/model/recipe.application.model.js";
 import { RECIPE_CLOCK, type ClockPort } from "~agent-api/domain/recipe/port/clock.port.js";
@@ -40,6 +41,7 @@ export class ReportRecipeOutcomeUseCase {
         // 남의 레시피는 존재 자체를 알리지 않는다.
         if (recipe === null || recipe.userId !== input.userId) throw new NotFoundException("Recipe not found");
 
+        // 저장소가 자기 축의 행만 내므로 상대 축이 만든 행에 이 축의 결과를 적지 않는다.
         const recorded = await this.applications.findByTask(input.taskId);
         const existing = recorded.find((application) => application.recipeId === input.recipeId);
         const application = existing ?? this.buildManualApplication(input, this.clock.now());
@@ -51,6 +53,8 @@ export class ReportRecipeOutcomeUseCase {
     /** 사건에서 오지 않은 행이므로 사건 좌표를 비운다. */
     private buildManualApplication(input: ReportRecipeOutcomeInput, now: Date): RecipeApplication {
         const application = new RecipeApplication();
+        // 이 행을 만든 자리가 자기 축 상수를 적는다.
+        application.backend = AGENT_BACKEND;
         application.id = this.ids.next();
         application.userId = input.userId;
         application.recipeId = input.recipeId;

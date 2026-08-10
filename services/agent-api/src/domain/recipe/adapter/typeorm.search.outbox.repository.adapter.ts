@@ -1,3 +1,4 @@
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import type { Repository } from "typeorm";
 import { upsertByKeys } from "~agent-api/config/typeorm.upsert.js";
 import type { SearchOutboxRow } from "~agent-api/domain/recipe/model/search.outbox.model.js";
@@ -13,17 +14,22 @@ export class TypeOrmSearchOutboxRepository implements SearchOutboxWriterPort, Se
         await upsertByKeys(this.repo, toSearchOutboxEntity(row), ["id"]);
     }
 
-    /** 오래된 것부터 배출해 색인이 원장의 순서를 따라간다. */
+    /** 자기 축이 적재한 행만 오래된 것부터 배출해 색인이 원장의 순서를 따라간다. */
     async findBatch(limit: number): Promise<SearchOutboxRow[]> {
-        const rows = await this.repo.find({ order: { createdAt: "ASC" }, take: limit });
+        const rows = await this.repo.find({
+            where: { backend: AGENT_BACKEND },
+            order: { createdAt: "ASC" },
+            take: limit,
+        });
         return rows.map(toSearchOutboxRow);
     }
 
+    /** 이미 자기가 읽은 행을 지목하므로 여기서는 축을 다시 거르지 않는다. */
     async delete(id: string): Promise<void> {
         await this.repo.delete({ id });
     }
 
-    /** 실패한 행은 남겨 다음 주기가 다시 집으며 사유를 적어 반복 실패를 관측할 수 있게 한다. */
+    /** 실패한 행은 남겨 다음 주기가 다시 가져가며 사유를 적어 반복 실패를 관측할 수 있게 한다. */
     async markFailed(id: string, attempts: number, error: string): Promise<void> {
         await this.repo.update({ id }, { attempts, lastError: error });
     }

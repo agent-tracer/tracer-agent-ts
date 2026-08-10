@@ -1,5 +1,6 @@
+import { AGENT_AXIS, AGENT_BACKEND } from "@tracer-agent/llm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { RECIPES_INDEX_ALIAS } from "~agent-api/domain/recipe/model/recipe.document.js";
+import { recipeDocumentId, RECIPES_INDEX_ALIAS } from "~agent-api/domain/recipe/model/recipe.document.js";
 import { SearchOutboxRow } from "~agent-api/domain/recipe/model/search.outbox.model.js";
 import { InMemoryRecipeRepository } from "~agent-api/domain/recipe/port/__fakes__/in-memory.recipe.transaction.js";
 import { recipeRow } from "~agent-api/domain/recipe/port/__fakes__/recipe.test-support.js";
@@ -13,7 +14,10 @@ import { SearchOutboxDrainUseCase } from "./search.outbox.drain.usecase.js";
 
 const NOW = new Date("2026-02-01T00:00:00.000Z");
 
-/** 아웃박스 줄의 대역이며 실물의 정렬은 넣은 순서로 대신한다. */
+/** 이 축이 아닌 축 하나이며 두 축이 같은 원장을 볼 때 무엇을 비켜 가야 하는지를 보인다. */
+const FOREIGN_AXIS = Object.values(AGENT_AXIS).filter((axis) => axis !== AGENT_BACKEND)[0]!;
+
+/** 아웃박스 줄의 대역이며 실물의 정렬은 넣은 순서로 대신하고 자기 축만 소진하는 제약은 흉내 낸다. */
 class InMemoryDrainRepository implements SearchOutboxDrainRepositoryPort {
     readonly rows: SearchOutboxRow[] = [];
 
@@ -24,7 +28,7 @@ class InMemoryDrainRepository implements SearchOutboxDrainRepositoryPort {
     }
 
     findBatch(limit: number): Promise<SearchOutboxRow[]> {
-        return Promise.resolve(this.rows.slice(0, limit));
+        return Promise.resolve(this.rows.filter((row) => row.backend === AGENT_BACKEND).slice(0, limit));
     }
 
     delete(id: string): Promise<void> {
@@ -94,8 +98,10 @@ describe("색인 반영 요청을 배출한다", () => {
         await expect(target.runOnce()).resolves.toBe(1);
         expect(index.indexed[0]).toEqual({
             alias: RECIPES_INDEX_ALIAS,
-            id: "recipe-1",
+            id: recipeDocumentId("recipe-1"),
             document: {
+                recipeId: "recipe-1",
+                backend: AGENT_BACKEND,
                 userId: "local",
                 title: "빌드 실패를 되돌린다",
                 intent: "빌드를 되살린다",
@@ -124,7 +130,17 @@ describe("색인 반영 요청을 배출한다", () => {
         outbox.seed(SearchOutboxRow.createForRecipe("outbox-1", "local", "recipe-없음", NOW));
 
         await expect(target.runOnce()).resolves.toBe(1);
-        expect(index.deleted).toEqual([{ alias: RECIPES_INDEX_ALIAS, id: "recipe-없음" }]);
+        expect(index.deleted).toEqual([{ alias: RECIPES_INDEX_ALIAS, id: recipeDocumentId("recipe-없음") }]);
+    });
+
+    it("상대 축이 적재한 행은 가져가지 않는다", async () => {
+        recipes.seed(recipeRow());
+        const foreign = SearchOutboxRow.createForRecipe("outbox-상대", "local", "recipe-1", NOW);
+        foreign.backend = FOREIGN_AXIS;
+        outbox.seed(foreign);
+
+        await expect(target.runOnce()).resolves.toBe(0);
+        expect({ indexed: index.indexed, rows: outbox.rows.length }).toEqual({ indexed: [], rows: 1 });
     });
 
     it("색인 쓰기가 실패하면 행을 남기고 시도 수를 올린다", async () => {

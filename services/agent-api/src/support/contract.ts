@@ -128,3 +128,50 @@ export function readNotificationTopic(): NotificationTopicDeclaration {
     return readContractJson<{ readonly notifications: NotificationTopicDeclaration }>("wire/topics.json")
         .notifications;
 }
+
+/** 이름 하나를 축마다 다르게 만드는 서식이며 구현체는 자리표시자에 자기 축을 넣는다. */
+export interface AxisTemplateDeclaration {
+    readonly template: string;
+    readonly placeholder: string;
+}
+
+/** 배출기가 지키는 주기와 배치 크기와 자문 잠금 열쇠를 계약이 적은 그대로 담는다. */
+export interface SearchDrainDeclaration {
+    readonly batchSize: number;
+    readonly intervalMs: number;
+    readonly advisoryLock: {
+        readonly base: number;
+        readonly axisOffset: Readonly<Record<string, number>>;
+    };
+}
+
+interface SearchIndexDeclaration {
+    readonly pipeline: {
+        readonly stages: readonly ({ readonly name: string } & SearchDrainDeclaration)[];
+    };
+    readonly indices: { readonly recipes: { readonly documentId: AxisTemplateDeclaration } };
+}
+
+function readSearchIndex(): SearchIndexDeclaration {
+    return readContractJson<SearchIndexDeclaration>("wire/search.index.json");
+}
+
+/** 배출의 주기와 크기와 열쇠를 두 구현체가 각자 적으면 같은 쓰기가 축마다 다른 때에 검색에 보인다. */
+export function readSearchDrain(): SearchDrainDeclaration {
+    const drain = readSearchIndex().pipeline.stages.find((stage) => stage.name === "drain");
+    if (drain === undefined) throw new Error("계약이 색인 배출 단계를 선언하지 않는다");
+    return drain;
+}
+
+/** 레시피 색인 문서 하나를 가리키는 식별자의 서식이며 축을 넣을 자리를 계약이 정한다. */
+export function readRecipeDocumentId(): AxisTemplateDeclaration {
+    return readSearchIndex().indices.recipes.documentId;
+}
+
+/** 자문 잠금 열쇠는 계약의 base 에 자기 축의 간격을 더한 값이며 완성된 수를 소스가 적지 않는다. */
+export function searchDrainLockKey(axis: string): number {
+    const lock = readSearchDrain().advisoryLock;
+    const offset = lock.axisOffset[axis];
+    if (offset === undefined) throw new Error(`계약이 ${axis} 축의 자문 잠금 간격을 선언하지 않는다`);
+    return lock.base + offset;
+}

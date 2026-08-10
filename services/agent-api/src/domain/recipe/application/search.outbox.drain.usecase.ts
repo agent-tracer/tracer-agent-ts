@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { errorMessage, logError, logInfo } from "@tracer-agent/platform";
 import {
     buildRecipeDocument,
+    recipeDocumentId,
     RECIPES_INDEX_ALIAS,
     SEARCH_OUTBOX_BATCH_SIZE,
 } from "~agent-api/domain/recipe/model/recipe.document.js";
@@ -52,10 +53,14 @@ export class SearchOutboxDrainUseCase implements SearchOutboxDrainRunnerPort {
         try {
             const recipe = await repositories.recipes.findById(row.targetId);
             if (recipe === null) {
-                await this.searchIndex.deleteDocument(RECIPES_INDEX_ALIAS, row.targetId);
+                await this.searchIndex.deleteDocument(RECIPES_INDEX_ALIAS, recipeDocumentId(row.targetId));
                 return true;
             }
-            await this.searchIndex.indexDocument(RECIPES_INDEX_ALIAS, recipe.id, buildRecipeDocument(recipe));
+            await this.searchIndex.indexDocument(
+                RECIPES_INDEX_ALIAS,
+                recipeDocumentId(recipe.id),
+                buildRecipeDocument(recipe),
+            );
             return true;
         } catch (error) {
             logError({

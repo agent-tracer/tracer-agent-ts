@@ -1,4 +1,5 @@
 import path from "node:path";
+import { AGENT_BACKEND } from "@tracer-agent/llm";
 import { LEDGER_CONTAINER_STARTUP_MS, startLedger, type StartedLedger } from "@tracer-agent/platform/testing/ledger.container.js";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CONTRACT_ROOT } from "~agent-worker/support/contract.js";
@@ -152,6 +153,14 @@ describe("종결 단계가 후보를 자기 원장에 적는다", () => {
         const recipes = await ledger.repository(RecipeRowEntity).find();
         const outbox = await ledger.repository(SearchOutboxRowEntity).find();
         expect(outbox.map((row) => row.targetId).sort()).toEqual(recipes.map((row) => row.id).sort());
+    });
+
+    // 축이 없으면 상대 축의 배출기가 이 행을 가져가 지운다.
+    it("적재한 행에 자기 축을 남긴다", async () => {
+        await target.createCandidates(batch([candidate()]));
+
+        const outbox = await ledger.repository(SearchOutboxRowEntity).find();
+        expect(outbox.map((row) => row.backend)).toEqual([AGENT_BACKEND]);
     });
 
     it("같은 실행이 두 번 닿아도 후보를 두 벌 만들지 않는다", async () => {

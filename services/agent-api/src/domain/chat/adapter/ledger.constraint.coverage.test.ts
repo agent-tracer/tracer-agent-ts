@@ -17,6 +17,8 @@ const COVERED_BY: Readonly<Record<string, string>> = {
     chat_executions_requested_backend_check: "chat.thread.lock.contract.test.ts",
     cleanup_pending_task_kind_unique: "../../cleanup/adapter/cleanup.suggestion.contract.test.ts",
     search_outbox_target_check: "../../recipe/adapter/search.outbox.contract.test.ts",
+    search_outbox_backend_check: "../../recipe/adapter/search.outbox.contract.test.ts",
+    recipe_applications_backend_check: "../../recipe/adapter/recipe.application.contract.test.ts",
 };
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
@@ -36,6 +38,8 @@ const MIMICKED_BY: Readonly<Record<string, string>> = {
     ai_job_steps_job_attempt_seq: "흉내 내지 않는다",
     cleanup_pending_task_kind_unique: "흉내 내지 않는다",
     search_outbox_target_check: "흉내 내지 않는다",
+    search_outbox_backend_check: "흉내 내지 않는다",
+    recipe_applications_backend_check: "흉내 내지 않는다",
 };
 
 function migrationText(): string {
